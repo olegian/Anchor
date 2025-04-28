@@ -16,7 +16,7 @@ export function Editor() {
         history: false,
       }),
     ],
-    immediatelyRender: false,
+    immediatelyRender: true,
   });
 
   return (
