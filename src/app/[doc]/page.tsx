@@ -7,7 +7,7 @@ import { prompt } from "../actions";
 
 const LLM_URL = "http://127.0.0.1:3000/api";
 
-export default async function DocPage() {
+export default function DocPage() {
   const params = useParams<{ doc: string }>();
 
   const prompt_handler = () => {
