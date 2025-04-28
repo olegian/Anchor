@@ -5,6 +5,7 @@ import { Room } from "./Room";
 import { Editor } from "./Editor";
 import { prompt } from "../actions";
 
+// TODO: CSS styling
 export default function DocPage() {
   const params = useParams<{ doc: string }>();
 
