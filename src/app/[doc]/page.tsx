@@ -1,22 +1,24 @@
 "use client";
 
-import { ClientPageRoot } from "next/dist/client/components/client-page";
-import { db, fetchDocument } from "../firebase";
-import { BaseSyntheticEvent } from "react";
 import { useParams } from "next/navigation";
 import { Room } from "./Room";
 import { Editor } from "./Editor";
+import { prompt } from "../actions";
 
-export default function DocPage() {
+const LLM_URL = "http://127.0.0.1:3000/api";
+
+export default async function DocPage() {
   const params = useParams<{ doc: string }>();
 
-  const get_document = (e: BaseSyntheticEvent) => {
-    console.log(e.currentTarget);
-    fetchDocument(params.doc).then((a) => {
-        console.log(a)
-    }).catch((e) => {
-        console.log(e)
-    })
+  const prompt_handler = () => {
+    console.log("sending prompt");
+    let response = prompt(params.doc, "from client!")
+      .then((response) => {
+        console.log(`got response: ${response}`);
+      })
+      .catch((e) => {
+        console.error(e);
+      });
   };
 
   return (
@@ -25,6 +27,7 @@ export default function DocPage() {
       <Room doc_name={params.doc}>
         <Editor />
       </Room>
+      <button onClick={prompt_handler}>Send LLM Request</button>
     </div>
   );
 }
