@@ -5,14 +5,12 @@ import { Room } from "./Room";
 import { Editor } from "./Editor";
 import { prompt } from "../actions";
 
-const LLM_URL = "http://127.0.0.1:3000/api";
-
-export default async function DocPage() {
+export default function DocPage() {
   const params = useParams<{ doc: string }>();
 
   const prompt_handler = () => {
     console.log("sending prompt");
-    let response = prompt(params.doc, "from client!")
+    prompt(params.doc, "from client!")
       .then((response) => {
         console.log(`got response: ${response}`);
       })
