@@ -6,10 +6,8 @@ import { Editor } from "./Editor";
 import { prompt } from "../actions";
 
 // !FIX: fix the YJS error, there's a double import for YJS somewhere which
-// apparently leads to some really shit memory errors. probably add a console.trace
-// to the node_modules file and then see where the imports are happening, and resolve that.
-// it might also have something to do with server side / client side rendering. if ^ doesnt
-// work, look at this.
+// ?UPDATE: I think I did this ^^ but I'm really not sure, there wasn't a lot of documentation on the
+//          the fix, which involved editing ../next.config.ts to have the serverExternalPackages set for "yjs"
 // TODO: CSS styling
 export default function DocPage() {
   const params = useParams<{ doc: string }>();
