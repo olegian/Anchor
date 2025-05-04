@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { Room } from "./Room";
 import { Editor } from "./Editor";
 import { prompt } from "../actions";
+import { Sidebar } from "./Sidebar";
 
 // !FIX: fix the YJS error, there's a double import for YJS somewhere which
 // ?UPDATE: I think I did this ^^ but I'm really not sure, there wasn't a lot of documentation on the
@@ -24,12 +25,16 @@ export default function DocPage() {
   };
 
   return (
-    <div className="div">
-      <div> DOC_PAGE: {params.doc} </div>
-      <Room doc_name={params.doc}>
-        <Editor />
-      </Room>
-      <button onClick={prompt_handler}>Send LLM Request</button>
-    </div>
+    <>
+        <Sidebar />
+
+        <div className="editor-container">
+            <div> DOC_PAGE: {params.doc} </div>
+            <Room doc_name={params.doc}>
+                <Editor />
+            </Room>
+            <button onClick={prompt_handler}>Send LLM Request</button>
+        </div>
+    </>
   );
 }
