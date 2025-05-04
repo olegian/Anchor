@@ -1,0 +1,68 @@
+/* styles.css */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #f9f9f9 0%, #e0eaff 100%);
+    margin: 0;
+    padding: 0;
+  }
+  
+  .doc-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 1.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .doc-title {
+    font-size: 2rem;
+    color: #4a4a4a;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .doc-id {
+    color: #5e72e4;
+    font-weight: bold;
+  }
+  
+  .editor-wrapper {
+    border: 2px solid #dbeafe;
+    border-radius: 1rem;
+    overflow: hidden;
+    background-color: #f0f4ff;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .prompt-button {
+    display: block;
+    margin: 0 auto;
+    background-color: #5e72e4;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .prompt-button:hover {
+    background-color: #324cdd;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  

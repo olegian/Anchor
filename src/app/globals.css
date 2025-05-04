@@ -1,30 +1,89 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 246, 248, 250;
+  --background-end-rgb: 240, 242, 244;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      rgb(var(--background-start-rgb)),
+      rgb(var(--background-end-rgb))
+    )
+    fixed;
 }
 
-.annotation-normal {
-    background-color: red;
+/* TipTap Editor Styles */
+.ProseMirror {
+  @reference p-4 min-h-[60vh] outline-none;
+}
+
+.ProseMirror p {
+  @reference mb-3;
+}
+
+.ProseMirror h1 {
+  @reference text-3xl font-bold mb-4;
+}
+
+.ProseMirror h2 {
+  @reference text-2xl font-bold mb-3;
+}
+
+.ProseMirror h3 {
+  @reference text-xl font-bold mb-2;
+}
+
+.ProseMirror ul {
+  @reference list-disc pl-5 mb-3;
+}
+
+.ProseMirror ol {
+  @reference list-decimal pl-5 mb-3;
+}
+
+.ProseMirror blockquote {
+  @reference border-l-4 border-gray-300 pl-4 py-2 italic;
+}
+
+.ProseMirror code {
+  @reference bg-gray-100 px-1 py-0.5 rounded;
+}
+
+/* Context Highlight Styles */
+.context-highlight {
+  @reference bg-blue-100 rounded px-0.5;
+}
+
+/* AI Generated Content Highlight */
+.ai-generated {
+  @reference bg-ai-highlight;
+}
+
+/* Thread Sidebar Styles */
+.thread-list-item {
+  @reference p-3 mb-2 rounded-md hover:bg-gray-100 cursor-pointer transition-colors;
+}
+
+.thread-list-item.active {
+  @reference bg-blue-50 border-l-4 border-primary;
+}
+
+/* User Cursor Styles */
+.collaboration-cursor__caret {
+  @reference border-r-2 border-solid h-5 relative;
+  margin-left: -1px;
+  margin-right: -1px;
+  box-sizing: border-box;
+  word-break: normal;
+}
+
+.collaboration-cursor__label {
+  @reference absolute left-0 -top-6 px-2 py-1 rounded text-xs text-white pointer-events-none;
+  white-space: nowrap;
 }
