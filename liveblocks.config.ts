@@ -1,4 +1,12 @@
 // Define Liveblocks types for your application
+
+import { JsonObject, LiveList, LiveObject, LsonObject } from "@liveblocks/client";
+
+interface SnapshotEntry extends JsonObject {
+    preview: string,
+    snapshotId: string,
+}
+
 // https://liveblocks.io/docs/api-reference/liveblocks-react#Typing-your-data
 declare global {
   interface Liveblocks {
@@ -12,6 +20,7 @@ declare global {
     Storage: {
       // Example, a conflict-free list
       // animals: LiveList<string>;
+      snapshots: LiveList<LiveObject<SnapshotEntry>>;
     };
 
     // Custom user info set when authenticating with a secret key
@@ -26,9 +35,9 @@ declare global {
 
     // Custom events, for useBroadcastEvent, useEventListener
     RoomEvent: {};
-      // Example has two events, using a union
-      // | { type: "PLAY" } 
-      // | { type: "REACTION"; emoji: "🔥" };
+    // Example has two events, using a union
+    // | { type: "PLAY" }
+    // | { type: "REACTION"; emoji: "🔥" };
 
     // Custom metadata set on threads, for useThreads, useCreateThread, etc.
     ThreadMetadata: {

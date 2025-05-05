@@ -1,6 +1,14 @@
 "use server";
 
+// import { Liveblocks } from "@liveblocks/node";
+
+// const liveblocks = new Liveblocks({
+//   secret: process.env.LB_KEY ?? "",
+// });
+
 const LB_DELETE_COMMENT_URL =
+  "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
+const LB_COPY_ROOM =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
 
 // TODO: probably change the data to be of whatever type captures required context,
@@ -13,21 +21,30 @@ export async function prompt(doc_name: string, data: string) {
   return "from server!";
 }
 
+
 export async function deleteAnnotation(
-  room_id: string,
+  roomId: string,
   threadId: string,
   commentId: string
 ) {
-  const endpoint = LB_DELETE_COMMENT_URL.replace("{room_id}", room_id)
-    .replace("{thread_id}", threadId)
-    .replace("{comment_id}", commentId);
+    const endpoint = LB_DELETE_COMMENT_URL.replace("{room_id}", roomId)
+      .replace("{thread_id}", threadId)
+      .replace("{comment_id}", commentId);
 
-  const response = await fetch(endpoint, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${process.env.LB_KEY}`,
-    },
-  });
+    const response = await fetch(endpoint, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${process.env.LB_KEY}`,
+      },
+    });
 
-  return response.status;
+  return response;
+}
+
+export async function takeSnapshot(
+  roomId: string,
+  docName: string,
+  newSnapShotId: string
+) {
+    
 }
