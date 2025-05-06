@@ -14,14 +14,22 @@ interface SnapshotEntry extends JsonObject {
 function SidebarSnapshot({
   snapshot,
   id,
+  openSnapshotHandler,
 }: {
   snapshot: { readonly preview: string; readonly snapshotId: string };
   id: number;
+  openSnapshotHandler: (snapshot: string) => void;
 }) {
   return (
-    <div key={id} className={"sidebar-snapshot"}>
+    <button
+      key={id}
+      className={"sidebar-snapshot"}
+      onClick={() => {
+        openSnapshotHandler(snapshot.snapshotId);
+      }}
+    >
       ID: {snapshot.snapshotId}
-    </div>
+    </button>
   );
 }
 
@@ -37,23 +45,33 @@ export function Sidebar({ doc }: { doc: string }) {
     );
   }, []);
 
-  const room = useRoom();
   const router = useRouter();
 
   const prompt_handler = () => {
     const newSnapshotId = crypto.randomUUID();
 
-    addSnapshot(newSnapshotId);
-    router.push(`/${doc}/${newSnapshotId}`);
-
     // still need to populate newsnapshotid editor content
+    addSnapshot(newSnapshotId);
+
+    router.push(`/${doc}/${newSnapshotId}`);
+  };
+
+  const openSnapshotHandler = (snapshot: string) => {
+    router.push(`/${doc}/${snapshot}`);
   };
 
   return (
     <>
       <div className={"sidebar-container"}>
         {snapshots?.map((snapshot, idx) => {
-          return <SidebarSnapshot snapshot={snapshot} id={idx} key={idx} />;
+          return (
+            <SidebarSnapshot
+              openSnapshotHandler={openSnapshotHandler}
+              snapshot={snapshot}
+              id={idx}
+              key={idx}
+            />
+          );
         })}
       </div>
       <button onClick={prompt_handler}>Send LLM Request</button>

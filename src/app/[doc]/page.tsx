@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { Room } from "./Room";
 import { Editor } from "./Editor";
-import { prompt, takeSnapshot } from "../actions";
+import { prompt } from "../actions";
 import { useRoom } from "@liveblocks/react";
 import { Sidebar } from "./Sidebar";
 

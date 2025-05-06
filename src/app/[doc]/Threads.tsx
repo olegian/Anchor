@@ -20,7 +20,7 @@ interface Annotation {
 }
 
 export function Threads({ editor }: { editor: Editor | null }) {
-  const { threads } = useThreads({ query: { resolved: false } });
+  const { threads } = useThreads();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
 
   const newAnnotationHandler = () => {
@@ -56,10 +56,6 @@ export function Threads({ editor }: { editor: Editor | null }) {
       },
     ]);
   };
-
-  useEffect(() => {
-    console.log(annotations);
-  }, [annotations]);
 
   // populate annotations state on mount
   useEffect(() => {

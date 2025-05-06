@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  serverExternalPackages: ['yjs', "@tiptap/pm/*"]
+  serverExternalPackages: ['yjs']
 };
 
 export default nextConfig;

@@ -14,7 +14,7 @@ export default function DocPage() {
         DOC_PAGE: {params.doc}, snapshot: {params.snapshot}
       </div>
       <Room doc_name={params.doc}>
-        <SnapShotEditor snapshotId={params.snapshot} />
+        <SnapShotEditor doc={params.doc} snapshotId={params.snapshot} />
       </Room>
     </div>
   );
