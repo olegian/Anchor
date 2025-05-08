@@ -1,18 +1,20 @@
 "use client";
 
 import { ChevronLeftIcon } from "@heroicons/react/20/solid";
-import ThreadsSidebar from "./components/ThreadsSidebar";
+import ThreadsSidebar from "@/app/components/ThreadSidebar";
 import Editor from "./components/Editor";
 import FloatingMenu from "./components/FloatingMenu";
 import { useEffect, useState } from "react";
 import FloatingNavbar from "./components/FloatingNavbar";
 import { ArrowRightIcon } from "@heroicons/react/16/solid";
 import DocMenu from "./components/DocMenu";
+import { Session } from "next-auth";
+import { Room } from "./Room";
+import { useParams } from "next/navigation";
 
-export default function EditorPage({}) {
-  const [title, setTitle] = useState(
-    "Garlic bread with cheese: What the science tells us"
-  );
+export default function MainEditorPage({ session }: { session: Session }) {
+  const [title, setTitle] = useState("Garlic bread with cheese: What the science tells us");
+  const params = useParams<{ doc: string }>();
 
   const [scrollPosition, setScrollPosition] = useState(0);
 
@@ -43,7 +45,9 @@ export default function EditorPage({}) {
               Last updated 2 days ago by Greg Heffley
             </p>
           </div>
-          <Editor title={title} setTitle={setTitle} />
+          <Room doc_name={params.doc} session={session}>
+            <Editor title={title} setTitle={setTitle} />
+          </Room>
         </div>
       </div>
       <FloatingMenu />

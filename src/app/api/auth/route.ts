@@ -1,12 +1,8 @@
-import { Liveblocks } from "@liveblocks/node";
+import { liveblocks } from "@/app/liveblocks";
 
 if (!process.env.LB_KEY) {
   console.log("!!! SET LIVEBLOCKS SECRET ENVIRONMENT VARIABLE (LB_KEY)");
 }
-
-const liveblocks = new Liveblocks({
-  secret: process.env.LB_KEY ?? "",
-});
 
 interface AuthRequest {
   roomId: string | undefined;

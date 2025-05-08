@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "../auth";
-import DocPage from "./DocPage";
+import { AuthGuard } from "../components/AuthGuard";
+import MainEditorPage from "./MainEditorPage";
 
 export default async function Page() {
   const session = await auth();
@@ -8,5 +9,9 @@ export default async function Page() {
     redirect("/");
   }
 
-  return <DocPage session={session} />;
+  return (
+    <AuthGuard redirectTo="/">
+      <MainEditorPage session={session} />;
+    </AuthGuard>
+  );
 }

@@ -6,19 +6,12 @@ import { Session } from "next-auth";
 import { LiveList, LiveObject, LsonObject } from "@liveblocks/client";
 
 const LB_AUTH_ENDPOINT = "/api/auth";
-const HARDCODE_USERNAME = "oi";
 
 // Define the storage schema to fix TypeScript errors
 interface SnapshotEntry extends LsonObject {
   preview: string;
   snapshotId: string;
 }
-
-// Define the storage shape
-type Storage = {
-  snapshots: LiveList<LiveObject<SnapshotEntry>>;
-  // We don't need to store prompt history in LiveMap since we're using server-side memory
-};
 
 export function Room({
   children,
@@ -30,8 +23,8 @@ export function Room({
   session: Session;
 }) {
   const authHandler = async (roomId: string | undefined) => {
-    if (!session.user) {
-      console.log("No user id in session");
+    if (!session.user || !session.user.name) {
+      console.log("No user id in session: ", session);
       return;
     }
 

@@ -1,12 +1,8 @@
 "use server";
 
-import { Liveblocks } from "@liveblocks/node";
+import { liveblocks } from "@/app/liveblocks";
 import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const liveblocks = new Liveblocks({
-  secret:""
-});
 
 const LB_DELETE_COMMENT_URL =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";

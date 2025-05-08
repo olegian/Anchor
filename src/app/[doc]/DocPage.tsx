@@ -6,12 +6,6 @@ import { Editor } from "./Editor";
 import { prompt } from "../actions";
 import { Session } from "next-auth";
 
-// !FIX: fix the YJS error, there's a double import for YJS somewhere which
-// apparently leads to some really shit memory errors. probably add a console.trace
-// to the node_modules file and then see where the imports are happening, and resolve that.
-// it might also have something to do with server side / client side rendering. if ^ doesnt
-// work, look at this.
-// TODO: CSS styling
 export default function DocPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
 
