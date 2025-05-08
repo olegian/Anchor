@@ -1,9 +1,11 @@
+import { ChevronLeftIcon } from "@heroicons/react/20/solid";
 import Tabbar from "./components/Tabbar";
 import ThreadsSidebar from "./components/ThreadsSidebar";
 
 export default function Page({}) {
   return (
     <>
+      <BackButton />
       <ThreadsSidebar />
       <div className="p-4 md:p-8">
         <div className="max-w-3xl mx-auto py-16 space-y-4">
@@ -91,5 +93,14 @@ export default function Page({}) {
       {/* Floating Tabbar */}
       <Tabbar />
     </>
+  );
+}
+
+function BackButton() {
+  return (
+    <button className="fixed cursor-pointer hover:text-gray-400 top-4 left-4 z-50 flex items-center justify-start text-sm gap-1 text-zinc-600">
+      <ChevronLeftIcon className="size-6 shrink-0" />
+      <p className="font-medium text-sm">Back</p>
+    </button>
   );
 }
