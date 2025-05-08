@@ -9,6 +9,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.2",
+    "@heroicons/react": "^2.2.0",
     "@liveblocks/client": "^2.23.2",
     "@liveblocks/react": "^2.23.2",
     "@liveblocks/react-tiptap": "^2.23.2",
@@ -17,8 +19,8 @@
     "@tiptap/react": "^2.11.7",
     "@tiptap/starter-kit": "^2.11.7",
     "firebase": "^11.6.1",
-    "lucide-react": "^0.507.0",
     "next": "15.3.1",
+    "postcss": "^8.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tiptap-annotation-magic": "^2.0.0",
@@ -26,13 +28,14 @@
     "zustand": "^5.0.4"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.1.5",
+    "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "9.25.1",
     "eslint-config-next": "15.3.1",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.1.5",
     "typescript": "^5"
   }
 }

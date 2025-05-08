@@ -1,89 +1,42 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 246, 248, 250;
-  --background-end-rgb: 240, 242, 244;
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable.woff2") format("woff2"),
+    url("/fonts/InterVariable.ttf") format("truetype");
 }
 
-body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      rgb(var(--background-start-rgb)),
-      rgb(var(--background-end-rgb))
-    )
-    fixed;
+@font-face {
+  font-family: "Inter";
+  src: url("/fonts/InterVariable-Italic.woff2") format("woff2"),
+    url("/fonts/InterVariable-Italic.ttf") format("truetype");
+  font-style: italic;
 }
 
-/* TipTap Editor Styles */
-.ProseMirror {
-  @reference p-4 min-h-[60vh] outline-none;
+@theme {
+  --font-display: "Inter", "SF Pro", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  --font-display--font-feature-settings: "ss01", "liga", "calt";
+  --font-display--font-variation-settings: "opsz" 32;
+
+  --font-display-length: 10;
+
+  --font-sans: "Inter", "SF Pro", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans--font-feature-settings: "ss01", "liga", "calt";
+  --font-sans--font-variation-settings: "opsz" 16;
+  --font-sans-length: 10;
 }
 
-.ProseMirror p {
-  @reference mb-3;
-}
-
-.ProseMirror h1 {
-  @reference text-3xl font-bold mb-4;
-}
-
-.ProseMirror h2 {
-  @reference text-2xl font-bold mb-3;
-}
-
-.ProseMirror h3 {
-  @reference text-xl font-bold mb-2;
-}
-
-.ProseMirror ul {
-  @reference list-disc pl-5 mb-3;
-}
-
-.ProseMirror ol {
-  @reference list-decimal pl-5 mb-3;
-}
-
-.ProseMirror blockquote {
-  @reference border-l-4 border-gray-300 pl-4 py-2 italic;
-}
-
-.ProseMirror code {
-  @reference bg-gray-100 px-1 py-0.5 rounded;
-}
-
-/* Context Highlight Styles */
-.context-highlight {
-  @reference bg-blue-100 rounded px-0.5;
-}
-
-/* AI Generated Content Highlight */
-.ai-generated {
-  @reference bg-ai-highlight;
-}
-
-/* Thread Sidebar Styles */
-.thread-list-item {
-  @reference p-3 mb-2 rounded-md hover:bg-gray-100 cursor-pointer transition-colors;
-}
-
-.thread-list-item.active {
-  @reference bg-blue-50 border-l-4 border-primary;
-}
-
-/* User Cursor Styles */
-.collaboration-cursor__caret {
-  @reference border-r-2 border-solid h-5 relative;
-  margin-left: -1px;
-  margin-right: -1px;
-  box-sizing: border-box;
-  word-break: normal;
-}
-
-.collaboration-cursor__label {
-  @reference absolute left-0 -top-6 px-2 py-1 rounded text-xs text-white pointer-events-none;
-  white-space: nowrap;
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+  }
 }
