@@ -25,7 +25,7 @@ export function User({
 }) {
   return (
     <div className="group relative w-6">
-      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-teal-500 border border-white/50 text-white font-semibold text-xs">
+      <div className="uppercase flex items-center justify-center w-6 h-6 rounded-full bg-teal-500 border border-white/50 text-white font-semibold text-xs">
         {first[0]}
         {last[0]}
       </div>
