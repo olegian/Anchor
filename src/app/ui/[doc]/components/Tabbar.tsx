@@ -4,6 +4,7 @@ import {
   ItalicIcon,
   ListBulletIcon,
   NumberedListIcon,
+  StrikethroughIcon,
 } from "@heroicons/react/20/solid";
 import { Editor } from "@tiptap/react";
 
@@ -14,10 +15,12 @@ export default function Tabbar({ editor }: { editor: Editor | null }) {
 
   return (
     <div className="fixed bottom-4 left-0 right-0 z-20 flex items-center justify-center">
-      <div className="bg-white border rounded-xl border-zinc-200 relative shadow-xl p-2 flex items-center justify-center space-x-4">
+      <div className="bg-white border rounded-xl border-zinc-200 relative shadow-xl p-2 flex items-center justify-center space-x-2">
         <TabbarItem
           text="Heading"
-          children={<p className="text-xl">H</p>}
+          children={
+            <p className="text-xl flex items-center justify-center size-5">H</p>
+          }
           active={editor.isActive("heading", { level: 2 })}
           onClick={() =>
             editor.chain().focus().toggleHeading({ level: 2 }).run()
@@ -36,7 +39,12 @@ export default function Tabbar({ editor }: { editor: Editor | null }) {
           active={editor.isActive("italic")}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         />
-
+        <TabbarItem
+          text="Strikethrough"
+          children={<StrikethroughIcon className="size-5 shrink-0" />}
+          active={editor.isActive("strike")}
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+        />
         <div className="w-px h-8 bg-zinc-200" />
         <TabbarItem
           text="Bullet List"
@@ -91,9 +99,7 @@ function TabbarItem({
       </button>
       {text ? (
         <div
-          className={`absolute w-full -top-10 ${
-            active ? "flex z-0" : "hidden group-hover:flex z-10"
-          } items-center justify-center`}
+          className={`absolute w-full -top-10 hidden group-hover:flex items-center justify-center`}
         >
           <p className="text-center whitespace-nowrap text-xs font-medium text-gray-700 pointer-events-none px-2 py-1 bg-white border shadow rounded-md border-zinc-200">
             {text}

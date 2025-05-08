@@ -13,7 +13,11 @@ export default function Editor({}) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: {
+          levels: [2],
+        },
+      }),
       Placeholder.configure({
         placeholder: "Type something...",
       }),
