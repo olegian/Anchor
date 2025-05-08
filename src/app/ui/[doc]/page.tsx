@@ -7,6 +7,7 @@ import FloatingMenu from "./components/FloatingMenu";
 import { useEffect, useState } from "react";
 import FloatingNavbar from "./components/FloatingNavbar";
 import { ArrowRightIcon } from "@heroicons/react/16/solid";
+import DocMenu from "./components/DocMenu";
 
 export default function Page({}) {
   const [title, setTitle] = useState(
@@ -34,7 +35,10 @@ export default function Page({}) {
       <div className="py-4 px-2 md:py-8 md:px-6 ">
         <div className="max-w-3xl mx-auto py-16 space-y-4">
           <div className="space-y-4 px-2">
-            <DocPill mini={true} />
+            <div className="flex items-center justify-between">
+              <DocPill mini={true} />
+              <DocMenu showText={true} />
+            </div>
             <p className="font-semibold text-zinc-500 text-sm">
               Last updated 2 days ago by Greg Heffley
             </p>

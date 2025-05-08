@@ -1,7 +1,7 @@
 export function Users({ hover = false }: { hover?: boolean }) {
   return (
     <div
-      className={`flex items-center justify-end transition-all ${
+      className={`flex items-center justify-end transition-(--spacing) transform ${
         hover ? "hover:space-x-1" : ""
       } -space-x-2`}
     >
