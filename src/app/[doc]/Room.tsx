@@ -6,6 +6,7 @@ import {
   RoomProvider,
   ClientSideSuspense,
 } from "@liveblocks/react/suspense";
+import { Session } from "next-auth";
 
 const LB_AUTH_ENDPOINT = "/api/auth";
 const HARDCODE_USERNAME = "pick-something-unique-for-now";
@@ -13,11 +14,18 @@ const HARDCODE_USERNAME = "pick-something-unique-for-now";
 export function Room({
   children,
   doc_name,
+  session,
 }: {
   children: ReactNode;
   doc_name: string;
+  session: Session;
 }) {
   const authHandler = async (roomId: string | undefined) => {
+    if (!session.user) {
+        console.log("No user id in session")
+        return;
+    }
+
     const response = await fetch(LB_AUTH_ENDPOINT, {
       method: "POST",
       headers: {
@@ -25,7 +33,7 @@ export function Room({
       },
       body: JSON.stringify({
         roomId,
-        userId: HARDCODE_USERNAME,
+        userId: session.user.name,
       }),
     });
 
