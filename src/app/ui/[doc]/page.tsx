@@ -1,9 +1,31 @@
+"use client";
+
 import { ChevronLeftIcon } from "@heroicons/react/20/solid";
-import Tabbar from "./components/Tabbar";
 import ThreadsSidebar from "./components/ThreadsSidebar";
 import Editor from "./components/Editor";
+import FloatingMenu from "./components/FloatingMenu";
+import { useEffect, useState } from "react";
+import FloatingNavbar from "./components/FloatingNavbar";
 
 export default function Page({}) {
+  const [title, setTitle] = useState(
+    "Garlic bread with cheese: What the science tells us"
+  );
+
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollPosition(window.scrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   return (
     <>
       <BackButton />
@@ -18,9 +40,11 @@ export default function Page({}) {
               Last updated 2 days ago by Greg Heffley
             </p>
           </div>
-          <Editor />
+          <Editor title={title} setTitle={setTitle} />
         </div>
       </div>
+      <FloatingMenu />
+      <FloatingNavbar title={title} scrollPosition={scrollPosition} />
     </>
   );
 }

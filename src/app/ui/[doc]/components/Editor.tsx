@@ -1,16 +1,17 @@
 "use client";
 import Placeholder from "@tiptap/extension-placeholder";
-
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useState } from "react";
-import Tabbar from "./Tabbar";
+import { useEffect } from "react";
+import FloatingToolbar from "./FloatingToolbar";
 
-export default function Editor({}) {
-  const [title, setTitle] = useState(
-    "Garlic bread with cheese: What the science tells us"
-  );
-
+export default function Editor({
+  title,
+  setTitle,
+}: {
+  title: string;
+  setTitle: (title: string) => void;
+}) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -38,7 +39,7 @@ export default function Editor({}) {
         <Title title={title} setTitle={setTitle} />
         <EditorContent editor={editor} className="px-2" />
       </article>
-      <Tabbar editor={editor} />
+      <FloatingToolbar editor={editor} />
     </>
   );
 }
@@ -57,7 +58,7 @@ function Title({
       contentEditable
       suppressContentEditableWarning
       onBlur={(e) => setTitle(e.target.textContent || "")}
-      className="w-full text-3xl font-bold mb-4 border-b-2 transition-colors rounded-lg border-transparent hover:bg-zinc-100 inline px-2 py-1 focus:outline-none focus:border-none focus:bg-zinc-100"
+      className="w-full text-3xl mb-4 border-b-2 transition-colors rounded-lg border-transparent hover:bg-zinc-100 inline px-2 py-1 focus:outline-none focus:border-none focus:bg-zinc-100"
     >
       {title || placeholder}
     </h1>

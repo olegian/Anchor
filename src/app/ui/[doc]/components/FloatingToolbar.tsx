@@ -8,7 +8,7 @@ import {
 } from "@heroicons/react/20/solid";
 import { Editor } from "@tiptap/react";
 
-export default function Tabbar({ editor }: { editor: Editor | null }) {
+export default function FloatingToolbar({ editor }: { editor: Editor | null }) {
   if (!editor) {
     return null;
   }
@@ -19,14 +19,16 @@ export default function Tabbar({ editor }: { editor: Editor | null }) {
         <TabbarItem
           text="Heading"
           children={
-            <p className="text-xl flex items-center justify-center size-5">H</p>
+            <p className="text-xl flex items-center justify-center size-5 font-bold font-display">
+              H
+            </p>
           }
           active={editor.isActive("heading", { level: 2 })}
           onClick={() =>
             editor.chain().focus().toggleHeading({ level: 2 }).run()
           }
         />
-        <div className="w-px h-8 bg-zinc-200" />
+        <Divider />
         <TabbarItem
           text="Bold"
           children={<BoldIcon className="size-5 shrink-0" />}
@@ -45,7 +47,7 @@ export default function Tabbar({ editor }: { editor: Editor | null }) {
           active={editor.isActive("strike")}
           onClick={() => editor.chain().focus().toggleStrike().run()}
         />
-        <div className="w-px h-8 bg-zinc-200" />
+        <Divider />
         <TabbarItem
           text="Bullet List"
           children={<ListBulletIcon className="size-5 shrink-0" />}
@@ -58,7 +60,7 @@ export default function Tabbar({ editor }: { editor: Editor | null }) {
           active={editor.isActive("orderedList")}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         />
-        <div className="w-px h-8 bg-zinc-200" />
+        <Divider />
         <TabbarItem
           text="Code Block"
           children={<CodeBracketIcon className="size-5 shrink-0" />}
@@ -68,6 +70,10 @@ export default function Tabbar({ editor }: { editor: Editor | null }) {
       </div>
     </div>
   );
+
+  function Divider() {
+    return <div className="w-px h-8 bg-zinc-200" />;
+  }
 }
 
 function TabbarItem({
@@ -87,7 +93,7 @@ function TabbarItem({
         onClick={onClick}
         className={`${
           active ? "text-gray-700" : "text-gray-500 hover:text-gray-700"
-        } focus:outline-none flex flex-col items-center justify-center space-y-1`}
+        } focus:outline-none cursor-pointer flex flex-col items-center justify-center space-y-1`}
       >
         <div
           className={`${

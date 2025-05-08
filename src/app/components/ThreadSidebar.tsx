@@ -77,7 +77,7 @@
 //   );
 // }
 
-// NOTE 2: this has a slightly different design, where the user is actually adding threads, and im not sure if this is what we want or to 
+// NOTE 2: this has a slightly different design, where the user is actually adding threads, and im not sure if this is what we want or to
 // combine them somehow
 // components/ThreadSidebar.tsx
 // "use client";
@@ -210,7 +210,7 @@
 
 import React, { useEffect, useState } from "react";
 import { Button } from "../components/ui/button";
-import { Trash2, Eye, Plus } from "lucide-react";
+// import { Trash2, Eye, Plus } from "lucide-react";
 import { useThreadStore } from "../lib/threadStore";
 import "../styling/ThreadSidebar.css";
 
@@ -250,27 +250,28 @@ export default function ThreadSidebar() {
           className="new-thread-input"
         />
         <Button size="icon" onClick={handleAddThread}>
-          <Plus size={18} />
+          {/* <Plus size={18} /> */}
         </Button>
       </div>
 
       <ul className="thread-list">
-        {threads.length === 0 && (
-          <p className="empty-text">No threads yet.</p>
-        )}
+        {threads.length === 0 && <p className="empty-text">No threads yet.</p>}
         {threads.map((thread) => (
           <li key={thread.id} className="thread-item">
             <div>
               <span className="thread-title">{thread.title}</span>
               {thread.activeUser && (
                 <span className="thread-user">
-                  In use by {thread.activeUser === currentUser ? "you" : thread.activeUser}
+                  In use by{" "}
+                  {thread.activeUser === currentUser
+                    ? "you"
+                    : thread.activeUser}
                 </span>
               )}
             </div>
             <div className="button-group">
               <Button size="icon" variant="default" className="button view">
-                <Eye size={18} />
+                {/* <Eye size={18} /> */}
               </Button>
               <Button
                 size="icon"
@@ -279,7 +280,7 @@ export default function ThreadSidebar() {
                 onClick={() => deleteThread(thread.id)}
                 className="button delete"
               >
-                <Trash2 size={18} />
+                {/* <Trash2 size={18} /> */}
               </Button>
             </div>
           </li>
