@@ -39,4 +39,16 @@
   h6 {
     @apply font-display;
   }
+
+  [role="textbox"] {
+    @apply focus-within:ring-0 focus-within:border-0 focus-within:outline-0;
+  }
+
+  .tiptap p.is-editor-empty:first-child::before {
+    @apply text-gray-400;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
 }

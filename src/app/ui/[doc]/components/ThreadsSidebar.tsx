@@ -5,7 +5,7 @@ import { ChevronLeftIcon } from "@heroicons/react/16/solid";
 import { MainThreadListItem, ThreadListItem } from "./ThreadListItem";
 
 export default function ThreadsSidebar() {
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(false);
 
   const handleMouseEnter = () => setShowSidebar(true);
   const handleMouseLeave = () => setShowSidebar(false);
