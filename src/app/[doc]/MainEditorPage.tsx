@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeftIcon } from "@heroicons/react/20/solid";
-import ThreadsSidebar from "@/app/components/ThreadSidebar";
+import ThreadsSidebar from "./components/ThreadsSidebar";
 import Editor from "./components/Editor";
 import FloatingMenu from "./components/FloatingMenu";
 import { useEffect, useState } from "react";
@@ -13,7 +13,9 @@ import { Room } from "./Room";
 import { useParams } from "next/navigation";
 
 export default function MainEditorPage({ session }: { session: Session }) {
-  const [title, setTitle] = useState("Garlic bread with cheese: What the science tells us");
+  const [title, setTitle] = useState(
+    "Garlic bread with cheese: What the science tells us"
+  );
   const params = useParams<{ doc: string }>();
 
   const [scrollPosition, setScrollPosition] = useState(0);
