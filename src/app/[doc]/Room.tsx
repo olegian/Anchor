@@ -1,17 +1,11 @@
 "use client";
 
-import { ReactNode } from "react";
-import { LiveblocksProvider, RoomProvider, ClientSideSuspense } from "@liveblocks/react/suspense";
+import { LiveList } from "@liveblocks/client";
+import { ClientSideSuspense, LiveblocksProvider, RoomProvider } from "@liveblocks/react/suspense";
 import { Session } from "next-auth";
-import { LiveList, LiveObject, LsonObject } from "@liveblocks/client";
+import { ReactNode } from "react";
 
 const LB_AUTH_ENDPOINT = "/api/auth";
-
-// Define the storage schema to fix TypeScript errors
-interface SnapshotEntry extends LsonObject {
-  preview: string;
-  snapshotId: string;
-}
 
 export function Room({
   children,

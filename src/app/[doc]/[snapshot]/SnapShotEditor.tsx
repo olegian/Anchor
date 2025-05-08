@@ -107,6 +107,7 @@ export function SnapShotEditor({ doc, snapshotId }: { doc: string; snapshotId: s
   const maindocLB = useLiveblocksExtension({
     field: "maindoc",
   });
+  // TODO: This is how to populate populate the initial snapshot contents
   const snapshots = useStorage((root) => root.snapshots);
   const setCreatedSnapshot = useMutation(({ storage }, snapshotEditor: Editor) => {
     getContents(doc)
@@ -149,6 +150,9 @@ export function SnapShotEditor({ doc, snapshotId }: { doc: string; snapshotId: s
     immediatelyRender: true,
   });
 
+  // TODO: alongside this use effect, to populate the snapshot contents
+  // when a new snapshot is loaded (especially if its yet to be initialized
+  // with the maindoc contents).
   useEffect(() => {
     if (!snapshots){
       return;
@@ -158,6 +162,8 @@ export function SnapShotEditor({ doc, snapshotId }: { doc: string; snapshotId: s
       return element["snapshotId"] === snapshotId;
     });
     console.log(`snapshot: ${snapshot}`);
+
+    // TODO: replace the preview tag with a isInitialized boolean, and use that
     if (snapshot?.preview.length == 0) {
       console.log("taking snapshot");
       setCreatedSnapshot(snapshotEditor);

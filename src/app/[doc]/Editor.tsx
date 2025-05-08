@@ -5,10 +5,6 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { Threads } from "./Threads";
 
-interface ContextSelection {
-  label: string;
-}
-
 export function Editor() {
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
 

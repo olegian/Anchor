@@ -13,9 +13,7 @@ import { Room } from "./Room";
 import { useParams } from "next/navigation";
 
 export default function MainEditorPage({ session }: { session: Session }) {
-  const [title, setTitle] = useState(
-    "Garlic bread with cheese: What the science tells us"
-  );
+  const [title, setTitle] = useState("Garlic bread with cheese: What the science tells us");
   const params = useParams<{ doc: string }>();
 
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -35,7 +33,6 @@ export default function MainEditorPage({ session }: { session: Session }) {
   return (
     <>
       <BackButton />
-      <ThreadsSidebar />
       <div className="py-4 px-2 md:py-8 md:px-6 ">
         <div className="max-w-3xl mx-auto py-16 space-y-4">
           <div className="space-y-4 px-2">
@@ -48,7 +45,9 @@ export default function MainEditorPage({ session }: { session: Session }) {
             </p>
           </div>
           <Room doc_name={params.doc} session={session}>
-            <Editor title={title} setTitle={setTitle} />
+            {/* TODO: This is kind of ugly, but ThreadsSidebar needs to be wrapped in Room so */}
+            {/* Right now, this completly breaks how the sidebar looks. */}
+            <ThreadsSidebar /> <Editor title={title} setTitle={setTitle} />
           </Room>
         </div>
       </div>
