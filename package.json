@@ -26,7 +26,8 @@
     "react-dom": "^19.0.0",
     "tiptap-annotation-magic": "^2.0.0",
     "uuid": "^11.1.0",
-    "zustand": "^5.0.4"
+    "zustand": "^5.0.4",
+    "@google/generative-ai": "^0.1.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.5",
