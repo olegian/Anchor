@@ -2,7 +2,11 @@
 import { useState } from "react";
 import { Transition, TransitionChild } from "@headlessui/react";
 import { ChevronLeftIcon } from "@heroicons/react/16/solid";
-import { MainThreadListItem, ThreadListItem } from "./ThreadListItem";
+import {
+  CurrentThreadListItem,
+  MainThreadListItem,
+  ThreadListItem,
+} from "./ThreadListItem";
 
 export default function ThreadsSidebar() {
   const [showSidebar, setShowSidebar] = useState(false);
@@ -44,10 +48,12 @@ export default function ThreadsSidebar() {
                     This view
                   </h3>
                   <div className="flex items-center justify-between gap-2">
-                    <MainThreadListItem />
-                    {/* <MainThreadListItem /> */}
+                    <CurrentThreadListItem />
                   </div>
                 </div>
+                <hr className="border-zinc-200 w-full" />
+
+                <MainThreadListItem />
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-lg">Threads</h3>
                   <p className="text-xs font-medium text-gray-500">

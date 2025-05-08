@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect } from "react";
 import FloatingToolbar from "./FloatingToolbar";
+import InlineAIExtension from "./extensions/InlineAIExtension";
 
 export default function Editor({
   title,
@@ -18,12 +19,18 @@ export default function Editor({
         heading: {
           levels: [2],
         },
+        history: false,
       }),
       Placeholder.configure({
         placeholder: "Type something...",
       }),
+      InlineAIExtension,
     ],
-    content: "",
+    content: `<p>
+      This is still the text editor you’re used to, but enriched with node views.
+    </p><inline-ai-component prompt="HELLO"></inline-ai-component> <p>
+      Did you see that? That’s a React component. We are really living in the future.
+    </p>`,
     immediatelyRender: false,
   });
 
@@ -32,7 +39,6 @@ export default function Editor({
       editor.commands.focus("end");
     }
   }, [editor]);
-
   return (
     <>
       <article className="prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-gray-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg">
