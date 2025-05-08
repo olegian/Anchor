@@ -1,9 +1,12 @@
+import { createReadStream } from "fs";
 import { signIn, signOut } from "./auth";
 
 export default async function Home() {
   const loginHandler = async (formData: FormData) => {
     "use server";
+
     await signIn("credentials", {
+      redirectTo: "/",
       username: formData.get("username"),
       password: formData.get("password"),
     });
@@ -15,10 +18,10 @@ export default async function Home() {
   };
 
   const signOutHandler = async () => {
-    "use server"
+    "use server";
 
-    await signOut()
-  }
+    await signOut();
+  };
 
   return (
     <>

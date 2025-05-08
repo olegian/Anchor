@@ -29,9 +29,9 @@ export default function DocPage({ session }: { session: Session }) {
   return (
     <div className="div">
       <div> DOC_PAGE: {params.doc}, AUTHED AS {session.user?.id} </div>
-      {/* <Room doc_name={params.doc}>
+      <Room doc_name={params.doc} session={session}>
         <Editor />
-      </Room> */}
+      </Room>
       <button onClick={prompt_handler}>Send LLM Request</button>
     </div>
   );

@@ -19,8 +19,9 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       },
       authorize: async (credentials, request) => {
         // TODO: make this actually check against a database
-        if (credentials.username && credentials.password) {
-            return { username: credentials.username } as any  // apparently theres a bug that this cast addresses: https://stackoverflow.com/questions/74089665/next-auth-credentials-provider-authorize-type-error
+        const AUTHORIZED = ["oi", "jk", "rk"];
+        if (AUTHORIZED.includes(credentials.username as string)) {
+          return { username: credentials.username } as any; // apparently theres a bug that this cast addresses: https://stackoverflow.com/questions/74089665/next-auth-credentials-provider-authorize-type-error
         }
 
         throw new Error("Invalid Credentials");
