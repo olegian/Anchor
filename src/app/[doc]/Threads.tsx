@@ -19,6 +19,8 @@ interface Annotation {
   comment: string | undefined;
 }
 
+// !!! THIS COMPONENT IS NO LONGER IN USE
+// TODO: come up with a better annotation scheme
 export function Threads({ editor }: { editor: Editor | null }) {
   const { threads } = useThreads();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -98,7 +100,6 @@ export function Threads({ editor }: { editor: Editor | null }) {
         editor={editor}
         components={{
           Thread: (props) => (
-            // TODO: add another button to this div to delete the annotation
             <div className={"annotation-container"}>
               {props.thread.comments.map((comment) => (
                 <div key={comment.id}>
