@@ -4,6 +4,8 @@ import { NodeViewWrapper } from "@tiptap/react";
 import React from "react";
 
 export default (props: any) => {
+  const editorContent = props.editor.state.doc.content.content;
+
   return (
     <NodeViewWrapper className="inline-ai-component bg-white border border-zinc-200 rounded-xl p-4 space-y-4 text-sm max-w-full">
       {/* Header */}

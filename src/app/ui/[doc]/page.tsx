@@ -36,7 +36,7 @@ export default function Page({}) {
         <div className="max-w-3xl mx-auto py-16 space-y-4">
           <div className="space-y-4 px-2">
             <div className="flex items-center justify-between">
-              <DocPill mini={true} />
+              <DocPill mini={false} />
               <DocMenu showText={true} />
             </div>
             <p className="font-semibold text-zinc-500 text-sm">
