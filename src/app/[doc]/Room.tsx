@@ -1,15 +1,11 @@
 "use client";
 
-import { ReactNode } from "react";
-import {
-  LiveblocksProvider,
-  RoomProvider,
-  ClientSideSuspense,
-} from "@liveblocks/react/suspense";
+import { LiveList } from "@liveblocks/client";
+import { ClientSideSuspense, LiveblocksProvider, RoomProvider } from "@liveblocks/react/suspense";
 import { Session } from "next-auth";
+import { ReactNode } from "react";
 
 const LB_AUTH_ENDPOINT = "/api/auth";
-const HARDCODE_USERNAME = "pick-something-unique-for-now";
 
 export function Room({
   children,
@@ -21,9 +17,9 @@ export function Room({
   session: Session;
 }) {
   const authHandler = async (roomId: string | undefined) => {
-    if (!session.user) {
-        console.log("No user id in session")
-        return;
+    if (!session.user || !session.user.name) {
+      console.log("No user id in session: ", session);
+      return;
     }
 
     const response = await fetch(LB_AUTH_ENDPOINT, {
@@ -41,12 +37,11 @@ export function Room({
   };
 
   // TODO: increase refresh rate by somehow changing throttle paramater. search through liveblocks docs.
+  // TODO: Add a better fallback component?
   return (
     <LiveblocksProvider authEndpoint={authHandler}>
-      <RoomProvider id={doc_name}>
-        <ClientSideSuspense fallback={<div>Loading...</div>}>
-          {children}
-        </ClientSideSuspense>
+      <RoomProvider id={doc_name} initialStorage={{ snapshots: new LiveList([]) }}>
+        <ClientSideSuspense fallback={<div>Loading...</div>}>{children}</ClientSideSuspense>
       </RoomProvider>
     </LiveblocksProvider>
   );

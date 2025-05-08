@@ -24,21 +24,80 @@ export default async function Home() {
   };
 
   return (
-    <>
-      <div> navigate to /doc_name </div>
-      <form action={loginHandler}>
-        <input type={"text"} name={"username"} id={"username"} />
-        <input type={"text"} name={"password"} id={"password"} />
-        <button type="submit"> sign in </button>
-      </form>
+    // <>
+    //   <div> navigate to /doc_name </div>
+    //   <form action={loginHandler}>
+    //     <input type={"text"} name={"username"} id={"username"} />
+    //     <input type={"text"} name={"password"} id={"password"} />
+    //     <button type="submit"> sign in </button>
+    //   </form>
 
-      <form action={signUpHandler}>
-        <input type={"text"} name={"username"} id={"username"} />
-        <input type={"text"} name={"username"} id={"username"} />
-        <button type="submit"> sign up </button>
-      </form>
+    //   <form action={signUpHandler}>
+    //     <input type={"text"} name={"username"} id={"username"} />
+    //     <input type={"text"} name={"username"} id={"username"} />
+    //     <button type="submit"> sign up </button>
+    //   </form>
 
-      <button onClick={signOutHandler}> sign out </button>
-    </>
+    //   <button onClick={signOutHandler}> sign out </button>
+    // </>
+    <div className="w-screen h-screen flex items-center justify-center bg-white">
+      <div className="mx-auto max-w-3xl px-4 py-8 w-full">
+        <div className="w-full space-y-8">
+          <div className="space-y-4">
+            <h1 className="text-4xl font-bold">gitgpt</h1>
+            <p className="text-lg">Please sign in to continue</p>
+          </div>
+          <form action={loginHandler} className="w-full space-y-4">
+            <div className="grid md:grid-cols-2 md:space-x-4 space-y-2 md:space-y-0">
+              <div className="space-y-2">
+                <label
+                  className="block text-gray-700 text-sm font-bold"
+                  htmlFor="username"
+                >
+                  Username
+                </label>
+                <input
+                  className="appearance-none border border-zinc-200 rounded-lg w-full py-2 px-3 text-gray-700"
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username"
+                  name="username"
+                />
+              </div>
+              <div className="space-y-2">
+                <label
+                  className="block text-gray-700 text-sm font-bold"
+                  htmlFor="password"
+                >
+                  Password
+                </label>
+                <input
+                  className="appearance-none border border-zinc-200 rounded-lg w-full py-2 px-3 text-gray-700"
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  name="password"
+                />
+              </div>
+            </div>
+            <div className="gap-2 flex items-center justify-start">
+              <button
+                className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm cursor-pointer"
+                type="submit"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={signOutHandler}
+                type="button"
+                className="bg-red-500 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm cursor-pointer"
+              >
+                Sign Out
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 }
