@@ -43,6 +43,7 @@ export function Room({
   };
 
   // TODO: increase refresh rate by somehow changing throttle paramater. search through liveblocks docs.
+  // TODO: Add a better fallback component?
   return (
     <LiveblocksProvider authEndpoint={authHandler}>
       <RoomProvider id={doc_name} initialStorage={{ snapshots: new LiveList([]) }}>
