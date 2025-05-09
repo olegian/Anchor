@@ -27,9 +27,20 @@ export async function GET(request, props) {
     const doc = await liveblocks.getYjsDocument(room, {
       format: true,
     });
+    // TODO: Ritesh is REALLY lazy. There's definitely a better way to do this. Hopefully.
     if (doc.maindoc) {
+      doc.maindoc = doc.maindoc.replaceAll('<heading level="2">', "<h2>");
+      doc.maindoc = doc.maindoc.replaceAll("</heading>", "</h2>");
       doc.maindoc = doc.maindoc.replaceAll("<paragraph>", "<p>");
       doc.maindoc = doc.maindoc.replaceAll("</paragraph>", "</p>");
+      doc.maindoc = doc.maindoc.replaceAll("[[", "");
+      doc.maindoc = doc.maindoc.replaceAll("]]", "");
+      doc.maindoc = doc.maindoc.replaceAll("<p></p>", "");
+      doc.maindoc = doc.maindoc.replaceAll(
+        '<inlineaicomponent prompt="',
+        "<strong>"
+      );
+      doc.maindoc = doc.maindoc.replaceAll("</inlineaicomponent>", "</strong>");
     }
 
     return new Response(

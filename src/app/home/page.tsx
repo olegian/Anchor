@@ -25,7 +25,9 @@ export default function Home() {
         <div className="space-y-2">
           <h1 className="text-4xl font-semibold">Documents</h1>
           <p className="text-lg font-medium text-gray-700">
-            Welcome back, {session?.data?.user?.name}!
+            {isLoading
+              ? "Figuring out who you are..."
+              : `    Welcome back, ${session?.data?.user?.name}!`}
           </p>
         </div>
         {/* <button
