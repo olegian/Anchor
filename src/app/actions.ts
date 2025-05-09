@@ -5,7 +5,7 @@ import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const liveblocks = new Liveblocks({
-  secret:"sk_dev_XyejPFRJgsYAHsBBKD7VRo25u_u_CQGg5f6qySMtn5fn4ida7iGSi229YixMj0Ll"
+  secret:""
 });
 
 const LB_DELETE_COMMENT_URL =

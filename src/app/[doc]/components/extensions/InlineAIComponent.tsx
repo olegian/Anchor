@@ -91,13 +91,12 @@ export default (props: any) => {
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        {/* <button className="bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition">
-          Insert
-        </button> */}
         <button
         onClick={() => {
           if (aiResponse) {
             props.updateAttributes({ response: aiResponse });
+            props.editor.commands.insertContent(aiResponse);
+            // props.deleteNode(); -> design choice: if we want to delete the node from props after we accept something
           }
         }}
         className="bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition"
@@ -105,9 +104,18 @@ export default (props: any) => {
       >
         Insert
       </button>
-        <button className="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition">
-          Reject
-        </button>
+        <button
+        onClick={() => {
+          setAiResponse(null); // clear local state
+          props.updateAttributes({ response: null }); // clear stored response
+          setError(null); // optional: clear any error message
+          // TODO: look here at reject -> do we want the node to be deleted or to persist?
+          props.deleteNode(); 
+        }}
+        className="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition"
+      >
+        Reject
+      </button>
       </div>
     </NodeViewWrapper>
   );
