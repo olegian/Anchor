@@ -1,8 +1,12 @@
 "use server";
 
-import { liveblocks } from "@/app/liveblocks";
+import { Liveblocks } from "@liveblocks/node";
 import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const liveblocks = new Liveblocks({
+  secret:"sk_dev_XyejPFRJgsYAHsBBKD7VRo25u_u_CQGg5f6qySMtn5fn4ida7iGSi229YixMj0Ll"
+});
 
 const LB_DELETE_COMMENT_URL =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
@@ -10,10 +14,10 @@ const LB_COPY_ROOM =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
 
 // Initialize Gemini API
-const genAI = new GoogleGenerativeAI("");
+const genAI = new GoogleGenerativeAI("AIzaSyBEYTu3BEuPpGiIPd4qwR9LXGWViAvt2gk");
 
 // Store conversation history per snapshot ID
-const conversationHistory = new Map<string, Array<{ role: string; parts: string[] }>>();
+const conversationHistory = new Map<string, Array<{ role: string; parts: { text: string }[] }>>();
 
 interface PromptResponse {
   text: string;
@@ -64,7 +68,9 @@ export async function prompt(
     console.log(`<PROMPT> ${doc_name}/${snapshotId} => ${userPrompt}`);
     
     // Get document contents to use as context
-    const docContents = await getContents(doc_name);
+    // needs to be parameterized on the field
+    //const docContents = await getContents(doc_name);
+    const docContents = await getContents(doc_name, snapshotId);
     
     // Get or initialize conversation history for this snapshot
     if (!conversationHistory.has(snapshotId)) {
@@ -87,7 +93,7 @@ export async function prompt(
     // Add user message to history
     history.push({
       role: "user",
-      parts: [fullPrompt],
+      parts: [{ text: fullPrompt }],
     });
     
     // Set up Gemini model
@@ -109,7 +115,7 @@ export async function prompt(
     // Add response to history
     history.push({
       role: "model",
-      parts: [text],
+      parts: [{ text: fullPrompt }],
     });
     
     // Update the conversation history
@@ -152,16 +158,32 @@ export async function deleteAnnotation(roomId: string, threadId: string, comment
   return response;
 }
 
-export async function getContents(roomId: string) {
+// export async function getContents(roomId: string) {
+//   return await withProsemirrorDocument(
+//     { roomId: roomId, field: "maindoc", client: liveblocks },
+//     (api) => {
+//       const contents = api.getText();
+//       console.log(contents);
+//       return contents;
+//     }
+//   );
+// }
+export async function getContents(roomId: string, snapshotId?: string) {
   return await withProsemirrorDocument(
-    { roomId: roomId, field: "maindoc", client: liveblocks },
+    {
+      roomId: roomId,
+      field: "maindoc",
+      client: liveblocks,
+      ...(snapshotId ? { snapshotId } : {})  // Add snapshotId if provided
+    },
     (api) => {
       const contents = api.getText();
-      console.log(contents);
+      console.log("contents = " + contents);
       return contents;
     }
   );
 }
+
 
 export async function getSnapshotContents(roomId: string, field: string) {
   return await withProsemirrorDocument(
@@ -175,3 +197,43 @@ export async function getSnapshotContents(roomId: string, field: string) {
 
 // Content updates are now handled directly through the Tiptap editor
 // on the client side for better real-time collaboration
+
+export async function invokeAllPrompts(
+  doc_name: string,
+  snapshotId: string,
+  env?: string
+): Promise<string[]> {
+  try {
+    //const docContents = await getContents(doc_name);
+    const docContents = await getContents(doc_name, snapshotId);
+
+
+    // Match all [[prompt]] blocks with optional following <ai-response>
+    const promptRegex = /\[\[(.*?)\]\](?:(?!\[\[).)*?(<ai-response>[\s\S]*?<\/ai-response>)?/g;
+
+    const matches = [...docContents.matchAll(promptRegex)];
+
+    const results: string[] = [];
+
+    for (const match of matches) {
+      const fullMatch = match[0];
+      const promptText = match[1].trim();
+      const existingResponse = match[2];
+
+      if (existingResponse) {
+        console.log(`Skipping already answered prompt: [[${promptText}]]`);
+        continue;
+      }
+
+      const response = await prompt(doc_name, snapshotId, promptText, env);
+      const annotatedResponse = `[[${promptText}]]\n<ai-response>\n${response.text}\n</ai-response>\n`;
+
+      results.push(annotatedResponse);
+    }
+
+    return results;
+  } catch (error) {
+    console.error("Error in invokeAllPrompts:", error);
+    return [];
+  }
+}

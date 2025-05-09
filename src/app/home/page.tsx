@@ -1,6 +1,6 @@
 "use client";
 import { useSession } from "next-auth/react";
-import { AuthGuard } from "../components/AuthGuard";
+// import { AuthGuard } from "../components/AuthGuard";
 import useSWR from "swr";
 import { Room } from "@liveblocks/client";
 import Link from "next/link";
