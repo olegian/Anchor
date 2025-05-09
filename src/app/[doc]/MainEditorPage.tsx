@@ -11,6 +11,7 @@ import DocMenu from "./components/DocMenu";
 import { Session } from "next-auth";
 import { Room } from "./Room";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const [title, setTitle] = useState(
@@ -60,10 +61,13 @@ export default function MainEditorPage({ session }: { session: Session }) {
 
 function BackButton() {
   return (
-    <button className="fixed cursor-pointer hover:text-gray-400 top-4 left-4 z-50 flex items-center justify-start text-sm gap-1 text-zinc-600">
+    <Link
+      href="/home"
+      className="fixed cursor-pointer hover:text-gray-400 top-4 left-4 z-50 flex items-center justify-start text-sm gap-1 text-zinc-600"
+    >
       <ChevronLeftIcon className="size-6 shrink-0" />
       <p className="font-medium text-sm">Back</p>
-    </button>
+    </Link>
   );
 }
 
