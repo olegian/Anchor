@@ -1,4 +1,4 @@
-import DocMenu from "./DocMenu";
+import DocMenu from "../DocMenu";
 
 export default function FloatingNavbar({
   title,

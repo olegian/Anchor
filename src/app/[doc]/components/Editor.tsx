@@ -3,7 +3,7 @@ import Placeholder from "@tiptap/extension-placeholder";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect } from "react";
-import FloatingToolbar from "./FloatingToolbar";
+import FloatingToolbar from "./floating/FloatingToolbar";
 import InlineAIExtension from "./extensions/InlineAIExtension";
 import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
 
@@ -52,7 +52,13 @@ export default function Editor({
   );
 }
 
-function Title({ title, setTitle }: { title: string; setTitle: (title: string) => void }) {
+function Title({
+  title,
+  setTitle,
+}: {
+  title: string;
+  setTitle: (title: string) => void;
+}) {
   const placeholder = "Enter a title...";
 
   return (

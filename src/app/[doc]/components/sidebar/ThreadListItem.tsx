@@ -1,5 +1,5 @@
 import { ChevronRightIcon } from "@heroicons/react/16/solid";
-import { Users } from "./Users";
+import { Users } from "../Users";
 
 export function MainThreadListItem() {
   return (
