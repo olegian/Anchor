@@ -5,7 +5,7 @@ import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const liveblocks = new Liveblocks({
-  secret:""
+  secret: process.env.LB_KEY ?? "",
 });
 
 const LB_DELETE_COMMENT_URL =
@@ -14,7 +14,7 @@ const LB_COPY_ROOM =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
 
 // Initialize Gemini API
-const genAI = new GoogleGenerativeAI("AIzaSyBEYTu3BEuPpGiIPd4qwR9LXGWViAvt2gk");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
 // Store conversation history per snapshot ID
 const conversationHistory = new Map<string, Array<{ role: string; parts: { text: string }[] }>>();
