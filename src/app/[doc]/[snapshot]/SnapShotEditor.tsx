@@ -32,7 +32,6 @@
 //       });
 //   }, []);
 
-
 //   const maindocEditor = useEditor({
 //     extensions: [
 //       maindocLB,
@@ -97,34 +96,44 @@ import { useEffect, useState } from "react";
 import { PromptEnvironment } from "./PromptEnvironment";
 
 interface SnapshotEntry extends JsonObject {
-  preview: string;
+  isInitialized: boolean;
   snapshotId: string;
 }
 
-export function SnapShotEditor({ doc, snapshotId }: { doc: string; snapshotId: string }) {
+export function SnapShotEditor({
+  doc,
+  snapshotEntry,
+}: {
+  doc: string;
+  snapshotEntry: SnapshotEntry;
+}) {
   const [isPromptOpen, setIsPromptOpen] = useState(false);
-  
+
   const maindocLB = useLiveblocksExtension({
     field: "maindoc",
   });
   // TODO: This is how to populate populate the initial snapshot contents
   const snapshots = useStorage((root) => root.snapshots);
-  const setCreatedSnapshot = useMutation(({ storage }, snapshotEditor: Editor) => {
-    getContents(doc)
-      .then((contents) => {
-        snapshotEditor.commands.setContent(contents);
+  const setCreatedSnapshot = useMutation(
+    ({ storage }, snapshotEditor: Editor) => {
+      getContents(doc)
+        .then((contents) => {
+          snapshotEditor.commands.setContent(contents);
 
-        const snapshots = storage.get("snapshots");
-        const snapshot = snapshots.find((element) => {
-          return element.toImmutable().snapshotId === snapshotId;
+          const snapshots = storage.get("snapshots");
+          const snapshot = snapshots.find((element) => {
+            return (
+              element.toImmutable().snapshotId === snapshotEntry.snapshotId
+            );
+          });
+          snapshot?.set("isInitialized", true); // raise flag to stop resnapping
+        })
+        .catch((error) => {
+          console.error("Error getting contents:", error);
         });
-        snapshot?.set("preview", "set"); // raise flag to stop resnapping
-      })
-      .catch((error) => {
-        console.error("Error getting contents:", error);
-      });
-  }, []);
-
+    },
+    []
+  );
 
   const maindocEditor = useEditor({
     extensions: [
@@ -137,7 +146,7 @@ export function SnapShotEditor({ doc, snapshotId }: { doc: string; snapshotId: s
   });
 
   const snapshotLB = useLiveblocksExtension({
-    field: snapshotId,
+    field: snapshotEntry.snapshotId,
   });
 
   const snapshotEditor = useEditor({
@@ -154,17 +163,16 @@ export function SnapShotEditor({ doc, snapshotId }: { doc: string; snapshotId: s
   // when a new snapshot is loaded (especially if its yet to be initialized
   // with the maindoc contents).
   useEffect(() => {
-    if (!snapshots){
+    if (!snapshots) {
       return;
     }
 
     const snapshot = snapshots?.find((element) => {
-      return element["snapshotId"] === snapshotId;
+      return element["snapshotId"] === snapshotEntry.snapshotId;
     });
     console.log(`snapshot: ${snapshot}`);
 
-    // TODO: replace the preview tag with a isInitialized boolean, and use that
-    if (snapshot?.preview.length == 0) {
+    if (snapshot?.isInitialized) {
       console.log("taking snapshot");
       setCreatedSnapshot(snapshotEditor);
     } else {
@@ -186,13 +194,17 @@ export function SnapShotEditor({ doc, snapshotId }: { doc: string; snapshotId: s
           {isPromptOpen ? "Close Prompt" : "Open Gemini Prompt"}
         </button>
       </div>
-      
+
       {isPromptOpen && (
         <div className="w-full flex justify-center mb-6">
-          <PromptEnvironment docName={doc} snapshotId={snapshotId} editor={snapshotEditor} />
+          <PromptEnvironment
+            docName={doc}
+            snapshotId={snapshotEntry.snapshotId}
+            editor={snapshotEditor}
+          />
         </div>
       )}
-      
+
       <div className="snapshot-editors-container">
         <div className="relative w-1/2">
           <div className="absolute top-0 left-0 bg-gray-200 dark:bg-gray-700 px-2 py-1 text-sm rounded-br-md">
