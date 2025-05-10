@@ -45,10 +45,20 @@
   }
 
   .tiptap p.is-editor-empty:first-child::before {
-    @apply text-gray-400;
+    @apply text-zinc-400;
     content: attr(data-placeholder);
     float: left;
     height: 0;
     pointer-events: none;
   }
+}
+
+/* Give a remote user a caret */
+.collaboration-cursor__caret {
+  @apply relative break-normal pointer-events-none -mx-px border-x border-zinc-500;
+}
+
+/* Render the username above the caret */
+.collaboration-cursor__label {
+  @apply font-medium -top-5 py-0.5 px-1.5 pointer-events-none rounded-bl-none rounded-lg  -left-px absolute select-none whitespace-nowrap text-sm text-white;
 }

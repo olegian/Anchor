@@ -1,37 +1,36 @@
 "use client";
-import Placeholder from "@tiptap/extension-placeholder";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useState } from "react";
-import FloatingToolbar from "./floating/FloatingToolbar";
-import InlineAIExtension from "./extensions/InlineAIExtension";
 import { Comment } from "@liveblocks/react-ui/primitives";
+import Placeholder from "@tiptap/extension-placeholder";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { useEffect } from "react";
+import InlineAIExtension from "./extensions/InlineAIExtension";
+import FloatingToolbar from "./floating/FloatingToolbar";
 
-import {
-  AnchoredThreads,
-  FloatingComposer,
-  useLiveblocksExtension,
-} from "@liveblocks/react-tiptap";
-import {
-  useAddReaction,
-  useDeleteComment,
-  useEditComment,
-  useRemoveReaction,
-  useThreads,
-} from "@liveblocks/react";
-import { Thread } from "@liveblocks/react-ui";
-import { CommentData } from "@liveblocks/core";
-import { User } from "./Users";
 import { XMarkIcon } from "@heroicons/react/16/solid";
+import { CommentData } from "@liveblocks/core";
+import {
+    useDeleteComment,
+    useMyPresence,
+    useThreads
+} from "@liveblocks/react";
+import {
+    AnchoredThreads,
+    FloatingComposer,
+    useLiveblocksExtension,
+} from "@liveblocks/react-tiptap";
 
 export default function Editor({
   title,
   setTitle,
+  open,
 }: {
   title: string;
   setTitle: (title: string) => void;
+  open: () => void;
 }) {
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
+  const [myPresence, updateMyPresence] = useMyPresence();
 
   const editor = useEditor({
     extensions: [
@@ -58,11 +57,15 @@ export default function Editor({
     }
   }, [editor]);
 
+  useEffect(() => {
+    updateMyPresence({ currentSnapshot: null });
+  }, []);
+
   const { threads } = useThreads();
 
   return (
     <>
-      <article className="prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-gray-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg">
+      <article className="prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg">
         <Title title={title} setTitle={setTitle} />
         <EditorContent editor={editor} className="px-2" />
       </article>
@@ -87,7 +90,7 @@ export default function Editor({
         />
         {/* <FloatingThreads editor={editor} threads={threads || []} /> */}
       </>
-      <FloatingToolbar editor={editor} />
+      <FloatingToolbar editor={editor} open={open} />
     </>
   );
 }
@@ -107,13 +110,13 @@ function CommentBlock({ comment }: { comment: CommentData }) {
           </div>
           <div>
             <h4 className="font-semibold text-sm">Greg Heffley</h4>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-zinc-500">
               {new Date(comment.createdAt).toLocaleDateString("en-US")}
             </p>
           </div>
         </div>
         <button
-          className="bg-white border cursor-pointer hover:opacity-75 transition-opacity border-zinc-200 p-1 rounded-full text-xs font-medium text-gray-700"
+          className="bg-white border cursor-pointer hover:opacity-75 transition-opacity border-zinc-200 p-1 rounded-full text-xs font-medium text-zinc-700"
           onClick={() =>
             deleteComment({
               threadId: comment.threadId,
@@ -124,7 +127,7 @@ function CommentBlock({ comment }: { comment: CommentData }) {
           <XMarkIcon className="size-4 shrink-0" />
         </button>
       </div>
-      <div className="text-gray-700">
+      <div className="text-zinc-700">
         <Comment.Body body={comment.body} />
       </div>
     </div>

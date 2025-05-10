@@ -32,13 +32,8 @@ export function SnapShotEditor({
         .then((contents) => {
           snapshotEditor.commands.setContent(contents);
 
-          const snapshots = storage.get("snapshots");
-          const snapshot = snapshots.find((element) => {
-            return (
-              element.toImmutable().snapshotId === snapshotEntry.snapshotId
-            );
-          });
-          snapshot?.set("isInitialized", true); // raise flag to stop resnapping
+          const snapshot = storage.get("snapshots").get(snapshotEntry.snapshotId)
+          snapshot?.set("isInitialized", true);  // raise flag to avoid re-initialization
         })
         .catch((error) => {
           console.error("Error getting contents:", error);
@@ -71,20 +66,14 @@ export function SnapShotEditor({
     immediatelyRender: true,
   });
 
-  // TODO: alongside this use effect, to populate the snapshot contents
-  // when a new snapshot is loaded (especially if its yet to be initialized
-  // with the maindoc contents).
   useEffect(() => {
     if (!snapshots) {
       return;
     }
 
-    const snapshot = snapshots?.find((element) => {
-      return element["snapshotId"] === snapshotEntry.snapshotId;
-    });
+    const snapshot = snapshots.get(snapshotEntry.snapshotId);
     console.log(`snapshot: ${snapshot}`);
-
-    if (snapshot?.isInitialized) {
+    if (!snapshot?.isInitialized) {
       console.log("taking snapshot");
       setCreatedSnapshot(snapshotEditor);
     } else {
@@ -119,13 +108,13 @@ export function SnapShotEditor({
 
       <div className="snapshot-editors-container">
         <div className="relative w-1/2">
-          <div className="absolute top-0 left-0 bg-gray-200 dark:bg-gray-700 px-2 py-1 text-sm rounded-br-md">
+          <div className="absolute top-0 left-0 bg-zinc-200 dark:bg-zinc-700 px-2 py-1 text-sm rounded-br-md">
             Snapshot Editor
           </div>
           <EditorContent editor={snapshotEditor} className="snapshot-editor" />
         </div>
         <div className="relative w-1/2">
-          <div className="absolute top-0 left-0 bg-gray-200 dark:bg-gray-700 px-2 py-1 text-sm rounded-br-md">
+          <div className="absolute top-0 left-0 bg-zinc-200 dark:bg-zinc-700 px-2 py-1 text-sm rounded-br-md">
             Main Document
           </div>
           <EditorContent editor={maindocEditor} className="maindoc-editor" />

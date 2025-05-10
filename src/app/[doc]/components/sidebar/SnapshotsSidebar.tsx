@@ -5,48 +5,19 @@ import { LiveMap, LiveObject } from "@liveblocks/client";
 import { useMutation, useStorage } from "@liveblocks/react";
 import { useState } from "react";
 import {
-  CurrentThreadListItem,
-  MainThreadListItem,
-  ThreadListItem,
-} from "./ThreadListItem";
+  CurrentSnapshotListItem,
+  MainListItem,
+  SnapshotListItem,
+} from "./SnapshotListItem";
+import { useParams } from "next/navigation";
 
-export default function ThreadsSidebar() {
+export default function SnapshotsSidebar({ open }: { open: () => void }) {
   const [showSidebar, setShowSidebar] = useState(false);
+  const params = useParams<{ doc: string; snapshot?: string }>();
 
-  // TODO: render the list of snapshots
-  // snapshots is a list of SnapshotEntry's above
   const snapshots = useStorage((root) => root.snapshots);
-  const addSnapshot = useMutation(({ storage }, newSnapshotId: string) => {
-    // TODO: I have no clue what's happening here
-    const snapshots = storage.get("snapshots");
-    snapshots.set(
-      newSnapshotId,
-      new LiveObject({
-        isInitialized: false,
-        snapshotTitle: "",
-        conversations: new LiveMap(),
-      })
-    );
-  }, []);
-
   const handleMouseEnter = () => setShowSidebar(true);
   const handleMouseLeave = () => setShowSidebar(false);
-  const handleCreateSnapshot = () => {
-    const newSnapshotId = crypto.randomUUID();
-
-    // note this just populates storage, it does not redirect the user
-    // or populate the snapshot contents yet. populating the contents
-    // can happen when the snapshot is loaded, as it requires a handle
-    // to the snapshot editor.
-    addSnapshot(newSnapshotId);
-
-    // TODO: After calling this handler, we MUST load snapshot editor, and have it populate
-    // if we reroute to the new snapshot ID, then we need to reroute
-    // if instead if we choose to store the snapshot as state
-    // then this sidebar needs to accept a setSnapshot function, and call it on the newSnapshotId
-
-    // router.push(`/${doc}/${newSnapshotId}`);
-  };
 
   return (
     <>
@@ -77,28 +48,47 @@ export default function ThreadsSidebar() {
             <div className="h-[calc(100vh)] space-y-0  w-full bg-white shadow-2xl border-r border-zinc-200 overflow-auto">
               <div className="sticky top-0 bg-white z-10 pt-16 border-b border-zinc-200 p-4 space-y-4">
                 <h2 className="font-semibold text-2xl">Document</h2>
-                <div className="space-y-2">
-                  <h3 className="font-medium text-gray-700 font-sans text-sm">
-                    This view
-                  </h3>
-                  <div className="flex items-center justify-between gap-2">
-                    <CurrentThreadListItem />
+                {params.snapshot !== undefined && ( // only render current thread if youre actually viewing a thread
+                  <div className="space-y-2">
+                    <h3 className="font-medium text-zinc-700 font-sans text-sm">
+                      This view
+                    </h3>
+                    <div className="flex items-center justify-between gap-2">
+                      <CurrentSnapshotListItem id={params.snapshot} />
+                    </div>
                   </div>
-                </div>
+                )}
                 <hr className="border-zinc-200 w-full" />
-
-                <MainThreadListItem />
+                <MainListItem />
                 <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-lg">Threads</h3>
-                  <p className="text-xs font-medium text-gray-500">
-                    30 threads
-                  </p>
+                  <h3 className="font-semibold text-lg">
+                    {snapshots?.size ?? 0} Snapshot{snapshots?.size ? "" : "s"}
+                  </h3>
+
+                  <button
+                    onClick={() => {
+                      open();
+                      setShowSidebar(false);
+                    }}
+                    className="text-xs bg-white font-medium text-zinc-700 hover:opacity-75 transition-opacity border border-zinc-200 rounded-lg px-2 py-1 cursor-pointer"
+                  >
+                    Create
+                  </button>
                 </div>
               </div>
               <ul className="divide-y divide-zinc-200">
-                {Array.from({ length: 8 }, (_, i) => (
-                  <ThreadListItem key={i} />
-                ))}
+                {snapshots
+                  ?.entries()
+                  .toArray()
+                  .map(([id, snapshotInfo]) => {
+                    return (
+                      <SnapshotListItem
+                        id={id}
+                        snapshotInfo={snapshotInfo}
+                        key={id}
+                      />
+                    );
+                  })}
               </ul>
             </div>
           </div>
@@ -128,7 +118,7 @@ function SidebarButton({
       >
         <ChevronLeftIcon className="size-5 shrink-0" />
       </div>
-      <p className="text-gray-700 font-medium text-sm">Threads</p>
+      <p className="text-zinc-700 font-medium text-sm">Snapshots</p>
     </button>
   );
 }

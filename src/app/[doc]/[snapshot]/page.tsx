@@ -1,21 +1,17 @@
-"use client";
+import { AuthGuard } from "@/app/components/AuthGuard";
+import { auth } from "@/app/auth";
+import { redirect } from "next/navigation";
+import SnapshotEditorPage from "./SnapshotEditorPage";
 
-import { useParams } from "next/navigation";
-import { Room } from "../Room";
-import { SnapShotEditor } from "./SnapShotEditor";
-
-export default function DocPage() {
-  const params = useParams<{ doc: string; snapshot: string }>();
+export default async function Page() {
+  const session = await auth();
+  if (!session) {
+    redirect("/");
+  }
 
   return (
-    <div className="div">
-      <div>
-        {" "}
-        DOC_PAGE: {params.doc}, snapshot: {params.snapshot}
-      </div>
-      <Room doc_name={params.doc}>
-        <SnapShotEditor doc={params.doc} snapshotId={params.snapshot} />
-      </Room>
-    </div>
+    <AuthGuard redirectTo="/">
+      <SnapshotEditorPage session={session} />
+    </AuthGuard>
   );
 }
