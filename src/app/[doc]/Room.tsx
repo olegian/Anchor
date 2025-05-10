@@ -1,7 +1,12 @@
 "use client";
 
-import { LiveList } from "@liveblocks/client";
-import { ClientSideSuspense, LiveblocksProvider, RoomProvider } from "@liveblocks/react/suspense";
+import { ArrowPathIcon } from "@heroicons/react/20/solid";
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
+import {
+  ClientSideSuspense,
+  LiveblocksProvider,
+  RoomProvider,
+} from "@liveblocks/react/suspense";
 import { Session } from "next-auth";
 import { ReactNode } from "react";
 
@@ -37,11 +42,22 @@ export function Room({
   };
 
   // TODO: increase refresh rate by somehow changing throttle paramater. search through liveblocks docs.
-  // TODO: Add a better fallback component?
   return (
     <LiveblocksProvider authEndpoint={authHandler}>
-      <RoomProvider id={doc_name} initialStorage={{ snapshots: new LiveList([]) }}>
-        <ClientSideSuspense fallback={<div>Loading...</div>}>{children}</ClientSideSuspense>
+      <RoomProvider
+        id={doc_name}
+        initialStorage={{snapshots: new LiveMap()}}
+      >
+        <ClientSideSuspense
+          fallback={
+            <div className="w-screen h-screen flex items-center justify-center gap-2">
+              <ArrowPathIcon className="size-5 animate-spin text-gray-500" />
+              <p className="text-gray-500">Loading...</p>
+            </div>
+          }
+        >
+          {children}
+        </ClientSideSuspense>
       </RoomProvider>
     </LiveblocksProvider>
   );

@@ -15,6 +15,9 @@ export default Node.create({
       prompt: {
         default: "",
       },
+      envId: {
+        default: "default-id"
+      },
     };
   },
 
@@ -42,6 +45,7 @@ export default Node.create({
         getAttributes: (match) => {
           return {
             prompt: match[1],
+            envId: crypto.randomUUID(),
           };
         },
       }),

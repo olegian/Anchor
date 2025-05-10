@@ -2,10 +2,27 @@
 import Placeholder from "@tiptap/extension-placeholder";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect } from "react";
-import FloatingToolbar from "./FloatingToolbar";
+import { useEffect, useState } from "react";
+import FloatingToolbar from "./floating/FloatingToolbar";
 import InlineAIExtension from "./extensions/InlineAIExtension";
-import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
+import { Comment } from "@liveblocks/react-ui/primitives";
+
+import {
+  AnchoredThreads,
+  FloatingComposer,
+  useLiveblocksExtension,
+} from "@liveblocks/react-tiptap";
+import {
+  useAddReaction,
+  useDeleteComment,
+  useEditComment,
+  useRemoveReaction,
+  useThreads,
+} from "@liveblocks/react";
+import { Thread } from "@liveblocks/react-ui";
+import { CommentData } from "@liveblocks/core";
+import { User } from "./Users";
+import { XMarkIcon } from "@heroicons/react/16/solid";
 
 export default function Editor({
   title,
@@ -41,18 +58,86 @@ export default function Editor({
     }
   }, [editor]);
 
+  const { threads } = useThreads();
+
   return (
     <>
       <article className="prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-gray-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg">
         <Title title={title} setTitle={setTitle} />
         <EditorContent editor={editor} className="px-2" />
       </article>
+
+      <>
+        {/* <AnchoredThreads editor={editor} /> */}
+        <FloatingComposer editor={editor} />
+        <AnchoredThreads
+          editor={editor}
+          threads={threads || []}
+          className="fixed top-20 w-full right-0 z-20 h-32"
+          // style={{ width: "300px" }}
+          components={{
+            Thread: (props) => (
+              <div className="flex items-center justify-end gap-2 -mr-80">
+                {props.thread.comments.map((comment) => (
+                  <CommentBlock key={comment.id} comment={comment} />
+                ))}
+              </div>
+            ),
+          }}
+        />
+        {/* <FloatingThreads editor={editor} threads={threads || []} /> */}
+      </>
       <FloatingToolbar editor={editor} />
     </>
   );
 }
 
-function Title({ title, setTitle }: { title: string; setTitle: (title: string) => void }) {
+function CommentBlock({ comment }: { comment: CommentData }) {
+  const deleteComment = useDeleteComment();
+
+  return (
+    <div
+      key={comment.id}
+      className="p-4 space-y-4 w-full relative max-w-72 border border-zinc-200 bg-white rounded-xl hover:shadow-lg transition-shadow"
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex items-center justify-start gap-2">
+          <div className="uppercase flex items-center justify-center w-8 h-8 rounded-full bg-teal-500 border border-white/50 text-white font-semibold text-sm">
+            GH
+          </div>
+          <div>
+            <h4 className="font-semibold text-sm">Greg Heffley</h4>
+            <p className="text-xs text-gray-500">
+              {new Date(comment.createdAt).toLocaleDateString("en-US")}
+            </p>
+          </div>
+        </div>
+        <button
+          className="bg-white border cursor-pointer hover:opacity-75 transition-opacity border-zinc-200 p-1 rounded-full text-xs font-medium text-gray-700"
+          onClick={() =>
+            deleteComment({
+              threadId: comment.threadId,
+              commentId: comment.id,
+            })
+          }
+        >
+          <XMarkIcon className="size-4 shrink-0" />
+        </button>
+      </div>
+      <div className="text-gray-700">
+        <Comment.Body body={comment.body} />
+      </div>
+    </div>
+  );
+}
+
+function Title({
+  title,
+  setTitle,
+}: {
+  title: string;
+  setTitle: (title: string) => void;
+}) {
   const placeholder = "Enter a title...";
 
   return (

@@ -1,7 +1,7 @@
 "use client";
 
 import { CogIcon, UserCircleIcon } from "@heroicons/react/20/solid";
-import { User, Users } from "./Users";
+import { User, Users } from "../Users";
 
 import { useSession } from "next-auth/react";
 

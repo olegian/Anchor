@@ -1,43 +1,127 @@
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/16/solid";
 import { SparklesIcon } from "@heroicons/react/20/solid";
 import { NodeViewWrapper } from "@tiptap/react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { prompt } from "@/app/actions";
 import { useParams } from "next/navigation";
+import { useMutation, useStorage } from "@liveblocks/react";
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 
 export default (props: any) => {
-  const editorContent = props.editor.state.doc.content.content;
   const params = useParams<{ doc: string }>();
+  const snapshots = useStorage((root) => root.snapshots);
+  const addExchange = useMutation(
+    ({ storage }, envId: string, prompt: string) => {
+      //TODO: populate snapshotid
+      // this null check should never happen, this component should not be renderable outside of a snapshot that already exists
+      const snapshots = storage.get("snapshots");
+      if (snapshots.get("test-snap") === undefined) {
+        snapshots.set("test-snap", new LiveObject());
+      }
+      const snapshotInfo = snapshots.get("test-snap");
 
-  const promptLLMHandler = () => {
-    const promptText = props.node.attrs.prompt;
-    if (!promptText) {
-      return; // TODO: maybe show that the prompt was empty at generation time?
+      // initialize conversation map if necessary
+      if (snapshotInfo?.get("conversations") === undefined) {
+        snapshotInfo?.set("conversations", new LiveMap());
+      }
+      const snapshotConversations = snapshotInfo?.get("conversations");
+
+      const exchangesInEnv = snapshotConversations?.get(envId);
+      // this is a horrible "lock", its not really atomic, but its serving a reminder for me to make it better later
+      const isConversationPending =
+        exchangesInEnv !== undefined && exchangesInEnv.get("isPending");
+      if (isConversationPending) {
+        throw new Error("Someone already prompted the LLM within this environment.")
+      }
+      // if this is the first exchange in this snapshot in general, then initialize memory
+      // and in both cases add the new prompt the proper place
+      if (exchangesInEnv === undefined) {
+        snapshotConversations?.set(
+          envId,
+          new LiveObject({
+            isPending: true,
+            exchanges: new LiveList([new LiveObject({ prompt, response: "" })]),
+          })
+        );
+      } else {
+        exchangesInEnv?.set("isPending", true);
+        exchangesInEnv
+          ?.get("exchanges")
+          .push(new LiveObject({ prompt, response: "" }));
+      }
+    },
+    []
+  );
+  const endExchange = useMutation(({ storage }, envId: string) => {
+    // cant invoke this mutation without having added the exchange, so null checks are unnecessary
+    // TODO: populate snapshot id
+    storage
+      .get("snapshots")
+      ?.get("test-snap")
+      ?.get("conversations")
+      ?.get(envId)
+      ?.set("isPending", false);
+  }, []);
+
+  const isConversationPending = (envId: string) => {
+    if (!snapshots) {
+      return true; // consider unloaded storage as conversations are all pending
+    }
+    console.log(snapshots);
+
+    // if there are no conversations with the given envId, then no conversation is pending
+    return (
+      snapshots.get("test-snap")?.conversations.get(envId)?.isPending ?? false
+    );
+  };
+
+  const getConversations = (envId: string) => {
+    if (!snapshots) {
+      return;
     }
 
-    const runPrompt = async () => {
-      // TODO: replace test-snap with the snapshot id
-      // if we decide to do actual routing, fetch the snapshot id from params, otherwise
-      // the state has to be passed as a prop to this, which means we need to figure
-      // out how to pass state into tiptap extension environments
-      let response = await prompt(params.doc, "test-snap", promptText);
-      if (response.status === "error") {
-        // TODO: report error response?
-        console.log(response.text, " -- ", response.message);
-      } else {
-        // TODO: report success.
-        // note that the prompt function should have directly modified the doc contents
-        // on the server... (thats also a TODO though I think)
-      }
-    };
+    // TODO: populate snapshotid
+    const conversations = snapshots.get("test-snap")?.conversations.get(envId);
 
-    runPrompt()
-      .then((response) => {
-        // TODO: report success
-      })
-      .catch((e) => {
-        //TODO: report error
-      });
+    return conversations;
+  };
+
+  // State to hold AI response, loading, and error
+  const [aiResponse, setAiResponse] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const promptLLMHandler = async () => {
+    const promptText = props.node.attrs.prompt;
+    const envId = props.node.attrs.envId;
+
+    if (!promptText) {
+      setError("Prompt is empty.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setAiResponse(null);
+
+    try {
+      // add an entry for this upcoming exchange to the storage
+      addExchange(envId, promptText);
+
+      // TODO: replace "test-snap" with actual snapshot ID if available
+      const response = await prompt(params.doc, "test-snap", envId, promptText);
+      endExchange(envId);
+
+      if (response.status === "error") {
+        setError(response.message || "Unknown error");
+      } else {
+        setAiResponse(response.text);
+      }
+    } catch (e: any) {
+      setError(e.message || "Unknown error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,22 +156,73 @@ export default (props: any) => {
           <button
             onClick={promptLLMHandler}
             className="bg-blue-500 text-white px-4 py-1.5 rounded-lg hover:bg-blue-600 transition"
+            disabled={loading}
           >
-            Generate
+            {loading ? "Generating..." : "Generate"}
           </button>
         </div>
       </div>
       <div className="space-y-2">
         <label className="block text-zinc-700 font-medium">Response</label>
-        <div className="border border-zinc-300 rounded-lg p-3 bg-zinc-50">
-          <p className="text-zinc-800">This is where the AI-generated response will appear.</p>
+        <div className="border border-zinc-300 rounded-lg p-3 bg-zinc-50 min-h-[2em]">
+          {/* {loading && <p className="text-zinc-500">Generating response...</p>}
+          {error && <p className="text-red-500">{error}</p>}
+          {!loading &&
+            !error &&
+            aiResponse &&
+            // TODO: populate snapshotId
+            snapshots
+              ?.get("test-snap")
+              ?.conversations.get(props.node.attrs.envid)
+              ?.exchanges.map(({ prompt, response }) => {
+                return (
+                  <p classname="text-zinc-800 whitespace-pre-line">
+                    {response}
+                  </p>
+                );
+              })}
+          {!loading && !error && !aiResponse && (
+            <p className="text-zinc-800">
+              This is where the AI-generated response will appear.
+            </p>
+          )} */}
+          {snapshots !== null &&
+            snapshots
+              .get("test-snap")
+              ?.conversations.get(props.node.attrs.envId)
+              ?.exchanges.map(({ prompt, response }) => {
+                return (
+                  <p className="text-zinc-800 whitespace-pre-line">
+                    {response}
+                  </p>
+                );
+              })}
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-2">
-        <button className="bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition">
+        <button
+          onClick={() => {
+            if (aiResponse) {
+              props.updateAttributes({ response: aiResponse });
+              props.editor.commands.insertContent(aiResponse);
+              // props.deleteNode(); -> design choice: if we want to delete the node from props after we accept something
+            }
+          }}
+          className="bg-green-500 text-white px-3 py-1.5 rounded-lg hover:bg-green-600 transition"
+          disabled={!aiResponse}
+        >
           Insert
         </button>
-        <button className="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition">
+        <button
+          onClick={() => {
+            setAiResponse(null); // clear local state
+            props.updateAttributes({ response: null }); // clear stored response
+            setError(null); // optional: clear any error message
+            // TODO: look here at reject -> do we want the node to be deleted or to persist?
+            props.deleteNode();
+          }}
+          className="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition"
+        >
           Reject
         </button>
       </div>

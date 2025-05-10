@@ -1,5 +1,6 @@
 import {
   BoldIcon,
+  ChatBubbleLeftRightIcon,
   CodeBracketIcon,
   ItalicIcon,
   ListBulletIcon,
@@ -66,6 +67,13 @@ export default function FloatingToolbar({ editor }: { editor: Editor | null }) {
           children={<CodeBracketIcon className="size-5 shrink-0" />}
           active={editor.isActive("codeBlock")}
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+        />
+        <Divider />
+        <TabbarItem
+          text="Comment"
+          children={<ChatBubbleLeftRightIcon className="size-5 shrink-0" />}
+          active={editor.isActive("liveblocksCommentMark")}
+          onClick={() => editor.chain().focus().addPendingComment().run()}
         />
       </div>
     </div>

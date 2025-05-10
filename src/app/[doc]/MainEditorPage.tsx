@@ -1,19 +1,22 @@
 "use client";
 
 import { ChevronLeftIcon } from "@heroicons/react/20/solid";
-import ThreadsSidebar from "./components/ThreadsSidebar";
+import ThreadsSidebar from "./components/sidebar/ThreadsSidebar";
 import Editor from "./components/Editor";
-import FloatingMenu from "./components/FloatingMenu";
+import FloatingMenu from "./components/floating/FloatingMenu";
 import { useEffect, useState } from "react";
-import FloatingNavbar from "./components/FloatingNavbar";
+import FloatingNavbar from "./components/floating/FloatingNavbar";
 import { ArrowRightIcon } from "@heroicons/react/16/solid";
 import DocMenu from "./components/DocMenu";
 import { Session } from "next-auth";
 import { Room } from "./Room";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 
 export default function MainEditorPage({ session }: { session: Session }) {
-  const [title, setTitle] = useState("Garlic bread with cheese: What the science tells us");
+  const [title, setTitle] = useState(
+    "Garlic bread with cheese: What the science tells us"
+  );
   const params = useParams<{ doc: string }>();
 
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -32,37 +35,39 @@ export default function MainEditorPage({ session }: { session: Session }) {
 
   return (
     <>
-      <BackButton />
-      <div className="py-4 px-2 md:py-8 md:px-6 ">
-        <div className="max-w-3xl mx-auto py-16 space-y-4">
-          <div className="space-y-4 px-2">
-            <div className="flex items-center justify-between">
-              <DocPill mini={false} />
-              <DocMenu showText={true} />
+      <Room doc_name={params.doc} session={session}>
+        <BackButton />
+        <ThreadsSidebar />
+        <div className="py-4 px-2 md:py-8 md:px-6 ">
+          <div className="max-w-3xl mx-auto py-16 space-y-4">
+            <div className="space-y-4 px-2">
+              <div className="flex items-center justify-between">
+                <DocPill mini={false} />
+                <DocMenu showText={true} />
+              </div>
+              <p className="font-semibold text-zinc-500 text-sm">
+                Last updated 2 days ago by Greg Heffley
+              </p>
             </div>
-            <p className="font-semibold text-zinc-500 text-sm">
-              Last updated 2 days ago by Greg Heffley
-            </p>
+            <Editor title={title} setTitle={setTitle} />
           </div>
-          <Room doc_name={params.doc} session={session}>
-            {/* TODO: This is kind of ugly, but ThreadsSidebar needs to be wrapped in Room so */}
-            {/* Right now, this completly breaks how the sidebar looks. */}
-            <ThreadsSidebar /> <Editor title={title} setTitle={setTitle} />
-          </Room>
         </div>
-      </div>
-      <FloatingMenu />
-      <FloatingNavbar title={title} scrollPosition={scrollPosition} />
+        <FloatingMenu />
+        <FloatingNavbar title={title} scrollPosition={scrollPosition} />
+      </Room>
     </>
   );
 }
 
 function BackButton() {
   return (
-    <button className="fixed cursor-pointer hover:text-gray-400 top-4 left-4 z-50 flex items-center justify-start text-sm gap-1 text-zinc-600">
+    <Link
+      href="/home"
+      className="fixed cursor-pointer hover:text-gray-400 top-4 left-4 z-50 flex items-center justify-start text-sm gap-1 text-zinc-600"
+    >
       <ChevronLeftIcon className="size-6 shrink-0" />
       <p className="font-medium text-sm">Back</p>
-    </button>
+    </Link>
   );
 }
 

@@ -6,7 +6,7 @@ export default async function Home() {
     "use server";
 
     await signIn("credentials", {
-      redirectTo: "/",
+      redirectTo: "/home",
       username: formData.get("username"),
       password: formData.get("password"),
     });
@@ -15,12 +15,6 @@ export default async function Home() {
   const signUpHandler = async (formData: FormData) => {
     "use server";
     // what
-  };
-
-  const signOutHandler = async () => {
-    "use server";
-
-    await signOut();
   };
 
   return (
@@ -80,21 +74,13 @@ export default async function Home() {
                 />
               </div>
             </div>
-            <div className="gap-2 flex items-center justify-start">
-              <button
-                className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm cursor-pointer"
-                type="submit"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={signOutHandler}
-                type="button"
-                className="bg-red-500 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg text-sm cursor-pointer"
-              >
-                Sign Out
-              </button>
-            </div>
+
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm cursor-pointer"
+              type="submit"
+            >
+              Sign In
+            </button>
           </form>
         </div>
       </div>
