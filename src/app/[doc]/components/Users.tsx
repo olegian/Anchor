@@ -1,5 +1,3 @@
-import { useEffect } from "react";
-
 export function Users({
   hover = false,
   usersList,
@@ -7,10 +5,6 @@ export function Users({
   hover?: boolean;
   usersList: string[] | undefined;
 }) {
-  useEffect(() => {
-    console.log(usersList);
-  }, [usersList]);
-
   return (
     <div
       className={`flex items-center justify-end transition-(--spacing) transform ${

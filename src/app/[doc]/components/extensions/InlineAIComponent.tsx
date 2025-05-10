@@ -8,17 +8,16 @@ import { useMutation, useStorage } from "@liveblocks/react";
 import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 
 export default (props: any) => {
-  const params = useParams<{ doc: string }>();
+  const params = useParams<{ doc: string; snapshot: string }>();
   const snapshots = useStorage((root) => root.snapshots);
   const addExchange = useMutation(
     ({ storage }, envId: string, prompt: string) => {
-      //TODO: populate snapshotid
       // this null check should never happen, this component should not be renderable outside of a snapshot that already exists
       const snapshots = storage.get("snapshots");
-      if (snapshots.get("test-snap") === undefined) {
-        snapshots.set("test-snap", new LiveObject());
+      if (snapshots.get(params.snapshot) === undefined) {
+        snapshots.set(params.snapshot, new LiveObject());
       }
-      const snapshotInfo = snapshots.get("test-snap");
+      const snapshotInfo = snapshots.get(params.snapshot);
 
       // initialize conversation map if necessary
       if (snapshotInfo?.get("conversations") === undefined) {
@@ -31,7 +30,9 @@ export default (props: any) => {
       const isConversationPending =
         exchangesInEnv !== undefined && exchangesInEnv.get("isPending");
       if (isConversationPending) {
-        throw new Error("Someone already prompted the LLM within this environment.")
+        throw new Error(
+          "Someone already prompted the LLM within this environment."
+        );
       }
       // if this is the first exchange in this snapshot in general, then initialize memory
       // and in both cases add the new prompt the proper place
@@ -54,10 +55,9 @@ export default (props: any) => {
   );
   const endExchange = useMutation(({ storage }, envId: string) => {
     // cant invoke this mutation without having added the exchange, so null checks are unnecessary
-    // TODO: populate snapshot id
     storage
       .get("snapshots")
-      ?.get("test-snap")
+      ?.get(params.snapshot)
       ?.get("conversations")
       ?.get(envId)
       ?.set("isPending", false);
@@ -71,7 +71,7 @@ export default (props: any) => {
 
     // if there are no conversations with the given envId, then no conversation is pending
     return (
-      snapshots.get("test-snap")?.conversations.get(envId)?.isPending ?? false
+      snapshots.get(params.snapshot)?.conversations.get(envId)?.isPending ?? false
     );
   };
 
@@ -80,8 +80,7 @@ export default (props: any) => {
       return;
     }
 
-    // TODO: populate snapshotid
-    const conversations = snapshots.get("test-snap")?.conversations.get(envId);
+    const conversations = snapshots.get(params.snapshot)?.conversations.get(envId);
 
     return conversations;
   };
@@ -108,8 +107,7 @@ export default (props: any) => {
       // add an entry for this upcoming exchange to the storage
       addExchange(envId, promptText);
 
-      // TODO: replace "test-snap" with actual snapshot ID if available
-      const response = await prompt(params.doc, "test-snap", envId, promptText);
+      const response = await prompt(params.doc, params.snapshot, envId, promptText);
       endExchange(envId);
 
       if (response.status === "error") {
@@ -170,7 +168,6 @@ export default (props: any) => {
           {!loading &&
             !error &&
             aiResponse &&
-            // TODO: populate snapshotId
             snapshots
               ?.get("test-snap")
               ?.conversations.get(props.node.attrs.envid)
@@ -188,7 +185,7 @@ export default (props: any) => {
           )} */}
           {snapshots !== null &&
             snapshots
-              .get("test-snap")
+              .get(params.snapshot)
               ?.conversations.get(props.node.attrs.envId)
               ?.exchanges.map(({ prompt, response }) => {
                 return (

@@ -1,12 +1,13 @@
+import { useStorage } from "@liveblocks/react";
 import DocMenu from "../DocMenu";
 
 export default function FloatingNavbar({
-  title,
   scrollPosition,
 }: {
-  title: string;
   scrollPosition: number;
 }) {
+  const title = useStorage((root) => root.docTitle);
+
   return (
     <>
       <div className="fixed top-0 left-0 right-0 z-10 transition-opacity p-2 bg-linear-to-b w-full text-center from-white via-white/75 to-transparent">
