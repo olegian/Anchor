@@ -103,7 +103,7 @@ export default function ThreadsSidebar() {
                 </div>
               </div>
               <ul className="divide-y divide-zinc-200">
-                {snapshots?.entries().map(([id, snapshotInfo]) => {
+                {snapshots?.entries().toArray().map(([id, snapshotInfo]) => {
                     return <ThreadListItem id={id} snapshotInfo={snapshotInfo} key={id}/>
                 })}
               </ul>
