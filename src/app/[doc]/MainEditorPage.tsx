@@ -12,6 +12,7 @@ import { Session } from "next-auth";
 import { Room } from "./Room";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useMyPresence } from "@liveblocks/react";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const [title, setTitle] = useState(

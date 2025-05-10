@@ -1,11 +1,9 @@
 // Define Liveblocks types for your application
 
 import {
-  JsonObject,
-  LiveList,
-  LiveMap,
-  LiveObject,
-  Lson,
+    LiveList,
+    LiveMap,
+    LiveObject
 } from "@liveblocks/client";
 
 type Conversations = LiveMap<
@@ -29,6 +27,8 @@ declare global {
     Presence: {
       // Example, real-time cursor coordinates
       // cursor: { x: number; y: number };
+      currentSnapshot: string | null;
+      name: string;
     };
 
     // The Storage tree for the room, for useMutation, useStorage, etc.

@@ -16,6 +16,7 @@ import {
   useAddReaction,
   useDeleteComment,
   useEditComment,
+  useMyPresence,
   useRemoveReaction,
   useThreads,
 } from "@liveblocks/react";
@@ -32,6 +33,7 @@ export default function Editor({
   setTitle: (title: string) => void;
 }) {
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
+  const [myPresence, updateMyPresence] = useMyPresence();
 
   const editor = useEditor({
     extensions: [
@@ -57,6 +59,10 @@ export default function Editor({
       }
     }
   }, [editor]);
+
+  useEffect(() => {
+    updateMyPresence({currentSnapshot: null});
+  }, []);
 
   const { threads } = useThreads();
 
