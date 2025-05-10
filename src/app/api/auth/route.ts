@@ -1,4 +1,4 @@
-import { auth } from "@/app/auth";
+import { auth, users } from "@/app/auth";
 import { Liveblocks } from "@liveblocks/node";
 
 if (!process.env.LB_KEY) {
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
   const session = liveblocks.prepareSession(authRequest.userId, {
     userInfo: {
       name: authRequest.userId,
-      color: "#0000ff", // TODO: let users specify thier own cursors
+      color: users.find((u) => u.name === authRequest.userId)?.color ?? "black", // TODO: let users specify thier own cursors
     },
   });
   session.allow(`${authRequest.roomId}`, session.FULL_ACCESS); // wild card access to all rooms
