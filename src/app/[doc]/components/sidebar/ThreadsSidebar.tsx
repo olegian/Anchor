@@ -9,9 +9,11 @@ import {
   MainThreadListItem,
   ThreadListItem,
 } from "./ThreadListItem";
+import { useParams } from "next/navigation";
 
 export default function ThreadsSidebar() {
   const [showSidebar, setShowSidebar] = useState(false);
+  const params = useParams<{doc: string, snapshot?: string}>()
 
   // TODO: render the list of snapshots
   // snapshots is a list of SnapshotEntry's above
@@ -77,28 +79,33 @@ export default function ThreadsSidebar() {
             <div className="h-[calc(100vh)] space-y-0  w-full bg-white shadow-2xl border-r border-zinc-200 overflow-auto">
               <div className="sticky top-0 bg-white z-10 pt-16 border-b border-zinc-200 p-4 space-y-4">
                 <h2 className="font-semibold text-2xl">Document</h2>
-                <div className="space-y-2">
-                  <h3 className="font-medium text-gray-700 font-sans text-sm">
-                    This view
-                  </h3>
-                  <div className="flex items-center justify-between gap-2">
-                    <CurrentThreadListItem />
-                  </div>
-                </div>
+                {
+                    params.snapshot !== undefined &&  // only render current thread if youre actually viewing a thread
+                    (
+                    <div className="space-y-2">
+                    <h3 className="font-medium text-gray-700 font-sans text-sm">
+                        This view
+                    </h3>
+                    <div className="flex items-center justify-between gap-2">
+                        <CurrentThreadListItem id={params.snapshot} />
+                    </div>
+                    </div>
+                    )
+                }
                 <hr className="border-zinc-200 w-full" />
 
                 <MainThreadListItem />
                 <div className="flex items-center justify-between">
                   <h3 className="font-semibold text-lg">Threads</h3>
                   <p className="text-xs font-medium text-gray-500">
-                    30 threads
+                    {snapshots?.size ?? 0} thread{snapshots?.size ? "" : "s"}
                   </p>
                 </div>
               </div>
               <ul className="divide-y divide-zinc-200">
-                {Array.from({ length: 8 }, (_, i) => (
-                  <ThreadListItem key={i} />
-                ))}
+                {snapshots?.entries().map(([id, snapshotInfo]) => {
+                    return <ThreadListItem id={id} snapshotInfo={snapshotInfo} key={id}/>
+                })}
               </ul>
             </div>
           </div>

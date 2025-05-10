@@ -1,19 +1,33 @@
-export function Users({ hover = false }: { hover?: boolean }) {
+import { useEffect } from "react";
+
+export function Users({
+  hover = false,
+  usersList,
+}: {
+  hover?: boolean;
+  usersList: string[] | undefined;
+}) {
+  useEffect(() => {
+    console.log(usersList);
+  }, [usersList]);
+
   return (
     <div
       className={`flex items-center justify-end transition-(--spacing) transform ${
         hover ? "hover:space-x-1" : ""
       } -space-x-2`}
     >
-      <User first="Gustavo" last="Henrique" hover={hover} />
-      <User first="Filipe" last="Figueiredo" hover={hover} />
-      <User first="Rafael" last="Júnior" hover={hover} />
+      {usersList !== undefined &&
+        usersList.map((name) => {
+          return <User first={name} last={name} hover={hover} key={name} />;
+        })}
       <div className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-200  z-20  text-zinc-600 font-semibold text-xs">
-        33
+        {(usersList?.length ?? -1) + 1}
       </div>
     </div>
   );
 }
+
 export function User({
   first,
   last,
@@ -26,6 +40,7 @@ export function User({
   return (
     <div className="group relative w-6">
       <div className="uppercase flex items-center justify-center w-6 h-6 rounded-full bg-teal-500 border border-white/50 text-white font-semibold text-xs">
+       {/* TODO: enhance user to store first / last name information, etc...*/}
         {first[0]}
         {last[0]}
       </div>

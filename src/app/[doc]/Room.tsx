@@ -45,8 +45,9 @@ export function Room({
   return (
     <LiveblocksProvider authEndpoint={authHandler}>
       <RoomProvider
+        initialPresence={{ currentSnapshot: null, name: session.user?.name ?? "" }}   // ?? should be unnecessary?
         id={doc_name}
-        initialStorage={{snapshots: new LiveMap()}}
+        initialStorage={{ snapshots: new LiveMap() }}
       >
         <ClientSideSuspense
           fallback={
