@@ -22,7 +22,7 @@ export default function FloatingNavbar({
             <h4 className="font-semibold line-clamp-1 max-w-sm font-sans ">
               {title || "No title"}
             </h4>
-            <p className="text-gray-500 text-xs font-semibold font-sans">
+            <p className="text-zinc-500 text-xs font-semibold font-sans">
               Last updated 2 days ago
             </p>
           </div>

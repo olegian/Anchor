@@ -1,11 +1,18 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { redirect, useParams } from "next/navigation";
 import { Room } from "../Room";
 import { SnapShotEditor } from "./SnapShotEditor";
+import { useSession } from "next-auth/react";
+import { auth } from "@/app/auth";
 
-export default function DocPage() {
+export default async function DocPage() {
   const params = useParams<{ doc: string; snapshot: string }>();
+
+  const session = await auth();
+  if (!session) {
+    redirect("/");
+  }
 
   return (
     <div className="div">
@@ -13,8 +20,14 @@ export default function DocPage() {
         {" "}
         DOC_PAGE: {params.doc}, snapshot: {params.snapshot}
       </div>
-      <Room doc_name={params.doc}>
-        <SnapShotEditor doc={params.doc} snapshotId={params.snapshot} />
+      <Room doc_name={params.doc} session={session}>
+        <SnapShotEditor
+          doc={params.doc}
+          snapshotEntry={{
+            isInitialized: false,
+            snapshotId: params.snapshot,
+          }}
+        />
       </Room>
     </div>
   );

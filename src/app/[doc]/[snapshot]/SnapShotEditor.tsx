@@ -119,13 +119,13 @@ export function SnapShotEditor({
 
       <div className="snapshot-editors-container">
         <div className="relative w-1/2">
-          <div className="absolute top-0 left-0 bg-gray-200 dark:bg-gray-700 px-2 py-1 text-sm rounded-br-md">
+          <div className="absolute top-0 left-0 bg-zinc-200 dark:bg-zinc-700 px-2 py-1 text-sm rounded-br-md">
             Snapshot Editor
           </div>
           <EditorContent editor={snapshotEditor} className="snapshot-editor" />
         </div>
         <div className="relative w-1/2">
-          <div className="absolute top-0 left-0 bg-gray-200 dark:bg-gray-700 px-2 py-1 text-sm rounded-br-md">
+          <div className="absolute top-0 left-0 bg-zinc-200 dark:bg-zinc-700 px-2 py-1 text-sm rounded-br-md">
             Main Document
           </div>
           <EditorContent editor={maindocEditor} className="maindoc-editor" />

@@ -3,7 +3,7 @@ import { useOthers } from "@liveblocks/react";
 import { Users } from "../Users";
 import { redirect, useParams } from "next/navigation";
 
-export function MainThreadListItem() {
+export function MainListItem() {
   const params = useParams<{ doc: string; snapshot: string }>();
   const usersOnMain = useOthers((others) =>
     others.map((other) => other.presence.name)
@@ -29,7 +29,7 @@ export function MainThreadListItem() {
   );
 }
 
-export function CurrentThreadListItem({ id }: { id: string }) {
+export function CurrentSnapshotListItem({ id }: { id: string }) {
   const usersOnSnapshot = useOthers((others) =>
     others
       .filter((other) => {
@@ -51,7 +51,7 @@ export function CurrentThreadListItem({ id }: { id: string }) {
   );
 }
 
-export function ThreadListItem({
+export function SnapshotListItem({
   id,
   snapshotInfo,
 }: {
@@ -76,12 +76,13 @@ export function ThreadListItem({
       className="cursor-pointer group py-2 px-4 hover:bg-zinc-100 transition-colors flex items-center justify-between"
       onClick={handleNavigate}
     >
-      <h4 className="font-semibold text-sm text-gray-700">
-        <span className="text-gray-500">#</span> {id}
+      <h4 className="font-semibold text-sm text-zinc-700">
+        {snapshotInfo.snapshotTitle}
       </h4>
+
       <div className="flex items-center justify-end gap-1">
         <Users hover={false} usersList={usersOnSnapshot} />
-        <button className="text-gray-700 p-1 hover:text-gray-500">
+        <button className="text-zinc-700 p-1 hover:text-zinc-500">
           <ChevronRightIcon className="size-5 shrink-0" />
         </button>
       </div>

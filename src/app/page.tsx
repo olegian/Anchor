@@ -45,13 +45,13 @@ export default async function Home() {
             <div className="grid md:grid-cols-2 md:space-x-4 space-y-2 md:space-y-0">
               <div className="space-y-2">
                 <label
-                  className="block text-gray-700 text-sm font-bold"
+                  className="block text-zinc-700 text-sm font-bold"
                   htmlFor="username"
                 >
                   Username
                 </label>
                 <input
-                  className="appearance-none border border-zinc-200 rounded-lg w-full py-2 px-3 text-gray-700"
+                  className="appearance-none border border-zinc-200 rounded-lg w-full py-2 px-3 text-zinc-700"
                   id="username"
                   type="text"
                   placeholder="Enter your username"
@@ -60,13 +60,13 @@ export default async function Home() {
               </div>
               <div className="space-y-2">
                 <label
-                  className="block text-gray-700 text-sm font-bold"
+                  className="block text-zinc-700 text-sm font-bold"
                   htmlFor="password"
                 >
                   Password
                 </label>
                 <input
-                  className="appearance-none border border-zinc-200 rounded-lg w-full py-2 px-3 text-gray-700"
+                  className="appearance-none border border-zinc-200 rounded-lg w-full py-2 px-3 text-zinc-700"
                   id="password"
                   type="password"
                   placeholder="Enter your password"
