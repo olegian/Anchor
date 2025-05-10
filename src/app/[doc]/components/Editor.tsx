@@ -1,29 +1,24 @@
 "use client";
-import Placeholder from "@tiptap/extension-placeholder";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useState } from "react";
-import FloatingToolbar from "./floating/FloatingToolbar";
-import InlineAIExtension from "./extensions/InlineAIExtension";
 import { Comment } from "@liveblocks/react-ui/primitives";
+import Placeholder from "@tiptap/extension-placeholder";
+import { EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import { useEffect } from "react";
+import InlineAIExtension from "./extensions/InlineAIExtension";
+import FloatingToolbar from "./floating/FloatingToolbar";
 
-import {
-  AnchoredThreads,
-  FloatingComposer,
-  useLiveblocksExtension,
-} from "@liveblocks/react-tiptap";
-import {
-  useAddReaction,
-  useDeleteComment,
-  useEditComment,
-  useMyPresence,
-  useRemoveReaction,
-  useThreads,
-} from "@liveblocks/react";
-import { Thread } from "@liveblocks/react-ui";
-import { CommentData } from "@liveblocks/core";
-import { User } from "./Users";
 import { XMarkIcon } from "@heroicons/react/16/solid";
+import { CommentData } from "@liveblocks/core";
+import {
+    useDeleteComment,
+    useMyPresence,
+    useThreads
+} from "@liveblocks/react";
+import {
+    AnchoredThreads,
+    FloatingComposer,
+    useLiveblocksExtension,
+} from "@liveblocks/react-tiptap";
 
 export default function Editor({
   title,
