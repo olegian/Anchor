@@ -1,36 +1,15 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# GitGPT (better name pending)
+To run, specify the following three environment variables in `.env.local`:
+- `LB_KEY`, a LiveBlocks secret key.
+- `AUTH_SECRET`, a random string used to encrypt authentication tokens, created by running `npx auth secret`.
+- `GEMINI_API_KEY`, you guessed it, a Gemini API key.
 
-## Getting Started
+Then, run `npm install`, followed by `npm run dev`, and the application should start on port 3000.
 
-First, run the development server:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**Course Staff**: if you want to run this on your own, you can either use a brand new [LiveBlocks](https://liveblocks.io/) account (with a brand new project setup), or if you'd like to have your account added to the dev project, please let one of us know. This will really only determine the "bank" of documents shown to users, and as it stands right now, all users can access all documents under one LiveBlocks project.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Note that two people can run this application on their own local machines, and document access and content is still synced between them, given they use the same LiveBlocks key. You can also just use two tabs to explore what realtime editing with other users looks like, if you don't have any friends :(.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### A Note on Authentication
+Currently, authentication is kind of spoofed, there is no actual way to signup with a new user, but feel free to use the three dev user profiles (any of our initials as the username, with any password). While the authentication management is setup, we have not gotten around to adding a users database, as there were bigger priorities.
