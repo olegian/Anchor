@@ -77,8 +77,9 @@ export function SnapshotListItem({
       onClick={handleNavigate}
     >
       <h4 className="font-semibold text-sm text-gray-700">
-        <span className="text-gray-500">#</span> {id}
+        {snapshotInfo.snapshotTitle}
       </h4>
+
       <div className="flex items-center justify-end gap-1">
         <Users hover={false} usersList={usersOnSnapshot} />
         <button className="text-gray-700 p-1 hover:text-gray-500">

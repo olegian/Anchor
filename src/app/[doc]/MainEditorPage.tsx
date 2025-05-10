@@ -71,7 +71,6 @@ function EditingInterface({
     setNewSnapshotDialog(false);
   }
 
-  const snapshots = useStorage((root) => root.snapshots);
   const addSnapshot = useMutation(
     ({ storage }, newSnapshotId: string, title: string) => {
       const snapshots = storage.get("snapshots");
