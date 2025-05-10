@@ -18,8 +18,9 @@ export function Users({
       } -space-x-2`}
     >
       {usersList !== undefined &&
-        usersList.map((name) => {
-          return <User first={name} last={name} hover={hover} key={name} />;
+        usersList.map((name, idx) => {
+          if (name === undefined) return <></>;
+          return <User first={name} last={name} hover={hover} key={idx} />;
         })}
       <div className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-200  z-20  text-zinc-600 font-semibold text-xs">
         {(usersList?.length ?? -1) + 1}
@@ -40,7 +41,7 @@ export function User({
   return (
     <div className="group relative w-6">
       <div className="uppercase flex items-center justify-center w-6 h-6 rounded-full bg-teal-500 border border-white/50 text-white font-semibold text-xs">
-       {/* TODO: enhance user to store first / last name information, etc...*/}
+        {/* TODO: enhance user to store first / last name information, etc...*/}
         {first[0]}
         {last[0]}
       </div>
