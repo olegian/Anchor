@@ -5,10 +5,11 @@ import useSWR from "swr";
 import { Room } from "@liveblocks/client";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { PlusIcon } from "@heroicons/react/20/solid";
+import { PlusIcon, UserCircleIcon } from "@heroicons/react/20/solid";
 import { useState } from "react";
 
 import dynamic from "next/dynamic";
+import UserMenu from "./components/UserMenu";
 const NewDocDialog = dynamic(() => import("./components/NewDocDialog"));
 
 const fetcher = (...args: [RequestInfo | URL, RequestInit?]) =>
@@ -47,13 +48,16 @@ export default function Home() {
                   : `    Welcome back, ${session?.data?.user?.name}!`}
               </p>
             </div>
-            <button
-              onClick={open}
-              className="border border-zinc-200 rounded-lg px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 flex items-center gap-2 cursor-pointer"
-            >
-              <PlusIcon className="size-5 text-zinc-500 hover:text-zinc-700" />
-              Create Document
-            </button>
+            <div className="flex items-center justify-end space-x-4">
+              <button
+                onClick={open}
+                className="border border-zinc-200 rounded-lg px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 flex items-center gap-2 cursor-pointer"
+              >
+                <PlusIcon className="size-5 text-zinc-500 hover:text-zinc-700" />
+                Create Document
+              </button>
+              <UserMenu user={session?.data?.user ?? null} />
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
             {isLoading ? (

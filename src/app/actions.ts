@@ -16,7 +16,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 const conversationHistory = new Map<
   string,
   Array<{ role: string; parts: { text: string }[] }>
->();
+>(); 
 
 interface PromptResponse {
   text: string;
@@ -69,7 +69,6 @@ export async function prompt(
 
     // Get document contents to use as context
     // needs to be parameterized on the field
-    //const docContents = await getContents(doc_name);
     const docContents = await getContents(doc_name, snapshotId);
 
     // Get or initialize conversation history for this snapshot
@@ -100,12 +99,29 @@ export async function prompt(
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // Create a chat session with history
+    // const chat = model.startChat({
+    //   history,
+    //   generationConfig: {
+    //     maxOutputTokens: 2048,
+    //   },
+    // });
     const chat = model.startChat({
       history,
       generationConfig: {
         maxOutputTokens: 2048,
       },
+      // Add system instruction to establish persistent context
+      systemInstruction: {
+        "role": "system",
+        "parts": [
+          {
+            "text": `Here is the current document content:\n${docContents}\n\n` +
+            (env ? `Environment variables:\n${env}\n\n` : "")
+          }
+        ]
+      }
     });
+    
 
     // Generate response
     const result = await chat.sendMessage(userPrompt);
@@ -160,6 +176,7 @@ export async function resetConversation(snapshotId: string): Promise<void> {
   conversationHistory.delete(snapshotId);
 }
 
+
 export async function deleteAnnotation(
   roomId: string,
   threadId: string,
@@ -179,21 +196,12 @@ export async function deleteAnnotation(
   return response;
 }
 
-// export async function getContents(roomId: string) {
-//   return await withProsemirrorDocument(
-//     { roomId: roomId, field: "maindoc", client: liveblocks },
-//     (api) => {
-//       const contents = api.getText();
-//       console.log(contents);
-//       return contents;
-//     }
-//   );
-// }
 export async function getContents(roomId: string, snapshotId?: string) {
   return await withProsemirrorDocument(
     {
       roomId: roomId,
-      field: snapshotId ?? "maindoc",
+      //field: snapshotId ?? "maindoc",
+      field: "maindoc",
       client: liveblocks,
     },
     (api) => {
@@ -224,7 +232,6 @@ export async function invokeAllPrompts(
   env?: string
 ): Promise<string[]> {
   try {
-    //const docContents = await getContents(doc_name);
     const docContents = await getContents(doc_name, snapshotId);
 
     // Match all [[prompt]] blocks with optional following <ai-response>
