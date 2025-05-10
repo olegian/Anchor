@@ -9,15 +9,11 @@ import FloatingToolbar from "./floating/FloatingToolbar";
 
 import { XMarkIcon } from "@heroicons/react/16/solid";
 import { CommentData } from "@liveblocks/core";
+import { useDeleteComment, useMyPresence, useThreads } from "@liveblocks/react";
 import {
-    useDeleteComment,
-    useMyPresence,
-    useThreads
-} from "@liveblocks/react";
-import {
-    AnchoredThreads,
-    FloatingComposer,
-    useLiveblocksExtension,
+  AnchoredThreads,
+  FloatingComposer,
+  useLiveblocksExtension,
 } from "@liveblocks/react-tiptap";
 
 export default function Editor({
@@ -105,7 +101,7 @@ function CommentBlock({ comment }: { comment: CommentData }) {
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center justify-start gap-2">
-          <div className="uppercase flex items-center justify-center w-8 h-8 rounded-full bg-teal-500 border border-white/50 text-white font-semibold text-sm">
+          <div className="uppercase flex items-center justify-center w-8 h-8 rounded-full bg-indigo-500 border border-white/50 text-white font-semibold text-sm">
             GH
           </div>
           <div>
