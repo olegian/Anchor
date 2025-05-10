@@ -1,11 +1,26 @@
 // Define Liveblocks types for your application
 
-import { JsonObject, LiveList, LiveObject, LsonObject } from "@liveblocks/client";
+import {
+  JsonObject,
+  LiveList,
+  LiveMap,
+  LiveObject,
+  Lson,
+} from "@liveblocks/client";
 
-interface SnapshotEntry extends JsonObject {
-    preview: string,
-    snapshotId: string,
-}
+type Conversations = LiveMap<
+  string, // envId
+  LiveObject<{
+    isPending: boolean;
+    exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>;
+  }>
+>;
+
+export type SnapshotEntry = LiveObject<{
+  isInitialized: boolean;
+  snapshotTitle: string;
+  conversations: Conversations;
+}>;
 
 // https://liveblocks.io/docs/api-reference/liveblocks-react#Typing-your-data
 declare global {
@@ -20,7 +35,7 @@ declare global {
     Storage: {
       // Example, a conflict-free list
       // animals: LiveList<string>;
-      snapshots: LiveList<LiveObject<SnapshotEntry>>;
+      snapshots: LiveMap<string, SnapshotEntry>; // snapshotId -> snapshot information
     };
 
     // Custom user info set when authenticating with a secret key
@@ -54,5 +69,3 @@ declare global {
     };
   }
 }
-
-export {};

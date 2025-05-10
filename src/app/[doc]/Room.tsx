@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowPathIcon } from "@heroicons/react/20/solid";
-import { LiveList } from "@liveblocks/client";
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 import {
   ClientSideSuspense,
   LiveblocksProvider,
@@ -46,7 +46,7 @@ export function Room({
     <LiveblocksProvider authEndpoint={authHandler}>
       <RoomProvider
         id={doc_name}
-        initialStorage={{ snapshots: new LiveList([]) }}
+        initialStorage={{snapshots: new LiveMap()}}
       >
         <ClientSideSuspense
           fallback={

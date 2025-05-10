@@ -8,15 +8,8 @@ import {
   ThreadListItem,
 } from "./ThreadListItem";
 import { useMutation, useStorage } from "@liveblocks/react";
-import { JsonObject, LiveObject } from "@liveblocks/client";
-
-// TODO: define this in a more central place to be access accross the entire project
-// TODO: consider what needs to be stored alongside this stuff for gen history and things like that
-// TODO: consider how to handler presense, and how to log which user is on what thread. This might require ^^^
-interface SnapshotEntry extends JsonObject {
-  isInitialized: boolean;
-  snapshotId: string;
-}
+import { JsonObject, LiveList, LiveMap, LiveObject } from "@liveblocks/client";
+import { SnapshotEntry } from "@/../../liveblocks.config";
 
 export default function ThreadsSidebar() {
   const [showSidebar, setShowSidebar] = useState(false);
@@ -27,10 +20,12 @@ export default function ThreadsSidebar() {
   const addSnapshot = useMutation(({ storage }, newSnapshotId: string) => {
     // TODO: I have no clue what's happening here
     const snapshots = storage.get("snapshots");
-    snapshots.push(
-      new LiveObject<SnapshotEntry>({
+    snapshots.set(
+      newSnapshotId,
+      new LiveObject({
         isInitialized: false,
-        snapshotId: newSnapshotId,
+        snapshotTitle: "",
+        conversations: new LiveMap(),
       })
     );
   }, []);
@@ -40,7 +35,7 @@ export default function ThreadsSidebar() {
   const handleCreateSnapshot = () => {
     const newSnapshotId = crypto.randomUUID();
 
-    // note this just populate storage, it does not redirect the user
+    // note this just populates storage, it does not redirect the user
     // or populate the snapshot contents yet. populating the contents
     // can happen when the snapshot is loaded, as it requires a handle
     // to the snapshot editor.
