@@ -1,18 +1,17 @@
 "use client";
 
+import { ArrowRightIcon } from "@heroicons/react/16/solid";
 import { ChevronLeftIcon } from "@heroicons/react/20/solid";
-import SnapshotsSidebar from "./components/sidebar/SnapshotsSidebar";
+import { Session } from "next-auth";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import DocMenu from "./components/DocMenu";
 import Editor from "./components/Editor";
 import FloatingMenu from "./components/floating/FloatingMenu";
-import { useEffect, useState } from "react";
 import FloatingNavbar from "./components/floating/FloatingNavbar";
-import { ArrowRightIcon } from "@heroicons/react/16/solid";
-import DocMenu from "./components/DocMenu";
-import { Session } from "next-auth";
+import SnapshotsSidebar from "./components/sidebar/SnapshotsSidebar";
 import { Room } from "./Room";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { useMyPresence } from "@liveblocks/react";
 
 import { LiveMap, LiveObject } from "@liveblocks/client";
 import { useMutation, useStorage } from "@liveblocks/react";

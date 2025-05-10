@@ -1,21 +1,21 @@
 "use client";
 import { Transition, TransitionChild } from "@headlessui/react";
 import { ChevronLeftIcon } from "@heroicons/react/16/solid";
-import { LiveMap, LiveObject } from "@liveblocks/client";
-import { useMutation, useStorage } from "@liveblocks/react";
+import { useStorage } from "@liveblocks/react";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 import {
-  CurrentSnapshotListItem,
-  MainListItem,
-  SnapshotListItem,
+    CurrentSnapshotListItem,
+    MainListItem,
+    SnapshotListItem,
 } from "./SnapshotListItem";
-import { useParams } from "next/navigation";
 
 export default function SnapshotsSidebar({ open }: { open: () => void }) {
   const [showSidebar, setShowSidebar] = useState(false);
   const params = useParams<{ doc: string; snapshot?: string }>();
 
   const snapshots = useStorage((root) => root.snapshots);
+
   const handleMouseEnter = () => setShowSidebar(true);
   const handleMouseLeave = () => setShowSidebar(false);
 

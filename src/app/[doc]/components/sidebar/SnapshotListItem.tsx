@@ -1,5 +1,5 @@
 import { ChevronRightIcon } from "@heroicons/react/16/solid";
-import { useOthers } from "@liveblocks/react";
+import { useMutation, useOthers } from "@liveblocks/react";
 import { Users } from "../Users";
 import { redirect, useParams } from "next/navigation";
 
@@ -66,6 +66,14 @@ export function SnapshotListItem({
       })
       .map((other) => other.presence.name)
   );
+
+  const deleteSnapshot = useMutation(({storage}) => {   
+    if (usersOnSnapshot.length !== 0) {
+        // TODO: report unable to delete snapshot with a user currently on the snapshot?
+        return;
+    }
+    storage.get("snapshots").delete(id)
+  }, [])
 
   const handleNavigate = () => {
     redirect(`/${params.doc}/${id}`);
