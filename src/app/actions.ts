@@ -200,11 +200,12 @@ export async function getContents(roomId: string, snapshotId?: string) {
   return await withProsemirrorDocument(
     {
       roomId: roomId,
-      field: snapshotId ?? "maindoc",
+      //field: snapshotId ?? "maindoc",
+      field: "maindoc",
       client: liveblocks,
     },
     (api) => {
-      console.log("Fetching contents for field:", snapshotId);
+      //console.log("Fetching contents for field:", snapshotId);
       const contents = api.getText();
       console.log("contents = " + contents);
       return contents;
