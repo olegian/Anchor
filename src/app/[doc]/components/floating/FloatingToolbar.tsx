@@ -6,10 +6,17 @@ import {
   ListBulletIcon,
   NumberedListIcon,
   StrikethroughIcon,
+  ViewfinderCircleIcon,
 } from "@heroicons/react/20/solid";
 import { Editor } from "@tiptap/react";
 
-export default function FloatingToolbar({ editor }: { editor: Editor | null }) {
+export default function FloatingToolbar({
+  editor,
+  open,
+}: {
+  editor: Editor | null;
+  open: () => void;
+}) {
   if (!editor) {
     return null;
   }
@@ -69,11 +76,19 @@ export default function FloatingToolbar({ editor }: { editor: Editor | null }) {
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         />
         <Divider />
-        <TabbarItem
+        {/* <TabbarItem
           text="Comment"
           children={<ChatBubbleLeftRightIcon className="size-5 shrink-0" />}
           active={editor.isActive("liveblocksCommentMark")}
           onClick={() => editor.chain().focus().addPendingComment().run()}
+        /> */}
+        <TabbarItem
+          text="Snapshot"
+          children={<ViewfinderCircleIcon className="size-5 shrink-0" />}
+          active={false}
+          onClick={() => {
+            open();
+          }}
         />
       </div>
     </div>

@@ -28,9 +28,11 @@ import { XMarkIcon } from "@heroicons/react/16/solid";
 export default function Editor({
   title,
   setTitle,
+  open,
 }: {
   title: string;
   setTitle: (title: string) => void;
+  open: () => void;
 }) {
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
   const [myPresence, updateMyPresence] = useMyPresence();
@@ -61,7 +63,7 @@ export default function Editor({
   }, [editor]);
 
   useEffect(() => {
-    updateMyPresence({currentSnapshot: null});
+    updateMyPresence({ currentSnapshot: null });
   }, []);
 
   const { threads } = useThreads();
@@ -93,7 +95,7 @@ export default function Editor({
         />
         {/* <FloatingThreads editor={editor} threads={threads || []} /> */}
       </>
-      <FloatingToolbar editor={editor} />
+      <FloatingToolbar editor={editor} open={open} />
     </>
   );
 }

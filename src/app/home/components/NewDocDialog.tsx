@@ -10,7 +10,7 @@ import {
 import { XMarkIcon } from "@heroicons/react/16/solid";
 import { redirect } from "next/navigation";
 
-export default function NewDocModal({
+export default function NewDocDialog({
   tempDocTitle,
   setTempDocTitle,
   isOpen,
@@ -67,7 +67,7 @@ export default function NewDocModal({
               disabled={tempDocTitle.length < 1}
               className="disabled:opacity-50 border border-zinc-200 inline-flex items-center gap-2 rounded-lg bg-white cursor-pointer px-2 py-1 text-sm font-medium text-black focus:not-data-focus:outline-none data-focus:outline data-hover:bg-zinc-100 data-open:bg-zinc-100"
             >
-              Create
+              Create document
             </Button>
 
             <CloseButton

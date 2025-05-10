@@ -3,7 +3,7 @@ import { useOthers } from "@liveblocks/react";
 import { Users } from "../Users";
 import { redirect, useParams } from "next/navigation";
 
-export function MainThreadListItem() {
+export function MainListItem() {
   const params = useParams<{ doc: string; snapshot: string }>();
   const usersOnMain = useOthers((others) =>
     others.map((other) => other.presence.name)
@@ -29,7 +29,7 @@ export function MainThreadListItem() {
   );
 }
 
-export function CurrentThreadListItem({ id }: { id: string }) {
+export function CurrentSnapshotListItem({ id }: { id: string }) {
   const usersOnSnapshot = useOthers((others) =>
     others
       .filter((other) => {
@@ -51,7 +51,7 @@ export function CurrentThreadListItem({ id }: { id: string }) {
   );
 }
 
-export function ThreadListItem({
+export function SnapshotListItem({
   id,
   snapshotInfo,
 }: {

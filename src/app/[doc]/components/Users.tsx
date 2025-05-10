@@ -22,7 +22,7 @@ export function Users({
           if (name === undefined) return <></>;
           return <User first={name} last={name} hover={hover} key={idx} />;
         })}
-      <div className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-200  z-20  text-zinc-600 font-semibold text-xs">
+      <div className="flex items-center justify-center size-6 rounded-full bg-white border border-zinc-200 z-20  text-zinc-600 font-semibold text-xs">
         {(usersList?.length ?? -1) + 1}
       </div>
     </div>
@@ -40,7 +40,7 @@ export function User({
 }) {
   return (
     <div className="group relative w-6">
-      <div className="uppercase flex items-center justify-center w-6 h-6 rounded-full bg-teal-500 border border-white/50 text-white font-semibold text-xs">
+      <div className="uppercase flex items-center justify-center size-6 rounded-full bg-teal-500 border border-white/50 text-white font-semibold text-xs">
         {/* TODO: enhance user to store first / last name information, etc...*/}
         {first[0]}
         {last[0]}

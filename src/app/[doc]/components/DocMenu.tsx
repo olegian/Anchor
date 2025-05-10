@@ -9,7 +9,7 @@ export default function DocMenu({ showText = false }: { showText?: boolean }) {
   return (
     <Menu>
       <MenuButton
-        className={`inline-flex items-center gap-1 text-sm rounded-lg data-hover:bg-zinc-100 data-open:bg-zinc-100 transition-colors ${
+        className={`inline-flex items-center gap-1 text-sm rounded-lg cursor-pointer data-hover:bg-zinc-100 data-open:bg-zinc-100 transition-colors ${
           showText ? "px-2 py-1" : "p-1"
         } font-medium text-gray-600`}
       >

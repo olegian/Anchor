@@ -9,7 +9,7 @@ import { PlusIcon } from "@heroicons/react/20/solid";
 import { useState } from "react";
 
 import dynamic from "next/dynamic";
-const NewDocModal = dynamic(() => import("./components/NewDocModal"));
+const NewDocDialog = dynamic(() => import("./components/NewDocDialog"));
 
 const fetcher = (...args: [RequestInfo | URL, RequestInit?]) =>
   fetch(...args).then((res) => res.json());
@@ -24,14 +24,14 @@ export default function Home() {
   );
 
   const [tempDocTitle, setTempDocTitle] = useState("");
-  const [newDocModal, setNewDocModal] = useState(false);
+  const [newDocDialog, setNewDocDialog] = useState(false);
 
   function open() {
-    setNewDocModal(true);
+    setNewDocDialog(true);
   }
 
   function close() {
-    setNewDocModal(false);
+    setNewDocDialog(false);
   }
 
   return (
@@ -72,10 +72,10 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <NewDocModal
+      <NewDocDialog
         tempDocTitle={tempDocTitle}
         setTempDocTitle={setTempDocTitle}
-        isOpen={newDocModal}
+        isOpen={newDocDialog}
         close={close}
       />
     </>
