@@ -197,7 +197,7 @@ export async function getContents(roomId: string, snapshotId?: string) {
       client: liveblocks,
     },
     (api) => {
-      const contents = api.getText();
+      const contents = api.getText(); // TODO: this call might not get all the information about the doc (are non-text nodes, text?)
       console.log("contents = " + contents);
       return contents;
     }
@@ -262,4 +262,9 @@ export async function invokeAllPrompts(
     console.error("Error in invokeAllPrompts:", error);
     return [];
   }
+}
+
+export async function createDoc(tempDocTitle: string) {
+  // if we want to do something with registering user permissions on doc creation
+  // it would have to be done here
 }

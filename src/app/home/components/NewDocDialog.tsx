@@ -1,4 +1,5 @@
 import { liveblocks } from "@/app/liveblocks";
+import { createDoc } from "@/app/actions";
 import {
   Button,
   CloseButton,
@@ -21,13 +22,12 @@ export default function NewDocDialog({
   isOpen: boolean;
   close: () => void;
 }) {
-  // TODO: this only works when secret key is public
-  const createDocHandler = async () => {
-    const slug = encodeURIComponent(tempDocTitle);
-    await liveblocks.createRoom(slug, {
-      defaultAccesses: ["room:write"],
-    });
-    redirect(`/${slug}`);
+  const createDocHandler = () => {
+    // if we want to register some sort of permissions/doc restrictions
+    // then call this action and set permissions server side
+    // await createDoc(tempDocTitle)
+
+    redirect(`/${tempDocTitle}`);  // auto creates doc on reroute
   };
 
   return (

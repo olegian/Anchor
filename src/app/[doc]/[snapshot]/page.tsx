@@ -1,34 +1,17 @@
-"use client";
-
-import { redirect, useParams } from "next/navigation";
-import { Room } from "../Room";
-import { SnapShotEditor } from "./SnapShotEditor";
-import { useSession } from "next-auth/react";
+import { AuthGuard } from "@/app/components/AuthGuard";
 import { auth } from "@/app/auth";
+import { redirect } from "next/navigation";
+import SnapshotEditorPage from "./SnapshotEditorPage";
 
-export default async function DocPage() {
-  const params = useParams<{ doc: string; snapshot: string }>();
-
+export default async function Page() {
   const session = await auth();
   if (!session) {
     redirect("/");
   }
 
   return (
-    <div className="div">
-      <div>
-        {" "}
-        DOC_PAGE: {params.doc}, snapshot: {params.snapshot}
-      </div>
-      <Room doc_name={params.doc} session={session}>
-        <SnapShotEditor
-          doc={params.doc}
-          snapshotEntry={{
-            isInitialized: false,
-            snapshotId: params.snapshot,
-          }}
-        />
-      </Room>
-    </div>
+    <AuthGuard redirectTo="/">
+      <SnapshotEditorPage session={session} />
+    </AuthGuard>
   );
 }
