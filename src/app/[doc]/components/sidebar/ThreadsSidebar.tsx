@@ -1,15 +1,14 @@
 "use client";
-import { useState } from "react";
 import { Transition, TransitionChild } from "@headlessui/react";
 import { ChevronLeftIcon } from "@heroicons/react/16/solid";
+import { LiveMap, LiveObject } from "@liveblocks/client";
+import { useMutation, useStorage } from "@liveblocks/react";
+import { useState } from "react";
 import {
   CurrentThreadListItem,
   MainThreadListItem,
   ThreadListItem,
 } from "./ThreadListItem";
-import { useMutation, useStorage } from "@liveblocks/react";
-import { JsonObject, LiveList, LiveMap, LiveObject } from "@liveblocks/client";
-import { SnapshotEntry } from "@/../../liveblocks.config";
 
 export default function ThreadsSidebar() {
   const [showSidebar, setShowSidebar] = useState(false);

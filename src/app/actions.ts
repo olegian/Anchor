@@ -126,13 +126,20 @@ export async function prompt(
     // await postComment(doc_name, snapshotId, `Gemini: ${text}`);
 
     await liveblocks.mutateStorage(doc_name, ({ root }) => {
-        const envExchanges = root.get("snapshots").get(snapshotId)?.get("conversations").get(envId)?.get("exchanges");
-        const exchange = envExchanges?.find((exchange) => {return exchange.get("prompt") === userPrompt }); // this is kind of an inefficient way of finding the associate prompt, it really should be a map but cest la vie for now
-        if (exchange === undefined) {
-            throw new Error("Unable to find prompt that resulted in response")
-        }
+      const envExchanges = root
+        .get("snapshots")
+        .get(snapshotId)
+        ?.get("conversations")
+        .get(envId)
+        ?.get("exchanges");
+      const exchange = envExchanges?.find((exchange) => {
+        return exchange.get("prompt") === userPrompt;
+      }); // this is kind of an inefficient way of finding the associate prompt, it really should be a map but cest la vie for now
+      if (exchange === undefined) {
+        throw new Error("Unable to find prompt that resulted in response");
+      }
 
-        exchange.set("response", text);
+      exchange.set("response", text);
     });
 
     return {
@@ -186,9 +193,8 @@ export async function getContents(roomId: string, snapshotId?: string) {
   return await withProsemirrorDocument(
     {
       roomId: roomId,
-      field: "maindoc",
+      field: snapshotId ?? "maindoc",
       client: liveblocks,
-      ...(snapshotId ? { snapshotId } : {}), // Add snapshotId if provided
     },
     (api) => {
       const contents = api.getText();
@@ -239,7 +245,13 @@ export async function invokeAllPrompts(
         continue;
       }
 
-      const response = await prompt(doc_name, snapshotId, promptText, envId, env);
+      const response = await prompt(
+        doc_name,
+        snapshotId,
+        promptText,
+        envId,
+        env
+      );
       const annotatedResponse = `[[${promptText}]]\n<ai-response>\n${response.text}\n</ai-response>\n`;
 
       results.push(annotatedResponse);

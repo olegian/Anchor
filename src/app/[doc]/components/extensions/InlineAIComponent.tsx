@@ -31,7 +31,7 @@ export default (props: any) => {
       const isConversationPending =
         exchangesInEnv !== undefined && exchangesInEnv.get("isPending");
       if (isConversationPending) {
-        return; // some conversation was already started by another user, don't let this one start until that one is finished
+        throw new Error("Someone already prompted the LLM within this environment.")
       }
       // if this is the first exchange in this snapshot in general, then initialize memory
       // and in both cases add the new prompt the proper place
@@ -99,11 +99,6 @@ export default (props: any) => {
       setError("Prompt is empty.");
       return;
     }
-
-    // if (!isConversationPending(envId)) {
-    //   // TODO: report that another client is currently waiting for a response for this environment
-    //   return;
-    // }
 
     setLoading(true);
     setError(null);
