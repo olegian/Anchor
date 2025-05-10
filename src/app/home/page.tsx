@@ -41,7 +41,7 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <div className="space-y-2">
               <h1 className="text-4xl font-semibold">Documents</h1>
-              <p className="text-lg font-medium text-gray-700">
+              <p className="text-lg font-medium text-zinc-700">
                 {isLoading
                   ? "Figuring out who you are..."
                   : `    Welcome back, ${session?.data?.user?.name}!`}
@@ -49,9 +49,9 @@ export default function Home() {
             </div>
             <button
               onClick={open}
-              className="border border-zinc-200 rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
+              className="border border-zinc-200 rounded-lg px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 flex items-center gap-2 cursor-pointer"
             >
-              <PlusIcon className="size-5 text-gray-500 hover:text-gray-700" />
+              <PlusIcon className="size-5 text-zinc-500 hover:text-zinc-700" />
               Create Document
             </button>
           </div>
@@ -109,7 +109,7 @@ function MiniTextRenderer({ roomId }: { roomId: string }) {
   );
 
   if (isLoading && !data) {
-    return <div className="w-full h-32 bg-gray-100 animate-pulse"></div>;
+    return <div className="w-full h-32 bg-zinc-100 animate-pulse"></div>;
   } else {
     if (data && data.doc) {
       if (data.doc.maindoc) {
@@ -129,6 +129,6 @@ function MiniTextRenderer({ roomId }: { roomId: string }) {
         );
       }
     }
-    return <div className="w-full h-32 bg-gray-200 animate-pulse"></div>;
+    return <div className="w-full h-32 bg-zinc-200 animate-pulse"></div>;
   }
 }

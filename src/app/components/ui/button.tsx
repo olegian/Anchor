@@ -19,12 +19,16 @@ const variantClasses = {
   destructive:
     "bg-red-600 text-white shadow hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-1",
   outline:
-    "border border-gray-300 text-gray-700 shadow-sm hover:bg-gray-100 focus:ring-2 focus:ring-gray-300 focus:ring-offset-1",
-  ghost: "bg-transparent text-gray-700 hover:bg-gray-100 focus:ring-2 focus:ring-gray-300 focus:ring-offset-1", // Added focus ring
+    "border border-zinc-300 text-zinc-700 shadow-sm hover:bg-zinc-100 focus:ring-2 focus:ring-zinc-300 focus:ring-offset-1",
+  ghost:
+    "bg-transparent text-zinc-700 hover:bg-zinc-100 focus:ring-2 focus:ring-zinc-300 focus:ring-offset-1", // Added focus ring
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, children, variant = "default", size = "md", ...props }, ref) => {
+  (
+    { className, children, variant = "default", size = "md", ...props },
+    ref
+  ) => {
     return (
       <button
         ref={ref}

@@ -115,13 +115,13 @@ function TabbarItem({
       <button
         onClick={onClick}
         className={`${
-          active ? "text-gray-700" : "text-gray-500 hover:text-gray-700"
+          active ? "text-zinc-700" : "text-zinc-500 hover:text-zinc-700"
         } focus:outline-none cursor-pointer flex flex-col items-center justify-center space-y-1`}
       >
         <div
           className={`${
-            active ? "bg-gray-200" : "bg-white"
-          } w-8 h-8 transition-colors rounded-lg group-hover:bg-gray-100 flex items-center justify-center`}
+            active ? "bg-zinc-200" : "bg-white"
+          } w-8 h-8 transition-colors rounded-lg group-hover:bg-zinc-100 flex items-center justify-center`}
         >
           {children}
         </div>
@@ -130,7 +130,7 @@ function TabbarItem({
         <div
           className={`absolute w-full -top-10 hidden group-hover:flex items-center justify-center`}
         >
-          <p className="text-center whitespace-nowrap text-xs font-medium text-gray-700 pointer-events-none px-2 py-1 bg-white border shadow rounded-md border-zinc-200">
+          <p className="text-center whitespace-nowrap text-xs font-medium text-zinc-700 pointer-events-none px-2 py-1 bg-white border shadow rounded-md border-zinc-200">
             {text}
           </p>
         </div>

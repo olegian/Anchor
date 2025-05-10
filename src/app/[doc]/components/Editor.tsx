@@ -70,7 +70,7 @@ export default function Editor({
 
   return (
     <>
-      <article className="prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-gray-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg">
+      <article className="prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg">
         <Title title={title} setTitle={setTitle} />
         <EditorContent editor={editor} className="px-2" />
       </article>
@@ -115,13 +115,13 @@ function CommentBlock({ comment }: { comment: CommentData }) {
           </div>
           <div>
             <h4 className="font-semibold text-sm">Greg Heffley</h4>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-zinc-500">
               {new Date(comment.createdAt).toLocaleDateString("en-US")}
             </p>
           </div>
         </div>
         <button
-          className="bg-white border cursor-pointer hover:opacity-75 transition-opacity border-zinc-200 p-1 rounded-full text-xs font-medium text-gray-700"
+          className="bg-white border cursor-pointer hover:opacity-75 transition-opacity border-zinc-200 p-1 rounded-full text-xs font-medium text-zinc-700"
           onClick={() =>
             deleteComment({
               threadId: comment.threadId,
@@ -132,7 +132,7 @@ function CommentBlock({ comment }: { comment: CommentData }) {
           <XMarkIcon className="size-4 shrink-0" />
         </button>
       </div>
-      <div className="text-gray-700">
+      <div className="text-zinc-700">
         <Comment.Body body={comment.body} />
       </div>
     </div>

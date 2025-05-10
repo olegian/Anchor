@@ -45,15 +45,18 @@ export function Room({
   return (
     <LiveblocksProvider authEndpoint={authHandler}>
       <RoomProvider
-        initialPresence={{ currentSnapshot: null, name: session.user?.name ?? "" }}   // ?? should be unnecessary?
+        initialPresence={{
+          currentSnapshot: null,
+          name: session.user?.name ?? "",
+        }} // ?? should be unnecessary?
         id={doc_name}
         initialStorage={{ snapshots: new LiveMap() }}
       >
         <ClientSideSuspense
           fallback={
             <div className="w-screen h-screen flex items-center justify-center gap-2">
-              <ArrowPathIcon className="size-5 animate-spin text-gray-500" />
-              <p className="text-gray-500">Loading...</p>
+              <ArrowPathIcon className="size-5 animate-spin text-zinc-500" />
+              <p className="text-zinc-500">Loading...</p>
             </div>
           }
         >

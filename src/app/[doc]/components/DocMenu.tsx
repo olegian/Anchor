@@ -11,7 +11,7 @@ export default function DocMenu({ showText = false }: { showText?: boolean }) {
       <MenuButton
         className={`inline-flex items-center gap-1 text-sm rounded-lg cursor-pointer data-hover:bg-zinc-100 data-open:bg-zinc-100 transition-colors ${
           showText ? "px-2 py-1" : "p-1"
-        } font-medium text-gray-600`}
+        } font-medium text-zinc-600`}
       >
         {showText && <span>Options</span>}
         <ChevronDownIcon className="size-4" />

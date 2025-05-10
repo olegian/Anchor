@@ -50,7 +50,7 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
                 <h2 className="font-semibold text-2xl">Document</h2>
                 {params.snapshot !== undefined && ( // only render current thread if youre actually viewing a thread
                   <div className="space-y-2">
-                    <h3 className="font-medium text-gray-700 font-sans text-sm">
+                    <h3 className="font-medium text-zinc-700 font-sans text-sm">
                       This view
                     </h3>
                     <div className="flex items-center justify-between gap-2">
@@ -70,7 +70,7 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
                       open();
                       setShowSidebar(false);
                     }}
-                    className="text-xs bg-white font-medium text-gray-700 hover:opacity-75 transition-opacity border border-zinc-200 rounded-lg px-2 py-1 cursor-pointer"
+                    className="text-xs bg-white font-medium text-zinc-700 hover:opacity-75 transition-opacity border border-zinc-200 rounded-lg px-2 py-1 cursor-pointer"
                   >
                     Create
                   </button>
@@ -118,7 +118,7 @@ function SidebarButton({
       >
         <ChevronLeftIcon className="size-5 shrink-0" />
       </div>
-      <p className="text-gray-700 font-medium text-sm">Snapshots</p>
+      <p className="text-zinc-700 font-medium text-sm">Snapshots</p>
     </button>
   );
 }

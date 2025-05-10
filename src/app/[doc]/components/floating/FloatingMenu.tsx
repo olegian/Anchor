@@ -24,10 +24,10 @@ export default function FloatingMenu() {
         />
       ) : (
         // <div className="flex animate-pulse items-center justify-center w-6 h-6 rounded-full bg-zinc-200" />
-        <UserCircleIcon className="size-6 fill-gray-500 animate-pulse" />
+        <UserCircleIcon className="size-6 fill-zinc-500 animate-pulse" />
       )}
-      <div className="bg-white w-8 h-8 transition-colors rounded-lg hover:bg-gray-100 flex items-center justify-center">
-        <CogIcon className="size-5 text-gray-700" />
+      <div className="bg-white w-8 h-8 transition-colors rounded-lg hover:bg-zinc-100 flex items-center justify-center">
+        <CogIcon className="size-5 text-zinc-700" />
       </div>
     </div>
   );
