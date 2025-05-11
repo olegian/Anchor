@@ -190,9 +190,9 @@ export default (props: any) => {
             snapshots
               .get("test-snap")
               ?.conversations.get(props.node.attrs.envId)
-              ?.exchanges.map(({ prompt, response }) => {
+              ?.exchanges.map(({ prompt, response }, idx) => {
                 return (
-                  <p className="text-zinc-800 whitespace-pre-line">
+                  <p className="text-zinc-800 whitespace-pre-line" key={idx}>
                     {response}
                   </p>
                 );

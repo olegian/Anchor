@@ -40,11 +40,11 @@ export default Node.create({
   addInputRules() {
     return [
       nodeInputRule({
-        find: /\[\[(.*?)\]\]/g,
+        find: /(\[\[.*?\]\])/g,
         type: this.type,
         getAttributes: (match) => {
           return {
-            prompt: match[1],
+            prompt: match[1].slice(2, match[1].length - 2),
             envId: crypto.randomUUID(),
           };
         },
