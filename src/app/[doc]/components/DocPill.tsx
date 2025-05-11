@@ -3,14 +3,26 @@ import { ArrowRightIcon } from "@heroicons/react/20/solid";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 
-export default function DocPill({ snapshotTitle }: { snapshotTitle?: string }) {
+export default function DocPill({
+  snapshotTitle,
+  loaded,
+}: {
+  snapshotTitle?: string;
+  loaded: boolean;
+}) {
   const params = useParams<{ doc: string; snapshot: string }>();
   const searchParams = useSearchParams();
+
+  if (!loaded) {
+    return (
+      <div className="relative p-2 py-1 rounded-lg bg-zinc-200 animate-pulse h-7 w-32" />
+    );
+  }
 
   if (!snapshotTitle) {
     if (searchParams.get("from")) {
       return (
-        <div className="rounded-l-lg overflow-hidden">
+        <div className="rounded-lg overflow-hidden">
           <div className="relative font-semibold text-sm px-2 py-1 rounded-lg bg-amber-300 inline-block text-black z-20">
             Main
           </div>
@@ -31,7 +43,7 @@ export default function DocPill({ snapshotTitle }: { snapshotTitle?: string }) {
     }
   } else {
     return (
-      <div className="rounded-r-lg overflow-hidden">
+      <div className="rounded-lg overflow-hidden">
         <div className="relative font-semibold text-sm px-2 py-1 rounded-lg bg-blue-500 inline-block text-white z-20">
           {snapshotTitle}
         </div>

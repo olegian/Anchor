@@ -4,8 +4,11 @@ import {
   TrashIcon,
   ArrowUpOnSquareIcon,
 } from "@heroicons/react/16/solid";
+import { useParams } from "next/navigation";
 
 export default function DocMenu({ showText = false }: { showText?: boolean }) {
+  const params = useParams<{ doc: string; snapshot?: string }>();
+
   return (
     <Menu>
       <MenuButton
@@ -29,13 +32,17 @@ export default function DocMenu({ showText = false }: { showText?: boolean }) {
           </button>
         </MenuItem>
 
-        <div className="my-1 h-px bg-zinc-200" />
-        <MenuItem>
-          <button className="group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium">
-            <TrashIcon className="size-4 fill-red-500" />
-            Delete Thread
-          </button>
-        </MenuItem>
+        {params.snapshot ? (
+          <>
+            <div className="my-1 h-px bg-zinc-200" />
+            <MenuItem>
+              <button className="group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium">
+                <TrashIcon className="size-4 fill-red-500" />
+                Delete Thread
+              </button>
+            </MenuItem>
+          </>
+        ) : null}
       </MenuItems>
     </Menu>
   );

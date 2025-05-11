@@ -3,7 +3,7 @@ import { Comment } from "@liveblocks/react-ui/primitives";
 import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, Extension, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import InlineAIExtension from "./extensions/InlineAIExtension";
 import FloatingToolbar from "./floating/FloatingToolbar";
 
@@ -29,15 +29,20 @@ export default function Editor({
   setTitle,
   open,
   field,
+  loaded,
 }: {
   title: string;
   setTitle: (title: string) => void;
   open: () => void;
   field: string;
+  loaded: boolean;
 }) {
   const liveblocks = useLiveblocksExtension({ field });
   const params = useParams<{ doc: string; snapshot?: string }>();
   const [myPresence, updateMyPresence] = useMyPresence();
+
+  const [isEditorReady, setEditorReady] = useState(false);
+
   const snapshots = useStorage((root) => root.snapshots);
   const setCreatedSnapshot = useMutation(({ storage }, editor) => {
     getContents(params.doc, "maindoc")
@@ -46,6 +51,8 @@ export default function Editor({
 
         const snapshot = storage.get("snapshots").get(field);
         snapshot?.set("isInitialized", true); // raise flag to avoid re-initialization
+
+        setEditorReady(true);
       })
       .catch((error) => {
         console.error("Error getting contents:", error);
@@ -64,7 +71,9 @@ export default function Editor({
       Placeholder.configure({
         placeholder: "Type something...",
       }),
-    ].concat(field !== "maindoc" ? [InlineAIExtension as unknown as Extension] : []),
+    ].concat(
+      field !== "maindoc" ? [InlineAIExtension as unknown as Extension] : []
+    ),
     immediatelyRender: false,
   });
 
@@ -92,21 +101,32 @@ export default function Editor({
 
   const { threads } = useThreads();
 
+  useEffect(() => {
+    if (editor && field === "maindoc") {
+      setEditorReady(true);
+    }
+  }, [editor, field]);
+
   return (
     <>
-      <article className="prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg">
-        <Title title={title} setTitle={setTitle} />
-        <EditorContent editor={editor} className="px-2" />
-      </article>
+      <div className="relative">
+        <SkeletonEditor loaded={loaded} />
+        <article
+          className={`${
+            loaded ? "" : "hidden"
+          } prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg`}
+        >
+          <Title title={title} setTitle={setTitle} />
+          <EditorContent editor={editor} className="px-2" />
+        </article>
+      </div>
 
       <>
-        {/* <AnchoredThreads editor={editor} /> */}
         <FloatingComposer editor={editor} />
         <AnchoredThreads
           editor={editor}
           threads={threads || []}
           className="fixed top-20 w-full right-0 z-20 h-32"
-          // style={{ width: "300px" }}
           components={{
             Thread: (props) => (
               <div className="flex items-center justify-end gap-2 -mr-80">
@@ -117,10 +137,34 @@ export default function Editor({
             ),
           }}
         />
-        {/* <FloatingThreads editor={editor} threads={threads || []} /> */}
       </>
       <FloatingToolbar editor={editor} open={open} />
     </>
+  );
+}
+
+function SkeletonEditor({ loaded }: { loaded: boolean }) {
+  return (
+    <div className={`${loaded ? "hidden" : "block"} w-full px-2`}>
+      <div className="space-y-4">
+        <div className="w-3/4 h-10 bg-zinc-200 animate-pulse rounded-lg" />
+        <div className="space-y-4">
+          {Array.from({ length: 12 }, (_, i) =>
+            i % 2 === 0 ? (
+              <div
+                key={i}
+                className="w-full h-20 bg-zinc-200 animate-pulse rounded-lg"
+              />
+            ) : (
+              <div
+                key={i}
+                className="w-full h-8 bg-zinc-200 animate-pulse rounded-lg"
+              />
+            )
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -163,7 +207,13 @@ function CommentBlock({ comment }: { comment: CommentData }) {
   );
 }
 
-function Title({ title, setTitle }: { title: string; setTitle: (title: string) => void }) {
+function Title({
+  title,
+  setTitle,
+}: {
+  title: string;
+  setTitle: (title: string) => void;
+}) {
   const placeholder = "Enter a title...";
 
   return (
