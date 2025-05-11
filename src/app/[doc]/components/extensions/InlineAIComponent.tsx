@@ -219,6 +219,7 @@ export default (props: any) => {
             props.updateAttributes({ response: null }); // clear stored response
             setError(null); // optional: clear any error message
             // TODO: look here at reject -> do we want the node to be deleted or to persist?
+            // TODO: do we want to delete the envId linked conversation from the live storage?
             props.deleteNode();
           }}
           className="bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition"
