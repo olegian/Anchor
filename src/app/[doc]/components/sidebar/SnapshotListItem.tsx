@@ -79,7 +79,10 @@ export function SnapshotListItem({
       // TODO: report unable to delete snapshot with a user currently on the snapshot?
       return;
     }
+    // delete snapshot entry in storage
     storage.get("snapshots").delete(id);
+
+    // TODO: delete YJS doc from room
   }, []);
 
   const handleNavigate = () => {
