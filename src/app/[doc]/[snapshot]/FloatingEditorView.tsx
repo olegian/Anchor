@@ -57,7 +57,7 @@ export default function FloatingEditorView({ field }: { field: string }) {
                 <EditorContent editor={editor} />
               </article>
               <div className="absolute flex items-center justify-between bottom-0 left-0 right-0 p-4 bg-white border-t border-zinc-200">
-                <DocPill />
+                <DocPill loaded={editor !== undefined || editor !== null} />
                 <SidebarButton
                   type="bottom"
                   showSidebar={showSidebar}

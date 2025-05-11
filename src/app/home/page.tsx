@@ -87,31 +87,54 @@ export default function Home() {
 }
 
 function DocGridItem({ room }: { room: any }) {
-  return (
-    <Link href={`/${room.id}`}>
-      <div className="overflow-hidden hover:scale-95 transition-all cursor-pointer rounded-xl border border-zinc-200">
-        <MiniTextRenderer roomId={room.id} />
-        <div className="border-t border-zinc-200 p-4">
-          <h2 className="text-sm font-semibold line-clamp-1">{room.id}</h2>
-          <p className="text-xs text-zinc-500">
-            {room.lastConnectionAt
-              ? `Last updated ${new Date(
-                  room.lastConnectionAt
-                ).toLocaleString()}`
-              : "No update information available"}
-          </p>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function MiniTextRenderer({ roomId }: { roomId: string }) {
   const { data, error, isLoading } = useSWR(
-    `/api/liveblocks/room/${roomId}/get-storage`,
+    `/api/liveblocks/room/${room.id}/get-storage`,
     fetcher
   );
 
+  const snapshots = data ? Object.keys(data.doc).length - 1 : 0;
+
+  return (
+    <>
+      <Link href={`/${room.id}`}>
+        <div className="overflow-hidden hover:scale-95 transition-all cursor-pointer relative rounded-xl border border-zinc-200">
+          {data ? (
+            snapshots > 0 ? (
+              <div className="absolute right-2 top-2 text-right text-xs font-semibold text-white bg-blue-600 rounded-lg px-2 py-1">
+                {snapshots} snapshot{snapshots > 1 ? "s" : ""}
+              </div>
+            ) : null
+          ) : null}
+          <MiniTextRenderer isLoading={isLoading} data={data} />
+          <div className="border-t border-zinc-200 p-4 space-y-1">
+            {data ? (
+              <h2 className="text-sm font-semibold line-clamp-1">
+                {data?.data?.data?.docTitle ?? "Untitled Document"}
+              </h2>
+            ) : (
+              <div className="h-4 bg-zinc-200 rounded-lg w-1/2 animate-pulse" />
+            )}
+            <p className="text-xs text-zinc-500">
+              {room.lastConnectionAt
+                ? `Last updated ${new Date(
+                    room.lastConnectionAt
+                  ).toLocaleString()}`
+                : "No update information available"}
+            </p>
+          </div>
+        </div>
+      </Link>
+    </>
+  );
+}
+
+function MiniTextRenderer({
+  isLoading,
+  data,
+}: {
+  isLoading?: boolean;
+  data?: any;
+}) {
   if (isLoading && !data) {
     return <div className="w-full h-32 bg-zinc-100 animate-pulse"></div>;
   } else {

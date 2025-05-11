@@ -85,22 +85,28 @@ function EditingInterface({ doc }: { doc: string }) {
   return (
     <>
       <SnapshotsSidebar open={open} />
+
       <div className="py-4 px-2 md:py-8 md:px-6 ">
         <div className="max-w-3xl mx-auto py-16 space-y-4">
           <div className="space-y-4 px-2">
             <div className="flex items-center justify-between">
-              <DocPill />
+              <DocPill loaded={title !== null} />
               <DocMenu showText={true} />
             </div>
-            <p className="font-semibold text-zinc-500 text-sm">
-              Last updated 2 days ago by Greg Heffley
-            </p>
+            {title !== null ? (
+              <p className="font-semibold text-zinc-500 text-sm">
+                Last updated 2 days ago by Greg Heffley
+              </p>
+            ) : (
+              <div className="relative p-2 py-1 rounded-lg bg-zinc-200 animate-pulse h-5 w-56" />
+            )}
           </div>
           <Editor
             title={title ?? ""}
             setTitle={setTitle}
             open={open}
             field="maindoc"
+            loaded={title !== null}
           />
         </div>
       </div>
