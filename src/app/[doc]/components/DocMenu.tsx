@@ -1,3 +1,4 @@
+import { deleteSnapshotDoc } from "@/app/actions";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import { ChevronDownIcon, TrashIcon, ArrowUpOnSquareIcon } from "@heroicons/react/16/solid";
 import { useMutation, useMyPresence, useOthers } from "@liveblocks/react";
@@ -21,10 +22,20 @@ export default function DocMenu({ showText = false }: { showText?: boolean }) {
       return;
     }
 
-    // TODO: delete snapshot editor contents.
+    // TODO: maybe add some loading animation if this deletion takes a while
+    // TODO: This call currenty does nothing, and auto resolves. Go to the function to see why.
+    deleteSnapshotDoc(params.doc, params.snapshot).then(() => {
+        // delete snapshot entry in live storage
+        storage.get("snapshots").delete(params.snapshot);
+    }).catch((e) => {
+        // TODO: report unable to delete snapshot
+        // im honestly not sure if this will ever fail, unless the doc
+        // has already been deleted, in which case I'm not sure how
+        // someone would even be viewing this page. Nonetheless, something
+        // defenseive here would be a good idea.
+        console.log(e)
+    });
 
-    // delete snapshot entry in live storage
-    storage.get("snapshots").delete(params.snapshot);
     redirect(`/${params.doc}`);
   }, []);
 

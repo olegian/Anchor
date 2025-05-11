@@ -3,7 +3,8 @@
 import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { liveblocks } from "./liveblocks";
-import { LiveList } from "@liveblocks/client";
+import * as Y from "yjs";
+import { JsonObject } from "@liveblocks/node";
 
 const LB_DELETE_COMMENT_URL =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
@@ -17,7 +18,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 const conversationHistory = new Map<
   string,
   Array<{ role: string; parts: { text: string }[] }>
->(); 
+>();
 
 interface PromptResponse {
   text: string;
@@ -114,16 +115,16 @@ export async function prompt(
       },
       // Add system instruction to establish persistent context
       systemInstruction: {
-        "role": "system",
-        "parts": [
+        role: "system",
+        parts: [
           {
-            "text": `Here is the current document content:\n${docContents}\n\n` +
-            (env ? `Environment variables:\n${env}\n\n` : "")
-          }
-        ]
-      }
+            text:
+              `Here is the current document content:\n${docContents}\n\n` +
+              (env ? `Environment variables:\n${env}\n\n` : ""),
+          },
+        ],
+      },
     });
-    
 
     // Generate response
     const result = await chat.sendMessage(userPrompt);
@@ -177,7 +178,6 @@ export async function prompt(
 export async function resetConversation(snapshotId: string): Promise<void> {
   conversationHistory.delete(snapshotId);
 }
-
 
 export async function deleteAnnotation(
   roomId: string,
@@ -261,21 +261,49 @@ export async function invokeAllPrompts(
   }
 }
 
-export async function deleteSnapshot(roomId: string, snapshotId: string) {
-  if (!snapshotId || snapshotId === "maindoc") { // just in case cause that would be catastrophic
+export async function deleteSnapshotDoc(roomId: string, snapshotId: string) {
+  if (!snapshotId || snapshotId === "maindoc") {
+    // just in case cause that would be catastrophic
     return;
   }
 
-  return await withProsemirrorDocument(
-    {
-      roomId: roomId,
-      field: snapshotId,
-      client: liveblocks,
-    },
-    (api) => {
-      
-    }
-  );
+  // TODO: this was an attempt to delete the editor contents via the YJS doc stuff. It didnt work, mostly
+  // because accessing the actual top level doc is weird, the JsonObject returned by getYjsDocument is just
+  // a representation of the actual YDoc. Also the documentation only ever discusses update operations,
+  // which means the "delete through nulling" might not even be possible if updates are processed additively.
+  //   const oldState = await liveblocks.getYjsDocument(roomId); // could cast into Y.Map and then call .delete, but then how do you construct the binary update with a yDoc object
+
+  //   if (oldState[snapshotId]) {
+  //     // again, just in case. Damn am I scared of deletion.
+  //     const newYDoc = new Y.Doc(oldState); // create new doc and repopulate?
+  //     const yMap = newYDoc.getMap();
+  //     Object.keys(oldState)
+  //       .filter((id) => id !== snapshotId)
+  //       .forEach((id) => {
+  //         yMap.set(id, oldState[id])
+  //       });
+
+  //     const update = Y.encodeStateAsUpdate(newYDoc);
+  //     await liveblocks.sendYjsBinaryUpdate(roomId, update);
+  //   }
+
+  // at least this is better than nothing ig, delete contents, but not the doc itself.
+  // the UUID entry in the YJS doc will still exist referring to the now empty contents.
+  // at least we just leak an empty entry with an ID, as opposed to the whole doc.
+  //   await withProsemirrorDocument(
+  //     {
+  //       roomId: roomId,
+  //       field: snapshotId,
+  //       client: liveblocks,
+  //     },
+  //     async (api) => {
+  //       // return await api.clearContent(); // TODO: for some reason, this call is erroring out with some internal .set() function being undefined. im baffled.
+
+  //       // return api.update((doc, tr) => {  // You'd think something like this would be the alternative, but same error as above
+  //       //   return tr.deleteRange(0, doc.content.size);
+  //       // });
+  //     }
+  //   );
 }
 
 export async function createDoc(tempDocTitle: string) {
