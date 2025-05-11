@@ -20,12 +20,14 @@ export default function Editor({
   title,
   setTitle,
   open,
+  field,
 }: {
   title: string;
   setTitle: (title: string) => void;
   open: () => void;
+  field: string;
 }) {
-  const liveblocks = useLiveblocksExtension({ field: "maindoc" });
+  const liveblocks = useLiveblocksExtension({ field });
   const [myPresence, updateMyPresence] = useMyPresence();
 
   const editor = useEditor({

@@ -6,7 +6,6 @@ import SnapshotEditorPage from "./SnapshotEditorPage";
 export default async function Page() {
   const session = await auth();
   if (!session) {
-    // not authenticated, redirect to signin
     redirect("/");
   }
 
