@@ -5,16 +5,11 @@ export default async function Home() {
   const loginHandler = async (formData: FormData) => {
     "use server";
 
-    try {
-        await signIn("credentials", {
-            redirectTo: "/home",
-            username: formData.get("username"),
-            password: formData.get("password"),
-        });
-    } catch (error) {
-        console.log("Invalid credentials")
-        // TODO: Report login failed
-    }
+    await signIn("credentials", {
+      redirectTo: "/home",
+      username: formData.get("username"),
+      password: formData.get("password"),
+    });
   };
 
   const signUpHandler = async (formData: FormData) => {
