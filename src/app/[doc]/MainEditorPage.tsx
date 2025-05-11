@@ -1,7 +1,7 @@
 "use client";
 
 import { Session } from "next-auth";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import DocMenu from "./components/DocMenu";
 import Editor from "./components/Editor";
@@ -16,6 +16,7 @@ import NewSnapshotDialog from "./components/dialog/NewSnapshotDialog";
 import { useScrollPosition } from "../components/hooks/useScrollPosition";
 import BackButton from "./components/floating/BackButton";
 import DocPill from "./components/DocPill";
+import FloatingEditorView from "./[snapshot]/FloatingEditorView";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
@@ -76,6 +77,8 @@ function EditingInterface({ doc }: { doc: string }) {
     setNewSnapshotDialog(false);
   }
 
+  const searchParams = useSearchParams();
+
   return (
     <>
       <SnapshotsSidebar open={open} />
@@ -98,6 +101,10 @@ function EditingInterface({ doc }: { doc: string }) {
           />
         </div>
       </div>
+      {/* TODO: maybe we have a preview back and forth? */}
+      {/* {searchParams.get("from") ? (
+        <FloatingEditorView field={searchParams.get("from") ?? "null"} />
+      ) : null} */}
       <NewSnapshotDialog
         isOpen={newSnapshotDialog}
         close={close}

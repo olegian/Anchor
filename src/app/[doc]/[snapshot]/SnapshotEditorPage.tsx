@@ -12,6 +12,7 @@ import SnapshotsSidebar from "../components/sidebar/SnapshotsSidebar";
 import DocPill from "../components/DocPill";
 import DocMenu from "../components/DocMenu";
 import Editor from "../components/Editor";
+import FloatingEditorView from "./FloatingEditorView";
 
 export default function SnapshotEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string; snapshot: string }>();
@@ -66,6 +67,7 @@ function EditingInterface({
           />
         </div>
       </div>
+      <FloatingEditorView field="maindoc" />
     </>
   );
 }

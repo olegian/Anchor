@@ -1,6 +1,6 @@
 "use client";
 import { Transition, TransitionChild } from "@headlessui/react";
-import { ChevronLeftIcon } from "@heroicons/react/16/solid";
+import { ChevronRightIcon } from "@heroicons/react/16/solid";
 import { useStorage } from "@liveblocks/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
@@ -119,12 +119,10 @@ function SidebarButton({
     <button
       onMouseEnter={onMouseEnter}
       onClick={() => setShowSidebar(!showSidebar)}
-      className="cursor-pointer fixed flex items-center justify-start top-1/2 translate-x-4 transform -translate-y-1/2 gap-2 hover:opacity-75 transition-opacity"
+      className="cursor-pointer fixed flex items-center justify-start top-1/2 left-4 transform -translate-y-1/2 gap-2 hover:opacity-75 transition-opacity"
     >
-      <div
-        className={`rounded-full p-1 bg-white border border-zinc-200 hover:shadow-lg transition-all`}
-      >
-        <ChevronLeftIcon className="size-5 shrink-0" />
+      <div className="rounded-full p-1 bg-white border border-zinc-200">
+        <ChevronRightIcon className="size-5 shrink-0" />
       </div>
       <p className="text-zinc-700 font-medium text-sm">Snapshots</p>
     </button>
