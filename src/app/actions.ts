@@ -69,6 +69,7 @@ export async function prompt(
 
     // Get document contents to use as context
     // needs to be parameterized on the field
+    // !!! TODO: This call no longer returns just a string, but a JSON string representation of the entire doc contents
     const docContents = await getContents(doc_name, snapshotId);
 
     // Get or initialize conversation history for this snapshot
@@ -200,31 +201,19 @@ export async function getContents(roomId: string, snapshotId?: string) {
   return await withProsemirrorDocument(
     {
       roomId: roomId,
-      //field: snapshotId ?? "maindoc",
-      field: "maindoc",
+      field: snapshotId ?? "maindoc",
       client: liveblocks,
     },
     (api) => {
-      const contents = api.getText(); // TODO: this call might not get all the information about the doc (are non-text nodes, text?)
-      console.log("contents = " + contents);
-      return contents;
-    }
-  );
-}
-
-export async function getSnapshotContents(roomId: string, field: string) {
-  return await withProsemirrorDocument(
-    { roomId: roomId, field: field, client: liveblocks },
-    (api) => {
-      const contents = api.getText();
-      return contents;
+      const contents = api.toJSON();
+      console.log("contents = ");
+      return JSON.stringify(contents);
     }
   );
 }
 
 // Content updates are now handled directly through the Tiptap editor
 // on the client side for better real-time collaboration
-
 export async function invokeAllPrompts(
   doc_name: string,
   snapshotId: string,

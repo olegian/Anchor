@@ -63,7 +63,7 @@ function EditingInterface({
             title={title ?? ""}
             setTitle={setTitle}
             open={open}
-            field={params.doc}
+            field={params.snapshot}
           />
         </div>
       </div>

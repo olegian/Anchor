@@ -9,12 +9,20 @@ import FloatingToolbar from "./floating/FloatingToolbar";
 
 import { XMarkIcon } from "@heroicons/react/16/solid";
 import { CommentData } from "@liveblocks/core";
-import { useDeleteComment, useMyPresence, useThreads } from "@liveblocks/react";
+import {
+  useDeleteComment,
+  useMutation,
+  useMyPresence,
+  useStorage,
+  useThreads,
+} from "@liveblocks/react";
 import {
   AnchoredThreads,
   FloatingComposer,
   useLiveblocksExtension,
 } from "@liveblocks/react-tiptap";
+import { getContents } from "@/app/actions";
+import { useParams } from "next/navigation";
 
 export default function Editor({
   title,
@@ -28,7 +36,21 @@ export default function Editor({
   field: string;
 }) {
   const liveblocks = useLiveblocksExtension({ field });
+  const params = useParams<{ doc: string; snapshot?: string }>();
   const [myPresence, updateMyPresence] = useMyPresence();
+  const snapshots = useStorage((root) => root.snapshots);
+  const setCreatedSnapshot = useMutation(({ storage }, editor) => {
+    getContents(params.doc, "maindoc")
+      .then((contents) => {
+        editor.commands.setContent(JSON.parse(contents));
+
+        const snapshot = storage.get("snapshots").get(field);
+        snapshot?.set("isInitialized", true); // raise flag to avoid re-initialization
+      })
+      .catch((error) => {
+        console.error("Error getting contents:", error);
+      });
+  }, []);
 
   const editor = useEditor({
     extensions: [
@@ -42,9 +64,7 @@ export default function Editor({
       Placeholder.configure({
         placeholder: "Type something...",
       }),
-    ].concat(
-      field !== "maindoc" ? [InlineAIExtension as unknown as Extension] : []
-    ),
+    ].concat(field !== "maindoc" ? [InlineAIExtension as unknown as Extension] : []),
     immediatelyRender: false,
   });
 
@@ -57,7 +77,17 @@ export default function Editor({
   }, [editor]);
 
   useEffect(() => {
-    updateMyPresence({ currentSnapshot: null });
+    if (snapshots) {
+      // initialize snapshot if necessary
+      if (field !== "maindoc" && !snapshots.get(field)?.isInitialized) {
+        setCreatedSnapshot(editor);
+      }
+    }
+  }, [snapshots]);
+
+  useEffect(() => {
+    // register user presence correctly
+    updateMyPresence({ currentSnapshot: field === "maindoc" ? null : field });
   }, []);
 
   const { threads } = useThreads();
@@ -133,13 +163,7 @@ function CommentBlock({ comment }: { comment: CommentData }) {
   );
 }
 
-function Title({
-  title,
-  setTitle,
-}: {
-  title: string;
-  setTitle: (title: string) => void;
-}) {
+function Title({ title, setTitle }: { title: string; setTitle: (title: string) => void }) {
   const placeholder = "Enter a title...";
 
   return (
