@@ -18,9 +18,6 @@ import { useMutation, useStorage } from "@liveblocks/react";
 import NewSnapshotDialog from "./components/dialog/NewSnapshotDialog";
 
 export default function MainEditorPage({ session }: { session: Session }) {
-  const [title, setTitle] = useState(
-    "Garlic bread with cheese: What the science tells us"
-  );
   const params = useParams<{ doc: string }>();
 
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -41,34 +38,22 @@ export default function MainEditorPage({ session }: { session: Session }) {
     <>
       <Room doc_name={params.doc} session={session}>
         <BackButton />
-        <EditingInterface doc={params.doc} title={title} setTitle={setTitle} />
+        <EditingInterface doc={params.doc} />
         <FloatingMenu />
-        <FloatingNavbar title={title} scrollPosition={scrollPosition} />
+        <FloatingNavbar scrollPosition={scrollPosition} />
       </Room>
     </>
   );
 }
 
-function EditingInterface({
-  doc,
-  title,
-  setTitle,
-}: {
-  doc: string;
-  title: string;
-  setTitle: (title: string) => void;
-}) {
+function EditingInterface({ doc }: { doc: string }) {
   const router = useRouter();
-
   const [newSnapshotDialog, setNewSnapshotDialog] = useState(false);
 
-  function open() {
-    setNewSnapshotDialog(true);
-  }
-
-  function close() {
-    setNewSnapshotDialog(false);
-  }
+  const title = useStorage((root) => root.docTitle);
+  const setTitle = useMutation(({ storage }, newTitle) => {
+    storage.set("docTitle", newTitle);
+  }, []);
 
   const addSnapshot = useMutation(
     ({ storage }, newSnapshotId: string, title: string) => {
@@ -93,14 +78,16 @@ function EditingInterface({
     // can happen when the snapshot is loaded, as it requires a handle
     // to the snapshot editor.
     addSnapshot(newSnapshotId, title);
-
-    // TODO: After calling this handler, we MUST load snapshot editor, and have it populate
-    // if we reroute to the new snapshot ID, then we need to reroute
-    // if instead if we choose to store the snapshot as state
-    // then this sidebar needs to accept a setSnapshot function, and call it on the newSnapshotId
-
     router.push(`/${doc}/${newSnapshotId}`);
   };
+
+  function open() {
+    setNewSnapshotDialog(true);
+  }
+
+  function close() {
+    setNewSnapshotDialog(false);
+  }
 
   return (
     <>
@@ -116,7 +103,7 @@ function EditingInterface({
               Last updated 2 days ago by Greg Heffley
             </p>
           </div>
-          <Editor title={title} setTitle={setTitle} open={open} />
+          <Editor title={title ?? ""} setTitle={setTitle} open={open} />
         </div>
       </div>
       <NewSnapshotDialog

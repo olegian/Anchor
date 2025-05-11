@@ -50,7 +50,7 @@ export function Room({
           name: session.user?.name ?? "",
         }} // ?? should be unnecessary?
         id={doc_name}
-        initialStorage={{ snapshots: new LiveMap() }}
+        initialStorage={{ snapshots: new LiveMap(), docTitle: "New Document" }}
       >
         <ClientSideSuspense
           fallback={

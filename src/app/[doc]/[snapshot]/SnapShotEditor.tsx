@@ -72,7 +72,7 @@ export function SnapShotEditor({
     }
 
     const snapshot = snapshots.get(snapshotEntry.snapshotId);
-    console.log(`snapshot: ${snapshot}`);
+    console.log("snapshot: ", snapshot);
     if (!snapshot?.isInitialized) {
       console.log("taking snapshot");
       setCreatedSnapshot(snapshotEditor);
