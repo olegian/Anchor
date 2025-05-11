@@ -1,5 +1,5 @@
 import { ChevronRightIcon } from "@heroicons/react/16/solid";
-import { useMutation, useOthers } from "@liveblocks/react";
+import { useMutation, useMyPresence, useOthers } from "@liveblocks/react";
 import { Users } from "../Users";
 import { redirect, useParams } from "next/navigation";
 
@@ -59,6 +59,7 @@ export function SnapshotListItem({
   snapshotInfo: any; // cheating on this type, as this is a long definition of a readonly copy of the SnapshotEntry type described in the liveblocks config
 }) {
   const params = useParams<{ doc: string; snapshot: string }>();
+  const [myPresence, updateMyPresence] = useMyPresence();
   const usersOnSnapshot = useOthers((others) =>
     others
       .filter((other) => {
@@ -68,7 +69,7 @@ export function SnapshotListItem({
   );
 
   const deleteSnapshot = useMutation(({storage}) => {   
-    if (usersOnSnapshot.length !== 0) {
+    if (usersOnSnapshot.length !== 0 || myPresence.currentSnapshot === id) {
         // TODO: report unable to delete snapshot with a user currently on the snapshot?
         return;
     }
