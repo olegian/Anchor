@@ -5,35 +5,25 @@ export default async function Home() {
   const loginHandler = async (formData: FormData) => {
     "use server";
 
-    await signIn("credentials", {
-      redirectTo: "/home",
-      username: formData.get("username"),
-      password: formData.get("password"),
-    });
+    try {
+        await signIn("credentials", {
+            redirectTo: "/home",
+            username: formData.get("username"),
+            password: formData.get("password"),
+        });
+    } catch (error) {
+        console.log("Invalid credentials")
+        // TODO: Report login failed
+    }
   };
 
   const signUpHandler = async (formData: FormData) => {
     "use server";
     // what
+    // we gotta do this at some point....
   };
 
   return (
-    // <>
-    //   <div> navigate to /doc_name </div>
-    //   <form action={loginHandler}>
-    //     <input type={"text"} name={"username"} id={"username"} />
-    //     <input type={"text"} name={"password"} id={"password"} />
-    //     <button type="submit"> sign in </button>
-    //   </form>
-
-    //   <form action={signUpHandler}>
-    //     <input type={"text"} name={"username"} id={"username"} />
-    //     <input type={"text"} name={"username"} id={"username"} />
-    //     <button type="submit"> sign up </button>
-    //   </form>
-
-    //   <button onClick={signOutHandler}> sign out </button>
-    // </>
     <div className="w-screen h-screen flex items-center justify-center bg-white">
       <div className="mx-auto max-w-3xl px-4 py-8 w-full">
         <div className="w-full space-y-8">
