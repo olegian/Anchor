@@ -20,7 +20,7 @@ export default function FloatingNavbar({
         >
           <div
             className={`${
-              snapshot ? "bg-blue-500 text-white" : "bg-amber-300 text-black"
+              snapshot ? "bg-blue-600 text-white" : "bg-amber-300 text-black"
             } relative font-semibold font-sans text-xs px-1 mr-2 py-0.5 rounded-md inline-flex items-center justify-center`}
           >
             {snapshot ? "Snapshot" : "Main"}

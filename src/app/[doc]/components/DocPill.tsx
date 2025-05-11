@@ -27,7 +27,7 @@ export default function DocPill({
             Main
           </div>
           <Link href={`/${params.doc}/${searchParams.get("from")}`}>
-            <div className="relative hover:opacity-75 cursor-pointer font-semibold text-sm pl-6 pr-2 py-1 gap-1.5 rounded-r-lg bg-blue-500 inline-flex items-center justify-center text-white -translate-x-14.5 hover:-translate-x-4 transition-transform duration-200">
+            <div className="relative hover:opacity-75 cursor-pointer font-semibold text-sm pl-6 pr-2 py-1 gap-1.5 rounded-r-lg bg-blue-600 inline-flex items-center justify-center text-white -translate-x-14.5 hover:-translate-x-4 transition-transform duration-200">
               Back
               <ArrowLeftIcon className="size-4 shrink-0 text-white " />
             </div>
@@ -36,7 +36,7 @@ export default function DocPill({
       );
     } else {
       return (
-        <div className="relative font-semibold text-sm p-2 py-1 rounded-lg bg-amber-300 inline-flex items-center justify-center text-black">
+        <div className="relative font-semibold text-sm p-2 py-1 rounded-lg bg-amber-300 text-black">
           Main
         </div>
       );
@@ -44,7 +44,7 @@ export default function DocPill({
   } else {
     return (
       <div className="rounded-lg overflow-hidden">
-        <div className="relative font-semibold text-sm px-2 py-1 rounded-lg bg-blue-500 inline-block text-white z-20">
+        <div className="relative font-semibold text-sm px-2 py-1 rounded-lg bg-blue-600 inline-block text-white z-20">
           {snapshotTitle}
         </div>
         <Link href={`/${params.doc}?from=${params.snapshot}`}>
