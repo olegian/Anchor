@@ -3,8 +3,10 @@ import DocMenu from "../DocMenu";
 
 export default function FloatingNavbar({
   scrollPosition,
+  snapshot,
 }: {
   scrollPosition: number;
+  snapshot?: string;
 }) {
   const title = useStorage((root) => root.docTitle);
 
@@ -16,11 +18,15 @@ export default function FloatingNavbar({
             scrollPosition < 180 ? "opacity-0" : "opacity-100"
           } transition-opacity`}
         >
-          <div className="relative font-semibold font-sans text-xxs px-1 mr-2 py-0.5 rounded-md bg-amber-300 inline-flex items-center justify-center text-black">
-            Main
+          <div
+            className={`${
+              snapshot ? "bg-blue-500 text-white" : "bg-amber-300 text-black"
+            } relative font-semibold font-sans text-xxs px-1 mr-2 py-0.5 rounded-md inline-flex items-center justify-cente`}
+          >
+            {snapshot ? "Snapshot" : "Main"}
           </div>
           <div className="text-center">
-            <h4 className="font-semibold line-clamp-1 max-w-sm font-sans ">
+            <h4 className="font-semibold line-clamp-1 w-sm font-sans ">
               {title || "No title"}
             </h4>
             <p className="text-zinc-500 text-xs font-semibold font-sans">

@@ -29,7 +29,13 @@ export function MainListItem() {
   );
 }
 
-export function CurrentSnapshotListItem({ id }: { id: string }) {
+export function CurrentSnapshotListItem({
+  id,
+  title,
+}: {
+  id: string;
+  title: string;
+}) {
   const usersOnSnapshot = useOthers((others) =>
     others
       .filter((other) => {
@@ -41,7 +47,7 @@ export function CurrentSnapshotListItem({ id }: { id: string }) {
   return (
     <button className="bg-blue-100 cursor-pointer group hover:opacity-75 transition-colors w-full rounded-lg p-2 flex items-center justify-between">
       <div className="font-semibold text-sm px-2 py-1 rounded-lg bg-blue-500 inline-block text-white">
-        # {id}
+        {title}
       </div>
       <div className="flex items-center justify-end gap-1">
         <Users hover={false} usersList={usersOnSnapshot} />
@@ -68,13 +74,13 @@ export function SnapshotListItem({
       .map((other) => other.presence.name)
   );
 
-  const deleteSnapshot = useMutation(({storage}) => {   
+  const deleteSnapshot = useMutation(({ storage }) => {
     if (usersOnSnapshot.length !== 0 || myPresence.currentSnapshot === id) {
-        // TODO: report unable to delete snapshot with a user currently on the snapshot?
-        return;
+      // TODO: report unable to delete snapshot with a user currently on the snapshot?
+      return;
     }
-    storage.get("snapshots").delete(id)
-  }, [])
+    storage.get("snapshots").delete(id);
+  }, []);
 
   const handleNavigate = () => {
     redirect(`/${params.doc}/${id}`);

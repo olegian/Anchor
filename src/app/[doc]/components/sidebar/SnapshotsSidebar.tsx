@@ -1,13 +1,13 @@
 "use client";
 import { Transition, TransitionChild } from "@headlessui/react";
-import { ChevronLeftIcon } from "@heroicons/react/16/solid";
+import { ChevronRightIcon } from "@heroicons/react/16/solid";
 import { useStorage } from "@liveblocks/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import {
-    CurrentSnapshotListItem,
-    MainListItem,
-    SnapshotListItem,
+  CurrentSnapshotListItem,
+  MainListItem,
+  SnapshotListItem,
 } from "./SnapshotListItem";
 
 export default function SnapshotsSidebar({ open }: { open: () => void }) {
@@ -54,7 +54,13 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
                       This view
                     </h3>
                     <div className="flex items-center justify-between gap-2">
-                      <CurrentSnapshotListItem id={params.snapshot} />
+                      <CurrentSnapshotListItem
+                        id={params.snapshot}
+                        title={
+                          snapshots?.get(params.snapshot)?.snapshotTitle ??
+                          "Untitled"
+                        }
+                      />
                     </div>
                   </div>
                 )}
@@ -65,15 +71,17 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
                     {snapshots?.size ?? 0} Snapshot{snapshots?.size ? "" : "s"}
                   </h3>
 
-                  <button
-                    onClick={() => {
-                      open();
-                      setShowSidebar(false);
-                    }}
-                    className="text-xs bg-white font-medium text-zinc-700 hover:opacity-75 transition-opacity border border-zinc-200 rounded-lg px-2 py-1 cursor-pointer"
-                  >
-                    Create
-                  </button>
+                  {params.snapshot === undefined ? (
+                    <button
+                      onClick={() => {
+                        open();
+                        setShowSidebar(false);
+                      }}
+                      className="text-xs bg-white font-medium text-zinc-700 hover:opacity-75 transition-opacity border border-zinc-200 rounded-lg px-2 py-1 cursor-pointer"
+                    >
+                      Create
+                    </button>
+                  ) : null}
                 </div>
               </div>
               <ul className="divide-y divide-zinc-200">
@@ -111,12 +119,10 @@ function SidebarButton({
     <button
       onMouseEnter={onMouseEnter}
       onClick={() => setShowSidebar(!showSidebar)}
-      className="cursor-pointer fixed flex items-center justify-start top-1/2 translate-x-4 transform -translate-y-1/2 gap-2 hover:opacity-75 transition-opacity"
+      className="cursor-pointer fixed flex items-center justify-start top-1/2 left-4 transform -translate-y-1/2 gap-2 hover:opacity-75 transition-opacity"
     >
-      <div
-        className={`rounded-full p-1 bg-white border border-zinc-200 hover:shadow-lg transition-all`}
-      >
-        <ChevronLeftIcon className="size-5 shrink-0" />
+      <div className="rounded-full p-1 bg-white border border-zinc-200">
+        <ChevronRightIcon className="size-5 shrink-0" />
       </div>
       <p className="text-zinc-700 font-medium text-sm">Snapshots</p>
     </button>

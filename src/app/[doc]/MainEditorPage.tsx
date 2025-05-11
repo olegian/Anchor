@@ -1,11 +1,8 @@
 "use client";
 
-import { ArrowRightIcon } from "@heroicons/react/16/solid";
-import { ChevronLeftIcon } from "@heroicons/react/20/solid";
 import { Session } from "next-auth";
-import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import DocMenu from "./components/DocMenu";
 import Editor from "./components/Editor";
 import FloatingMenu from "./components/floating/FloatingMenu";
@@ -16,24 +13,15 @@ import { Room } from "./Room";
 import { LiveMap, LiveObject } from "@liveblocks/client";
 import { useMutation, useStorage } from "@liveblocks/react";
 import NewSnapshotDialog from "./components/dialog/NewSnapshotDialog";
+import { useScrollPosition } from "../components/hooks/useScrollPosition";
+import BackButton from "./components/floating/BackButton";
+import DocPill from "./components/DocPill";
+import FloatingEditorView from "./[snapshot]/FloatingEditorView";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
 
-  const [scrollPosition, setScrollPosition] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollPosition(window.scrollY);
-    };
-
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
+  const scrollPosition = useScrollPosition();
   return (
     <>
       <Room doc_name={params.doc} session={session}>
@@ -89,6 +77,8 @@ function EditingInterface({ doc }: { doc: string }) {
     setNewSnapshotDialog(false);
   }
 
+  const searchParams = useSearchParams();
+
   return (
     <>
       <SnapshotsSidebar open={open} />
@@ -96,16 +86,25 @@ function EditingInterface({ doc }: { doc: string }) {
         <div className="max-w-3xl mx-auto py-16 space-y-4">
           <div className="space-y-4 px-2">
             <div className="flex items-center justify-between">
-              <DocPill mini={false} />
+              <DocPill />
               <DocMenu showText={true} />
             </div>
             <p className="font-semibold text-zinc-500 text-sm">
               Last updated 2 days ago by Greg Heffley
             </p>
           </div>
-          <Editor title={title ?? ""} setTitle={setTitle} open={open} />
+          <Editor
+            title={title ?? ""}
+            setTitle={setTitle}
+            open={open}
+            field="maindoc"
+          />
         </div>
       </div>
+      {/* TODO: maybe we have a preview back and forth? */}
+      {/* {searchParams.get("from") ? (
+        <FloatingEditorView field={searchParams.get("from") ?? "null"} />
+      ) : null} */}
       <NewSnapshotDialog
         isOpen={newSnapshotDialog}
         close={close}
@@ -113,38 +112,4 @@ function EditingInterface({ doc }: { doc: string }) {
       />
     </>
   );
-}
-
-function BackButton() {
-  return (
-    <Link
-      href="/home"
-      className="fixed cursor-pointer hover:text-zinc-400 top-4 left-4 z-50 flex items-center justify-start text-sm gap-1 text-zinc-600"
-    >
-      <ChevronLeftIcon className="size-6 shrink-0" />
-      <p className="font-medium text-sm">Back</p>
-    </Link>
-  );
-}
-
-function DocPill({ mini }: { mini: boolean }) {
-  if (mini) {
-    return (
-      <div className="relative font-semibold text-sm p-2 py-1 rounded-lg bg-amber-300 inline-flex items-center justify-center text-black">
-        Main
-      </div>
-    );
-  } else {
-    return (
-      <div>
-        <div className="relative font-semibold text-sm px-2 py-1 rounded-lg bg-blue-500 inline-block text-white z-20">
-          # Threadasjdkashdsakjhsadkjhdask
-        </div>
-        <div className="relative hover:opacity-75 cursor-pointer font-semibold text-sm pl-6 pr-2 py-1 gap-1.5 rounded-r-lg bg-amber-300 inline-flex items-center justify-center text-black -translate-x-14.5 hover:-translate-x-4 transition-transform duration-200">
-          Main
-          <ArrowRightIcon className="size-4 shrink-0 text-black " />
-        </div>
-      </div>
-    );
-  }
 }
