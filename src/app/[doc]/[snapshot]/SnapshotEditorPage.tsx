@@ -3,8 +3,6 @@
 import { Session } from "next-auth";
 import { useParams } from "next/navigation";
 import { Room } from "../Room";
-import { SnapShotEditor } from "./SnapShotEditor";
-import { useEffect, useState } from "react";
 import { useScrollPosition } from "@/app/components/hooks/useScrollPosition";
 import BackButton from "../components/floating/BackButton";
 import FloatingNavbar from "../components/floating/FloatingNavbar";
@@ -17,29 +15,30 @@ import Editor from "../components/Editor";
 
 export default function SnapshotEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string; snapshot: string }>();
-
   const scrollPosition = useScrollPosition();
 
   return (
     <>
       <Room doc_name={params.doc} session={session}>
-        {/* <SnapShotEditor
-          doc={params.doc}
-          snapshotEntry={{
-            isInitialized: false,
-            snapshotId: params.snapshot,
-          }}
-        /> */}
         <BackButton />
-        <EditingInterface doc={params.doc} />
+        <EditingInterface params={params} />
         <FloatingMenu />
-        <FloatingNavbar scrollPosition={scrollPosition} />
+        <FloatingNavbar
+          scrollPosition={scrollPosition}
+          snapshot={params.snapshot}
+        />
       </Room>
     </>
   );
 }
 
-function EditingInterface({ doc }: { doc: string }) {
+function EditingInterface({
+  params,
+}: {
+  params: { doc: string; snapshot: string };
+}) {
+  const snapshot = useStorage((root) => root.snapshots.get(params.snapshot));
+
   const title = useStorage((root) => root.docTitle);
   const setTitle = useMutation(({ storage }, newTitle) => {
     storage.set("docTitle", newTitle);
@@ -52,7 +51,7 @@ function EditingInterface({ doc }: { doc: string }) {
         <div className="max-w-3xl mx-auto py-16 space-y-4">
           <div className="space-y-4 px-2">
             <div className="flex items-center justify-between">
-              <DocPill mini={false} />
+              <DocPill snapshotTitle={snapshot?.snapshotTitle} />
               <DocMenu showText={true} />
             </div>
             <p className="font-semibold text-zinc-500 text-sm">
@@ -63,7 +62,7 @@ function EditingInterface({ doc }: { doc: string }) {
             title={title ?? ""}
             setTitle={setTitle}
             open={open}
-            field={doc}
+            field={params.doc}
           />
         </div>
       </div>
