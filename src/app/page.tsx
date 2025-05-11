@@ -61,7 +61,7 @@ export default async function Home() {
             </div>
 
             <button
-              className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm cursor-pointer"
               type="submit"
             >
               Sign In

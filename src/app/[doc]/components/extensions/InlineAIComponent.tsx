@@ -71,7 +71,8 @@ export default (props: any) => {
 
     // if there are no conversations with the given envId, then no conversation is pending
     return (
-      snapshots.get(params.snapshot)?.conversations.get(envId)?.isPending ?? false
+      snapshots.get(params.snapshot)?.conversations.get(envId)?.isPending ??
+      false
     );
   };
 
@@ -80,7 +81,9 @@ export default (props: any) => {
       return;
     }
 
-    const conversations = snapshots.get(params.snapshot)?.conversations.get(envId);
+    const conversations = snapshots
+      .get(params.snapshot)
+      ?.conversations.get(envId);
 
     return conversations;
   };
@@ -107,7 +110,12 @@ export default (props: any) => {
       // add an entry for this upcoming exchange to the storage
       addExchange(envId, promptText);
 
-      const response = await prompt(params.doc, params.snapshot, envId, promptText);
+      const response = await prompt(
+        params.doc,
+        params.snapshot,
+        envId,
+        promptText
+      );
       endExchange(envId);
 
       if (response.status === "error") {
@@ -153,7 +161,7 @@ export default (props: any) => {
           />
           <button
             onClick={promptLLMHandler}
-            className="bg-blue-500 text-white px-4 py-1.5 rounded-lg hover:bg-blue-600 transition"
+            className="bg-blue-600 text-white px-4 py-1.5 rounded-lg hover:bg-blue-600 transition"
             disabled={loading}
           >
             {loading ? "Generating..." : "Generate"}

@@ -2,13 +2,15 @@
 import { Transition, TransitionChild } from "@headlessui/react";
 import { ChevronRightIcon } from "@heroicons/react/16/solid";
 import { useStorage } from "@liveblocks/react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
   CurrentSnapshotListItem,
   MainListItem,
+  MainListItemLink,
   SnapshotListItem,
 } from "./SnapshotListItem";
+import Link from "next/link";
 
 export default function SnapshotsSidebar({ open }: { open: () => void }) {
   const [showSidebar, setShowSidebar] = useState(false);
@@ -18,6 +20,8 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
 
   const handleMouseEnter = () => setShowSidebar(true);
   const handleMouseLeave = () => setShowSidebar(false);
+
+  const searchParams = useSearchParams();
 
   return (
     <>
@@ -46,14 +50,10 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
             onMouseLeave={handleMouseLeave}
           >
             <div className="h-[calc(100vh)] space-y-0  w-full bg-white shadow-2xl border-r border-zinc-200 overflow-auto">
-              <div className="sticky top-0 bg-white z-10 pt-16 border-b border-zinc-200 p-4 space-y-4">
-                <h2 className="font-semibold text-2xl">Document</h2>
-                {params.snapshot !== undefined && ( // only render current thread if youre actually viewing a thread
-                  <div className="space-y-2">
-                    <h3 className="font-medium text-zinc-700 font-sans text-sm">
-                      This view
-                    </h3>
-                    <div className="flex items-center justify-between gap-2">
+              <div className="sticky top-0 bg-white z-10 pt-16 border-b border-zinc-200">
+                <div>
+                  <div className="space-y-2 px-2 pb-2 border-b border-zinc-200">
+                    {params.snapshot !== undefined ? ( // only render current thread if youre actually viewing a thread
                       <CurrentSnapshotListItem
                         id={params.snapshot}
                         title={
@@ -61,14 +61,24 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
                           "Untitled"
                         }
                       />
-                    </div>
+                    ) : (
+                      <MainListItem />
+                    )}
+                    <h2 className="font-semibold text-2xl">
+                      {params.snapshot === undefined ? (
+                        "Document"
+                      ) : snapshots?.get(params.snapshot) ? (
+                        snapshots.get(params.snapshot)?.snapshotTitle
+                      ) : (
+                        <div className="h-8 bg-zinc-200 rounded-lg w-1/2 animate-pulse" />
+                      )}
+                    </h2>
                   </div>
-                )}
-                <hr className="border-zinc-200 w-full" />
-                <MainListItem />
-                <div className="flex items-center justify-between">
+                  {params.snapshot !== undefined ? <MainListItemLink /> : null}
+                </div>
+                <div className="flex items-center justify-between p-2">
                   <h3 className="font-semibold text-lg">
-                    {snapshots?.size ?? 0} Snapshot{snapshots?.size ? "" : "s"}
+                    {snapshots?.size === 0 ? "No snapshots" : "Snapshots"}
                   </h3>
 
                   {params.snapshot === undefined ? (
@@ -77,7 +87,7 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
                         open();
                         setShowSidebar(false);
                       }}
-                      className="text-xs bg-white font-medium text-zinc-700 hover:opacity-75 transition-opacity border border-zinc-200 rounded-lg px-2 py-1 cursor-pointer"
+                      className="text-xs bg-white font-semibold text-zinc-700 hover:opacity-75 transition-opacity border border-zinc-200 rounded-lg px-2 py-1 cursor-pointer"
                     >
                       Create
                     </button>
@@ -86,17 +96,32 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
               </div>
               <ul className="divide-y divide-zinc-200">
                 {snapshots
-                  ?.entries()
-                  .toArray()
-                  .map(([id, snapshotInfo]) => {
-                    return (
-                      <SnapshotListItem
-                        id={id}
-                        snapshotInfo={snapshotInfo}
-                        key={id}
-                      />
-                    );
-                  })}
+                  ? snapshots
+                      .entries()
+                      .toArray()
+                      .map(([id, snapshotInfo]) => {
+                        return (
+                          <SnapshotListItem
+                            id={id}
+                            snapshotInfo={snapshotInfo}
+                            key={id}
+                            isActive={params.snapshot === id}
+                          />
+                        );
+                      })
+                  : Array.from({ length: 7 }, (_, i) => (
+                      <li
+                        key={i}
+                        className="border-b border-zinc-200 cursor-pointer flex items-center justify-between w-full p-2 animate-pulse"
+                      >
+                        <div className="relative h-3 rounded-sm bg-zinc-200 w-1/2" />
+                        <div className="flex items-center justify-end gap-1">
+                          <div className="text-zinc-400">
+                            <ChevronRightIcon className="size-5 shrink-0" />
+                          </div>
+                        </div>
+                      </li>
+                    ))}
               </ul>
             </div>
           </div>

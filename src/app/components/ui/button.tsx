@@ -15,7 +15,7 @@ const sizeClasses = {
 
 const variantClasses = {
   default:
-    "bg-blue-500 text-white shadow hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1",
+    "bg-blue-600 text-white shadow hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1",
   destructive:
     "bg-red-600 text-white shadow hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-1",
   outline:
