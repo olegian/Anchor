@@ -3,6 +3,7 @@
 import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { liveblocks } from "./liveblocks";
+import { LiveList } from "@liveblocks/client";
 
 const LB_DELETE_COMMENT_URL =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
@@ -258,6 +259,23 @@ export async function invokeAllPrompts(
     console.error("Error in invokeAllPrompts:", error);
     return [];
   }
+}
+
+export async function deleteSnapshot(roomId: string, snapshotId: string) {
+  if (!snapshotId || snapshotId === "maindoc") { // just in case cause that would be catastrophic
+    return;
+  }
+
+  return await withProsemirrorDocument(
+    {
+      roomId: roomId,
+      field: snapshotId,
+      client: liveblocks,
+    },
+    (api) => {
+      
+    }
+  );
 }
 
 export async function createDoc(tempDocTitle: string) {

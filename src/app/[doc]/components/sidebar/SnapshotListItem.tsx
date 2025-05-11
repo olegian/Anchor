@@ -65,7 +65,6 @@ export function SnapshotListItem({
   snapshotInfo: any; // cheating on this type, as this is a long definition of a readonly copy of the SnapshotEntry type described in the liveblocks config
 }) {
   const params = useParams<{ doc: string; snapshot: string }>();
-  const [myPresence, updateMyPresence] = useMyPresence();
   const usersOnSnapshot = useOthers((others) =>
     others
       .filter((other) => {
@@ -73,17 +72,6 @@ export function SnapshotListItem({
       })
       .map((other) => other.presence.name)
   );
-
-  const deleteSnapshot = useMutation(({ storage }) => {
-    if (usersOnSnapshot.length !== 0 || myPresence.currentSnapshot === id) {
-      // TODO: report unable to delete snapshot with a user currently on the snapshot?
-      return;
-    }
-    // delete snapshot entry in storage
-    storage.get("snapshots").delete(id);
-
-    // TODO: delete YJS doc from room
-  }, []);
 
   const handleNavigate = () => {
     redirect(`/${params.doc}/${id}`);

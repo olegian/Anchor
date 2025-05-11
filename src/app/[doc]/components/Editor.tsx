@@ -37,7 +37,6 @@ export default function Editor({
 }) {
   const liveblocks = useLiveblocksExtension({ field });
   const params = useParams<{ doc: string; snapshot?: string }>();
-  const [myPresence, updateMyPresence] = useMyPresence();
   const snapshots = useStorage((root) => root.snapshots);
   const setCreatedSnapshot = useMutation(({ storage }, editor) => {
     getContents(params.doc, "maindoc")
@@ -84,11 +83,6 @@ export default function Editor({
       }
     }
   }, [snapshots]);
-
-  useEffect(() => {
-    // register user presence correctly
-    updateMyPresence({ currentSnapshot: field === "maindoc" ? null : field });
-  }, []);
 
   const { threads } = useThreads();
 
