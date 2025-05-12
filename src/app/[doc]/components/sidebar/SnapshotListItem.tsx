@@ -30,7 +30,9 @@ export function MainListItemLink() {
 
 export function MainListItem() {
   const usersOnMain = useOthers((others) =>
-    others.map((other) => other.presence.name)
+    others
+      .filter((other) => other.presence.currentSnapshot === null)
+      .map((other) => other.presence.name)
   );
 
   return (
