@@ -1,6 +1,10 @@
 import { deleteSnapshotDoc } from "@/app/actions";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { ChevronDownIcon, TrashIcon, ArrowUpOnSquareIcon } from "@heroicons/react/16/solid";
+import {
+  ChevronDownIcon,
+  TrashIcon,
+  ArrowUpOnSquareIcon,
+} from "@heroicons/react/16/solid";
 import { useMutation, useMyPresence, useOthers } from "@liveblocks/react";
 import { redirect, useParams } from "next/navigation";
 
@@ -16,7 +20,11 @@ export default function DocMenu({ showText = false }: { showText?: boolean }) {
   );
 
   const deleteSnapshot = useMutation(({ storage, others }) => {
-    if (others.filter((other) => other.presence.currentSnapshot === params.snapshot).length !== 0) {
+    if (
+      others.filter(
+        (other) => other.presence.currentSnapshot === params.snapshot
+      ).length !== 0
+    ) {
       // TODO: report unable to delete snapshot with a user currently on the snapshot?
       console.log("blocked");
       return;
@@ -24,17 +32,19 @@ export default function DocMenu({ showText = false }: { showText?: boolean }) {
 
     // TODO: maybe add some loading animation if this deletion takes a while
     // TODO: This call currenty does nothing, and auto resolves. Go to the function to see why.
-    deleteSnapshotDoc(params.doc, params.snapshot).then(() => {
+    deleteSnapshotDoc(params.doc, params.snapshot)
+      .then(() => {
         // delete snapshot entry in live storage
         storage.get("snapshots").delete(params.snapshot);
-    }).catch((e) => {
+      })
+      .catch((e) => {
         // TODO: report unable to delete snapshot
         // im honestly not sure if this will ever fail, unless the doc
         // has already been deleted, in which case I'm not sure how
         // someone would even be viewing this page. Nonetheless, something
         // defenseive here would be a good idea.
-        console.log(e)
-    });
+        console.log(e);
+      });
 
     redirect(`/${params.doc}`);
   }, []);
@@ -62,7 +72,7 @@ export default function DocMenu({ showText = false }: { showText?: boolean }) {
           </button>
         </MenuItem>
 
-        {!!params.snapshot && (
+        {params.snapshot ? (
           <>
             <div className="my-1 h-px bg-zinc-200" />
             <MenuItem>
@@ -75,7 +85,7 @@ export default function DocMenu({ showText = false }: { showText?: boolean }) {
               </button>
             </MenuItem>
           </>
-        )}
+        ) : null}
       </MenuItems>
     </Menu>
   );
