@@ -7,12 +7,13 @@ import { useScrollPosition } from "@/app/components/hooks/useScrollPosition";
 import BackButton from "../components/floating/BackButton";
 import FloatingNavbar from "../components/floating/FloatingNavbar";
 import FloatingMenu from "../components/floating/FloatingMenu";
-import { useMutation, useStorage } from "@liveblocks/react";
+import { useMutation, useMyPresence, useStorage } from "@liveblocks/react";
 import SnapshotsSidebar from "../components/sidebar/SnapshotsSidebar";
 import DocPill from "../components/DocPill";
 import DocMenu from "../components/DocMenu";
 import Editor from "../components/Editor";
 import FloatingEditorView from "./FloatingEditorView";
+import { useEffect } from "react";
 
 export default function SnapshotEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string; snapshot: string }>();
@@ -24,25 +25,22 @@ export default function SnapshotEditorPage({ session }: { session: Session }) {
         <BackButton />
         <EditingInterface params={params} />
         <FloatingMenu />
-        <FloatingNavbar
-          scrollPosition={scrollPosition}
-          snapshot={params.snapshot}
-        />
+        <FloatingNavbar scrollPosition={scrollPosition} snapshot={params.snapshot} />
       </Room>
     </>
   );
 }
 
-function EditingInterface({
-  params,
-}: {
-  params: { doc: string; snapshot: string };
-}) {
+function EditingInterface({ params }: { params: { doc: string; snapshot: string } }) {
   const snapshot = useStorage((root) => root.snapshots.get(params.snapshot));
-
   const title = useStorage((root) => root.docTitle);
+  const [myPresence, updateMyPresence] = useMyPresence();
   const setTitle = useMutation(({ storage }, newTitle) => {
     storage.set("docTitle", newTitle);
+  }, []);
+
+  useEffect(() => {
+    updateMyPresence({ currentSnapshot: params.snapshot });
   }, []);
 
   return (

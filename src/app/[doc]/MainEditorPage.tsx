@@ -2,7 +2,7 @@
 
 import { Session } from "next-auth";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DocMenu from "./components/DocMenu";
 import Editor from "./components/Editor";
 import FloatingMenu from "./components/floating/FloatingMenu";
@@ -11,7 +11,7 @@ import SnapshotsSidebar from "./components/sidebar/SnapshotsSidebar";
 import { Room } from "./Room";
 
 import { LiveMap, LiveObject } from "@liveblocks/client";
-import { useMutation, useStorage } from "@liveblocks/react";
+import { useMutation, useMyPresence, useStorage } from "@liveblocks/react";
 import NewSnapshotDialog from "./components/dialog/NewSnapshotDialog";
 import { useScrollPosition } from "../components/hooks/useScrollPosition";
 import BackButton from "./components/floating/BackButton";
@@ -37,12 +37,12 @@ export default function MainEditorPage({ session }: { session: Session }) {
 function EditingInterface({ doc }: { doc: string }) {
   const router = useRouter();
   const [newSnapshotDialog, setNewSnapshotDialog] = useState(false);
+  const [myPresence, updateMyPresence] = useMyPresence();
 
   const title = useStorage((root) => root.docTitle);
   const setTitle = useMutation(({ storage }, newTitle) => {
     storage.set("docTitle", newTitle);
   }, []);
-
   const addSnapshot = useMutation(
     ({ storage }, newSnapshotId: string, title: string) => {
       const snapshots = storage.get("snapshots");
@@ -57,6 +57,11 @@ function EditingInterface({ doc }: { doc: string }) {
     },
     []
   );
+
+  useEffect(() => {
+    console.log("A ", myPresence)
+    updateMyPresence({currentSnapshot: null})
+  }, [])
 
   const handleCreateSnapshot = (title: string) => {
     const newSnapshotId = crypto.randomUUID();

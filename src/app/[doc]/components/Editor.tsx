@@ -94,11 +94,6 @@ export default function Editor({
     }
   }, [snapshots]);
 
-  useEffect(() => {
-    // register user presence correctly
-    updateMyPresence({ currentSnapshot: field === "maindoc" ? null : field });
-  }, []);
-
   const { threads } = useThreads();
 
   useEffect(() => {
