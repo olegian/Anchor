@@ -42,6 +42,8 @@ export default function HandleInput({
     storage.get("docHandles").delete(handleId); // this is all the state cleanup we should need to do!
   }, [])
 
+  // if you want a default name to be set when the handle is created, do that in the createHandleHandler
+  // otherwise, its currently an empty string
   const setHandleName = useMutation(({ storage }, newName) => {
     storage.get("docHandles").get(handleId)?.set("handleName", newName);
   }, []);
