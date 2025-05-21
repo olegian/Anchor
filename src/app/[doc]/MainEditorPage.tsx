@@ -10,13 +10,15 @@ import FloatingNavbar from "./components/floating/FloatingNavbar";
 import SnapshotsSidebar from "./components/sidebar/SnapshotsSidebar";
 import { Room } from "./Room";
 
-import { LiveMap, LiveObject } from "@liveblocks/client";
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 import { useMutation, useMyPresence, useStorage } from "@liveblocks/react";
 import NewSnapshotDialog from "./components/dialog/NewSnapshotDialog";
 import { useScrollPosition } from "../components/hooks/useScrollPosition";
 import BackButton from "./components/floating/BackButton";
 import DocPill from "./components/DocPill";
 import FloatingEditorView from "./[snapshot]/FloatingEditorView";
+import HandleInput from "./components/dialog/HandleInput";
+import { Conversation } from "../../../liveblocks.config";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
@@ -24,7 +26,7 @@ export default function MainEditorPage({ session }: { session: Session }) {
   const scrollPosition = useScrollPosition();
   return (
     <>
-      <Room doc_name={params.doc} session={session}>
+      <Room docId={params.doc} session={session}>
         <BackButton />
         <EditingInterface doc={params.doc} />
         <FloatingMenu />
@@ -40,47 +42,39 @@ function EditingInterface({ doc }: { doc: string }) {
   const [myPresence, updateMyPresence] = useMyPresence();
 
   const title = useStorage((root) => root.docTitle);
+  const handles = useStorage((root) => root.docHandles);
+
   const setTitle = useMutation(({ storage }, newTitle) => {
     storage.set("docTitle", newTitle);
   }, []);
-  const addSnapshot = useMutation(
-    ({ storage }, newSnapshotId: string, title: string) => {
-      const snapshots = storage.get("snapshots");
-      snapshots.set(
-        newSnapshotId,
+
+  const addHandle = useMutation(
+    ({ storage }, newHandleId: string, x: number, y: number) => {
+      const handles = storage.get("docHandles");
+      handles.set(
+        newHandleId,
         new LiveObject({
-          isInitialized: false,
-          snapshotTitle: title,
-          conversations: new LiveMap(),
+          isPending: false,
+          exchanges: new LiveList([  // initialize first prompt structure
+            new LiveObject({ prompt: "", response: "" }),
+          ]),
+          handleName: "",
+          x: x,
+          y: y,
         })
       );
     },
     []
   );
 
-  useEffect(() => {
-    console.log("A ", myPresence)
-    updateMyPresence({currentSnapshot: null})
-  }, [])
+  // funny ass name!
+  const createHandleHandler = () => {
+    const x = 0; // TODO: set these values to be wherever we want to hook the new handle to
+    const y = 0;
+    const newHandleId = crypto.randomUUID();
 
-  const handleCreateSnapshot = (title: string) => {
-    const newSnapshotId = crypto.randomUUID();
-
-    // note this just populates storage, it does not redirect the user
-    // or populate the snapshot contents yet. populating the contents
-    // can happen when the snapshot is loaded, as it requires a handle
-    // to the snapshot editor.
-    addSnapshot(newSnapshotId, title);
-    router.push(`/${doc}/${newSnapshotId}`);
+    addHandle(newHandleId, x, y);
   };
-
-  function open() {
-    setNewSnapshotDialog(true);
-  }
-
-  function close() {
-    setNewSnapshotDialog(false);
-  }
 
   return (
     <>
@@ -117,8 +111,13 @@ function EditingInterface({ doc }: { doc: string }) {
       <NewSnapshotDialog
         isOpen={newSnapshotDialog}
         close={close}
-        handleCreateSnapshot={handleCreateSnapshot}
+        handleCreateSnapshot={createHandleHandler}
       />
+
+      {/* TODO: style and attach handlers inside this component */}
+      {handles?.keys().map((handleId: string) => {
+        return <HandleInput docId={doc} handleId={handleId} />;
+      })}
     </>
   );
 }

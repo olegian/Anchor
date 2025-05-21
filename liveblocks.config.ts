@@ -6,19 +6,18 @@ import {
     LiveObject
 } from "@liveblocks/client";
 
-type Conversations = LiveMap<
-  string, // envId
-  LiveObject<{
-    isPending: boolean;
-    exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>;
-  }>
->;
-
-export type SnapshotEntry = LiveObject<{
-  isInitialized: boolean;
-  snapshotTitle: string;
-  conversations: Conversations;
+export type Conversation = LiveObject<{
+    isPending: boolean;  // whether there is a request that is currently outstanding
+    exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>; // in order
+    handleName: string;  // optional name for the handle
+    x: number; // on screen x-position
+    y: number; // on screen y-position
 }>;
+
+export type Handles = LiveMap<
+  string, // handleId
+  Conversation
+>;
 
 // https://liveblocks.io/docs/api-reference/liveblocks-react#Typing-your-data
 declare global {
@@ -27,7 +26,7 @@ declare global {
     Presence: {
       // Example, real-time cursor coordinates
       // cursor: { x: number; y: number };
-      currentSnapshot: string | null;
+      currentHandle: string | null;  // in case we want to track who has what handle open
       name: string;
     };
 
@@ -35,7 +34,8 @@ declare global {
     Storage: {
       // Example, a conflict-free list
       // animals: LiveList<string>;
-      snapshots: LiveMap<string, SnapshotEntry>; // snapshotId -> snapshot information
+
+      docHandles: Handles; // snapshotId -> snapshot information
       docTitle: string;
     };
 
