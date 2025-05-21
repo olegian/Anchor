@@ -55,7 +55,8 @@ function EditingInterface({ doc }: { doc: string }) {
         newHandleId,
         new LiveObject({
           isPending: false,
-          exchanges: new LiveList([  // initialize first prompt structure
+          exchanges: new LiveList([
+            // initialize first prompt structure
             new LiveObject({ prompt: "", response: "" }),
           ]),
           handleName: "",
@@ -75,6 +76,14 @@ function EditingInterface({ doc }: { doc: string }) {
 
     addHandle(newHandleId, x, y);
   };
+
+  function open() {
+    setNewSnapshotDialog(true);
+  }
+
+  function close() {
+    setNewSnapshotDialog(false);
+  }
 
   return (
     <>
