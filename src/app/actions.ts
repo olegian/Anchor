@@ -65,23 +65,8 @@ export async function prompt(
   env?: string
 ): Promise<PromptResponse> {
   try {
-    // acquire lock to shut away concurrent prompts (kinda, not sure if this is transactional,
-    // so i have no clue if this does anything, but for now it won't hurt)
-    let error = false;
-    await liveblocks.mutateStorage(docId, ({ root }) => {
-      const handleInfo = root.get("docHandles").get(handleId);
-      if (handleInfo?.get("isPending")) {
-        error = true;
-      } else {
-        handleInfo?.set("isPending", true);
-      }
-    });
-
-    if (error) {
-      throw new Error(
-        "Already have a pending prompt sent out within this handle"
-      );
-    }
+    // lock should have been acquired client side, to stop other clients from sending request
+    // TODO: oleg - do the user id association to isPending described in HandleInput.tsx, then update this a little 
 
     // Get document contents to use as context
     // !!! TODO: This call no longer returns just a string, but a JSON string representation of the entire doc contents
@@ -187,11 +172,12 @@ export async function prompt(
       const handleInfo = root.get("docHandles").get(handleId);
       const exchanges = handleInfo?.get("exchanges");
 
-      // this line implies that exchanges does not change after you hit submit, 
+      // this line implies that the exchange object does not change after you hit submit, 
       // and therefore you should only append to the exchanges list AFTER the client receives the
       // response from this prompt request
       exchanges?.get(exchanges.length - 1)?.set("response", response)
-      handleInfo?.set("isPending", false);
+
+      // handleInfo?.set("isPending", false);  // oleg: leave this commented out for now, client side should handle it
     });
 
     return {

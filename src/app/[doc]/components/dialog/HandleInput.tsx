@@ -2,6 +2,7 @@
 import { prompt } from "@/app/actions";
 import { LiveObject } from "@liveblocks/client";
 import { useMutation, useStorage } from "@liveblocks/react";
+import { Session } from "next-auth";
 
 export default function HandleInput({
   docId,
@@ -55,6 +56,9 @@ export default function HandleInput({
     handleInfo?.set("y", y);
   }, []);
 
+  // lock out other users from making requests
+  // TODO: change this so that userid is also stored, so that the server can vett that 
+  // only the user that acquired locked can actually make the request.
   const setPending = useMutation(({ storage }, isPending) => {
     const handleInfo = storage.get("docHandles").get(handleId);
 
@@ -71,7 +75,7 @@ export default function HandleInput({
       return true;
     } else {
       // trying to release lock, just do it unconditionally.
-      // i've written this comment a bunch, this is also not that cool to do but eh
+      // i've written this comment a bunch -- this is not that cool to do from a concurrency standpoint but eh
 
       handleInfo?.set("isPending", false);
       return true;
@@ -87,6 +91,7 @@ export default function HandleInput({
 
   const onPromptSubmit = () => {
     // TODO: lock out user from making input to the prompt box (btw, this might be easier to do just with isPending in storage)
+    // as in dont allow people to type in the chat box if the llm is currently trying to respond
 
     if (!setPending(true)) {
       // TODO: report that there is already a prompt pending
