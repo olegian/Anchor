@@ -128,6 +128,10 @@ export default function Editor({
         <SkeletonEditor loaded={loaded} />
         <article
           className={`${
+            draggingAnchor
+              ? "pointer-events-none select-none"
+              : "pointer-events-auto"
+          } ${
             loaded ? "" : "hidden"
           } prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg`}
         >
@@ -139,7 +143,6 @@ export default function Editor({
       <InteractionLayer
         anchorHandles={anchorHandles}
         setAnchorHandles={setAnchorHandles}
-        editor={editor}
         draggingAnchor={draggingAnchor}
         setDraggingAnchor={setDraggingAnchor}
       />
@@ -226,6 +229,7 @@ function AnchorHandle({
     let animationFrame: number | null = null;
 
     const smoothMove = (targetX: number, targetY: number) => {
+      setDraggingAnchor(true);
       setAnchorHandles((prev) => {
         const next = new Map(prev);
         const current = next.get(id) || { x: targetX, y: targetY };
@@ -236,6 +240,7 @@ function AnchorHandle({
         next.set(id, { x: newX, y: newY });
         return next;
       });
+      setDraggingAnchor(false);
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -248,10 +253,10 @@ function AnchorHandle({
       const paragraphs = overlayContainer.querySelectorAll("p");
       if (!paragraphs) return;
 
-      let found = false;
       let targetX = e.clientX;
       let targetY = e.clientY;
 
+      let found = false;
       for (let i = 0; i < paragraphs.length; i++) {
         const paragraph = paragraphs[i];
         const spans = paragraph.getElementsByTagName("span");
@@ -270,11 +275,27 @@ function AnchorHandle({
 
             // Highlight the span
             span.className =
-              "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colorsa";
+              "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colors";
             found = true;
           } else {
             span.className = "transition-colors";
           }
+        }
+
+        // if to the left of the paragraph, highlight the left side
+        const paraRect = paragraph.getBoundingClientRect();
+        if (
+          !found &&
+          e.clientX < paraRect.left &&
+          e.clientX > paraRect.left - 120 &&
+          e.clientY > paraRect.top &&
+          e.clientY < paraRect.bottom
+        ) {
+          // Highlight the left side
+          paragraph.className =
+            "border-l-4 border-zinc-300 -ml-2 transition-colors";
+          targetX = paraRect.left - 20;
+          targetY = paraRect.top + paraRect.height / 2 - 10;
         }
       }
 
@@ -283,10 +304,9 @@ function AnchorHandle({
       const animate = () => {
         smoothMove(targetX, targetY);
         animationFrame = requestAnimationFrame(animate);
+        setDraggingAnchor(false);
       };
       animate();
-
-      setDraggingAnchor(false);
     };
 
     const onMouseUp = () => {
@@ -330,7 +350,14 @@ function AnchorHandle({
     >
       <div className="flex flex-col items-center justify-center group relative space-y-1.5">
         <div className="select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 font-medium transform text-[8px] px-1.5 py-0.5 border border-zinc-200 bg-white shadow-sm origin-center rounded-md text-zinc-500 transition-all duration-200 ease-in-out">
-          Anchor
+          {/* ({x}, {y}) */}
+          {x > 280 && x < 320
+            ? "Paragraph"
+            : x > 50 && x < 280
+            ? "Document"
+            : x < 50
+            ? "Delete?"
+            : "Word"}
         </div>
 
         <div className="flex items-center justify-center border bg-white/50 backdrop-blur-sm origin-center border-zinc-200 opacity-50 rounded-full transition-all duration-200 ease-in-out cursor-pointer group-hover:scale-125 group-hover:opacity-100 size-5">
