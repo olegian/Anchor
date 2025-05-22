@@ -12,7 +12,7 @@ import { XMarkIcon } from "@heroicons/react/16/solid";
 import { redirect } from "next/navigation";
 
 export default function NewDocDialog({
-  tempDocTitle,
+  tempDocTitle,  // TODO: move away from using any title on doc creation
   setTempDocTitle,
   isOpen,
   close,
@@ -27,7 +27,8 @@ export default function NewDocDialog({
     // then call this action and set permissions server side
     // await createDoc(tempDocTitle)
 
-    redirect(`/${tempDocTitle}`);  // auto creates doc on reroute
+    const newDocId = crypto.randomUUID()
+    redirect(`/${newDocId}`);  // auto creates doc on reroute
   };
 
   return (

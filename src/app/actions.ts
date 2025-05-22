@@ -60,109 +60,128 @@ async function getConversation(roomId: string, threadId: string) {
 
 // Function to send a prompt to Gemini and get a response
 export async function prompt(
-  doc_name: string,
-  snapshotId: string,
-  envId: string,
-  userPrompt: string,
+  docId: string,
+  handleId: string,
   env?: string
 ): Promise<PromptResponse> {
   try {
-    console.log(`<PROMPT> ${doc_name}/${snapshotId} => ${userPrompt}`);
+    // lock should have been acquired client side, to stop other clients from sending request
+    // TODO: oleg - do the user id association to isPending described in HandleInput.tsx, then update this a little 
 
     // Get document contents to use as context
-    // needs to be parameterized on the field
     // !!! TODO: This call no longer returns just a string, but a JSON string representation of the entire doc contents
-    const docContents = await getContents(doc_name, snapshotId);
+    // thats good for keeping all the information within the document, but could complicate the below y-coordinate stuff
+    const docContents = await getContents(docId);
+    const docStorage = await liveblocks.getStorageDocument(docId, "json");
+    const handleInfo = docStorage.docHandles[handleId];
+    const { prompt } = handleInfo.exchanges[handleInfo.exchanges.length - 1];
+    const y = handleInfo.y; // TODO: write some way to map this y-position to a index into the docContents
 
-    // Get or initialize conversation history for this snapshot
-    if (!conversationHistory.has(snapshotId)) {
-      conversationHistory.set(snapshotId, []);
-    }
+    // !!! TODO: This all needs to be rewritten, we no longer have snapshots, just the above information
+    // // Get or initialize conversation history for this snapshot
+    // if (!conversationHistory.has(snapshotId)) {
+    //   conversationHistory.set(snapshotId, []);
+    // }
 
-    const history = conversationHistory.get(snapshotId)!;
+    // const history = conversationHistory.get(snapshotId)!;
 
-    // Create context string
-    let contextPrompt = `Document Content:\n${docContents}\n\n`;
+    // // Create context string
+    // let contextPrompt = `Document Content:\n${docContents}\n\n`;
 
-    // Add environment variables if provided
-    if (env) {
-      contextPrompt += `Environment Variables:\n${env}\n\n`;
-    }
+    // // Add environment variables if provided
+    // if (env) {
+    //   contextPrompt += `Environment Variables:\n${env}\n\n`;
+    // }
 
-    // Create the complete prompt
-    const fullPrompt = `${contextPrompt}User Query: ${userPrompt}`;
+    // // Create the complete prompt
+    // const fullPrompt = `${contextPrompt}User Query: ${userPrompt}`;
 
-    // Add user message to history
-    history.push({
-      role: "user",
-      parts: [{ text: fullPrompt }],
-    });
+    // // Add user message to history
+    // history.push({
+    //   role: "user",
+    //   parts: [{ text: fullPrompt }],
+    // });
 
-    // Set up Gemini model
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // // Set up Gemini model
+    // const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // Create a chat session with history
+    // // Create a chat session with history
+    // // const chat = model.startChat({
+    // //   history,
+    // //   generationConfig: {
+    // //     maxOutputTokens: 2048,
+    // //   },
+    // // });
     // const chat = model.startChat({
     //   history,
     //   generationConfig: {
     //     maxOutputTokens: 2048,
     //   },
+    //   // Add system instruction to establish persistent context
+    //   systemInstruction: {
+    //     role: "system",
+    //     parts: [
+    //       {
+    //         text:
+    //           `Here is the current document content:\n${docContents}\n\n` +
+    //           (env ? `Environment variables:\n${env}\n\n` : ""),
+    //       },
+    //     ],
+    //   },
     // });
-    const chat = model.startChat({
-      history,
-      generationConfig: {
-        maxOutputTokens: 2048,
-      },
-      // Add system instruction to establish persistent context
-      systemInstruction: {
-        role: "system",
-        parts: [
-          {
-            text:
-              `Here is the current document content:\n${docContents}\n\n` +
-              (env ? `Environment variables:\n${env}\n\n` : ""),
-          },
-        ],
-      },
-    });
 
-    // Generate response
-    const result = await chat.sendMessage(userPrompt);
-    const response = result.response;
-    const text = response.text();
+    // // Generate response
+    // const result = await chat.sendMessage(userPrompt);
+    // const response = result.response;
+    // const text = response.text();
 
-    // Add response to history
-    history.push({
-      role: "model",
-      parts: [{ text: fullPrompt }],
-    });
+    // // Add response to history
+    // history.push({
+    //   role: "model",
+    //   parts: [{ text: fullPrompt }],
+    // });
 
-    // Update the conversation history
-    conversationHistory.set(snapshotId, history);
+    // // Update the conversation history
+    // conversationHistory.set(snapshotId, history);
 
-    // do we need this?
-    // await postComment(doc_name, snapshotId, `User: ${userPrompt}`);
-    // await postComment(doc_name, snapshotId, `Gemini: ${text}`);
+    // // do we need this?
+    // // await postComment(doc_name, snapshotId, `User: ${userPrompt}`);
+    // // await postComment(doc_name, snapshotId, `Gemini: ${text}`);
 
-    await liveblocks.mutateStorage(doc_name, ({ root }) => {
-      const envExchanges = root
-        .get("snapshots")
-        .get(snapshotId)
-        ?.get("conversations")
-        .get(envId)
-        ?.get("exchanges");
-      const exchange = envExchanges?.find((exchange) => {
-        return exchange.get("prompt") === userPrompt;
-      }); // this is kind of an inefficient way of finding the associate prompt, it really should be a map but cest la vie for now
-      if (exchange === undefined) {
-        throw new Error("Unable to find prompt that resulted in response");
-      }
+    // await liveblocks.mutateStorage(doc_name, ({ root }) => {
+    //   const envExchanges = root
+    //     .get("snapshots")
+    //     .get(snapshotId)
+    //     ?.get("conversations")
+    //     .get(envId)
+    //     ?.get("exchanges");
+    //   const exchange = envExchanges?.find((exchange) => {
+    //     return exchange.get("prompt") === userPrompt;
+    //   }); // this is kind of an inefficient way of finding the associate prompt, it really should be a map but cest la vie for now
+    //   if (exchange === undefined) {
+    //     throw new Error("Unable to find prompt that resulted in response");
+    //   }
 
-      exchange.set("response", text);
+    //   exchange.set("response", text);
+    // });
+
+
+    const response = "some sort of LLM response";
+
+    await liveblocks.mutateStorage(docId, ({ root }) => {
+      const handleInfo = root.get("docHandles").get(handleId);
+      const exchanges = handleInfo?.get("exchanges");
+
+      // this line implies that the exchange object does not change after you hit submit, 
+      // and therefore you should only append to the exchanges list AFTER the client receives the
+      // response from this prompt request
+      exchanges?.get(exchanges.length - 1)?.set("response", response)
+
+      // handleInfo?.set("isPending", false);  // oleg: leave this commented out for now, client side should handle it
     });
 
     return {
-      text,
+      text: response,
       status: "success",
     };
   } catch (error) {
@@ -198,11 +217,11 @@ export async function deleteAnnotation(
   return response;
 }
 
-export async function getContents(roomId: string, snapshotId?: string) {
+export async function getContents(roomId: string) {
   return await withProsemirrorDocument(
     {
       roomId: roomId,
-      field: snapshotId ?? "maindoc",
+      field: "maindoc",
       client: liveblocks,
     },
     (api) => {
@@ -222,7 +241,7 @@ export async function invokeAllPrompts(
   env?: string
 ): Promise<string[]> {
   try {
-    const docContents = await getContents(doc_name, snapshotId);
+    const docContents = await getContents(doc_name);
 
     // Match all [[prompt]] blocks with optional following <ai-response>
     const promptRegex =
@@ -245,9 +264,9 @@ export async function invokeAllPrompts(
       const response = await prompt(
         doc_name,
         snapshotId,
-        promptText,
-        envId,
-        env
+        // promptText,
+        // envId,
+        // env
       );
       const annotatedResponse = `[[${promptText}]]\n<ai-response>\n${response.text}\n</ai-response>\n`;
 

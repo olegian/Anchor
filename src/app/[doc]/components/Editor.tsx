@@ -40,24 +40,7 @@ export default function Editor({
   const liveblocks = useLiveblocksExtension({ field });
   const params = useParams<{ doc: string; snapshot?: string }>();
   const [myPresence, updateMyPresence] = useMyPresence();
-
   const [isEditorReady, setEditorReady] = useState(false);
-
-  const snapshots = useStorage((root) => root.snapshots);
-  const setCreatedSnapshot = useMutation(({ storage }, editor) => {
-    getContents(params.doc, "maindoc")
-      .then((contents) => {
-        editor.commands.setContent(JSON.parse(contents));
-
-        const snapshot = storage.get("snapshots").get(field);
-        snapshot?.set("isInitialized", true); // raise flag to avoid re-initialization
-
-        setEditorReady(true);
-      })
-      .catch((error) => {
-        console.error("Error getting contents:", error);
-      });
-  }, []);
 
   const editor = useEditor({
     extensions: [
@@ -84,15 +67,6 @@ export default function Editor({
       }
     }
   }, [editor]);
-
-  useEffect(() => {
-    if (snapshots) {
-      // initialize snapshot if necessary
-      if (field !== "maindoc" && !snapshots.get(field)?.isInitialized) {
-        setCreatedSnapshot(editor);
-      }
-    }
-  }, [snapshots]);
 
   const { threads } = useThreads();
 

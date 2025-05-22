@@ -16,12 +16,11 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
   const [showSidebar, setShowSidebar] = useState(false);
   const params = useParams<{ doc: string; snapshot?: string }>();
 
-  const snapshots = useStorage((root) => root.snapshots);
-
   const handleMouseEnter = () => setShowSidebar(true);
   const handleMouseLeave = () => setShowSidebar(false);
 
   const searchParams = useSearchParams();
+
 
   return (
     <>
@@ -53,7 +52,7 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
               <div className="sticky top-0 bg-white z-10 pt-16 border-b border-zinc-200">
                 <div>
                   <div className="space-y-2 px-2 pb-2 border-b border-zinc-200">
-                    {params.snapshot !== undefined ? ( // only render current thread if youre actually viewing a thread
+                    {/* {params.snapshot !== undefined ? ( // only render current thread if youre actually viewing a thread
                       <CurrentSnapshotListItem
                         id={params.snapshot}
                         title={
@@ -72,13 +71,13 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
                       ) : (
                         <div className="h-8 bg-zinc-200 rounded-lg w-1/2 animate-pulse" />
                       )}
-                    </h2>
+                    </h2> */}
                   </div>
-                  {params.snapshot !== undefined ? <MainListItemLink /> : null}
+                  {/* {params.snapshot !== undefined ? <MainListItemLink /> : null} */}
                 </div>
                 <div className="flex items-center justify-between p-2">
                   <h3 className="font-semibold text-lg">
-                    {snapshots?.size === 0 ? "No snapshots" : "Snapshots"}
+                    {/* {snapshots?.size === 0 ? "No snapshots" : "Snapshots"} */}
                   </h3>
 
                   {params.snapshot === undefined ? (
@@ -95,7 +94,7 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
                 </div>
               </div>
               <ul className="divide-y divide-zinc-200">
-                {snapshots
+                {/* {snapshots
                   ? snapshots
                       .entries()
                       .toArray()
@@ -121,7 +120,7 @@ export default function SnapshotsSidebar({ open }: { open: () => void }) {
                           </div>
                         </div>
                       </li>
-                    ))}
+                    ))} */}
               </ul>
             </div>
           </div>

@@ -14,11 +14,11 @@ const LB_AUTH_ENDPOINT = "/api/auth";
 
 export function Room({
   children,
-  doc_name,
+  docId,
   session,
 }: {
   children: ReactNode;
-  doc_name: string;
+  docId: string;
   session: Session;
 }) {
   const authHandler = async (roomId: string | undefined) => {
@@ -41,16 +41,16 @@ export function Room({
     return await response.json();
   };
 
-  // TODO: increase refresh rate by somehow changing throttle paramater. search through liveblocks docs.
+  // TODO: increase refresh rate by changing throttle parameter on provider. search through liveblocks docs.
   return (
     <LiveblocksProvider authEndpoint={authHandler}>
       <RoomProvider
         initialPresence={{
-          currentSnapshot: null,
+          currentHandle: null,
           name: session.user?.name ?? "",
         }} // ?? should be unnecessary?
-        id={doc_name}
-        initialStorage={{ snapshots: new LiveMap(), docTitle: "New Document" }}
+        id={docId}
+        initialStorage={{ docHandles: new LiveMap(), docTitle: "New Document" }}
       >
         <ClientSideSuspense
           fallback={

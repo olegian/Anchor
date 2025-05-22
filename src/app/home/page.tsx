@@ -92,19 +92,17 @@ function DocGridItem({ room }: { room: any }) {
     fetcher
   );
 
-  const snapshots = data ? Object.keys(data.doc).length - 1 : 0;
-
   return (
     <>
       <Link href={`/${room.id}`}>
         <div className="overflow-hidden hover:scale-95 transition-all cursor-pointer relative rounded-xl border border-zinc-200">
-          {data ? (
+          {/* {data ? (
             snapshots > 0 ? (
               <div className="absolute right-2 top-2 text-right text-xs font-semibold text-white bg-blue-600 rounded-lg px-2 py-1">
                 {snapshots} snapshot{snapshots > 1 ? "s" : ""}
               </div>
             ) : null
-          ) : null}
+          ) : null} */}
           <MiniTextRenderer isLoading={isLoading} data={data} />
           <div className="border-t border-zinc-200 p-4 space-y-1">
             {data ? (
