@@ -30,27 +30,6 @@ import { getContents } from "@/app/actions";
 import { useParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
 
-function wrapWordsInSpans(editor: EditorType) {
-  const words = editor.getText().split(/\s+/);
-  editor.commands.clearContent();
-
-  words.forEach((word, index) => {
-    editor.commands.insertContent({
-      type: "text",
-      text: word,
-      marks: [
-        {
-          type: "wordSpan",
-        },
-      ],
-    });
-
-    if (index < words.length - 1) {
-      editor.commands.insertContent(" ");
-    }
-  });
-}
-
 export default function Editor({
   title,
   setTitle,
@@ -68,6 +47,7 @@ export default function Editor({
     React.SetStateAction<Map<string, { x: number; y: number }>>
   >;
 }) {
+  const [draggingAnchor, setDraggingAnchor] = useState(false);
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
   const params = useParams<{ doc: string }>();
   const [myPresence, updateMyPresence] = useMyPresence();
@@ -87,6 +67,7 @@ export default function Editor({
       }),
     ],
     immediatelyRender: false,
+    editable: !draggingAnchor,
   });
 
   useEffect(() => {
@@ -159,6 +140,8 @@ export default function Editor({
         anchorHandles={anchorHandles}
         setAnchorHandles={setAnchorHandles}
         editor={editor}
+        draggingAnchor={draggingAnchor}
+        setDraggingAnchor={setDraggingAnchor}
       />
     </>
   );
@@ -167,13 +150,15 @@ export default function Editor({
 function InteractionLayer({
   anchorHandles,
   setAnchorHandles,
-  editor,
+  draggingAnchor,
+  setDraggingAnchor,
 }: {
   anchorHandles: Map<string, { x: number; y: number }>;
   setAnchorHandles: React.Dispatch<
     React.SetStateAction<Map<string, { x: number; y: number }>>
   >;
-  editor: EditorType | null;
+  draggingAnchor: boolean;
+  setDraggingAnchor: (dragging: boolean) => void;
 }) {
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({
     x: 0,
@@ -210,6 +195,7 @@ function InteractionLayer({
             y={y}
             id={handleId}
             setAnchorHandles={setAnchorHandles}
+            setDraggingAnchor={setDraggingAnchor}
           />
         );
       })}
@@ -222,6 +208,7 @@ function AnchorHandle({
   y,
   id,
   setAnchorHandles,
+  setDraggingAnchor,
 }: {
   x: number;
   y: number;
@@ -229,30 +216,41 @@ function AnchorHandle({
   setAnchorHandles: React.Dispatch<
     React.SetStateAction<Map<string, { x: number; y: number }>>
   >;
+  setDraggingAnchor: (dragging: boolean) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const offset = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
-    const onMouseMove = (e: MouseEvent) => {
-      if (!dragging) return;
-      const newX = e.clientX - offset.current.x;
-      const newY = e.clientY - offset.current.y;
+    let animationFrame: number | null = null;
 
+    const smoothMove = (targetX: number, targetY: number) => {
       setAnchorHandles((prev) => {
         const next = new Map(prev);
+        const current = next.get(id) || { x: targetX, y: targetY };
+        // Interpolate towards the target
+        const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+        const newX = lerp(current.x, targetX, 0.2);
+        const newY = lerp(current.y, targetY, 0.2);
         next.set(id, { x: newX, y: newY });
         return next;
       });
+    };
 
-      const centerX = newX;
-      const centerY = newY;
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragging) return;
+
+      setDraggingAnchor(true);
 
       const overlayContainer = document.getElementById("overlay-editor");
       if (!overlayContainer) return;
       const paragraphs = overlayContainer.querySelectorAll("p");
       if (!paragraphs) return;
+
+      let found = false;
+      let targetX = e.clientX;
+      let targetY = e.clientY;
 
       for (let i = 0; i < paragraphs.length; i++) {
         const paragraph = paragraphs[i];
@@ -261,34 +259,50 @@ function AnchorHandle({
           const span = spans[j];
           const rect = span.getBoundingClientRect();
           if (
-            centerX >= rect.left &&
-            centerX <= rect.right &&
-            centerY >= rect.top &&
-            centerY <= rect.bottom
+            e.clientX >= rect.left &&
+            e.clientX <= rect.right &&
+            e.clientY >= rect.top &&
+            e.clientY <= rect.bottom
           ) {
-            console.log(
-              `Over Paragraph: ${i + 1}, Word: ${j + 1} - ${span.textContent}`
-            );
+            // Snap target is the center of the span
+            targetX = rect.left + rect.width / 2;
+            targetY = rect.top + rect.height / 2;
+
+            // Highlight the span
             span.className =
               "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colorsa";
-
-            return;
+            found = true;
           } else {
             span.className = "transition-colors";
           }
         }
       }
+
+      // Animate toward the target position
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+      const animate = () => {
+        smoothMove(targetX, targetY);
+        animationFrame = requestAnimationFrame(animate);
+      };
+      animate();
+
+      setDraggingAnchor(false);
     };
 
-    const onMouseUp = () => setDragging(false);
+    const onMouseUp = () => {
+      setDragging(false);
+      setDraggingAnchor(false);
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
 
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      if (animationFrame) cancelAnimationFrame(animationFrame);
     };
-  }, [dragging]);
+  }, [dragging, id, setAnchorHandles]);
 
   const onMouseDown = (e: React.MouseEvent) => {
     const rect = ref.current?.getBoundingClientRect();
