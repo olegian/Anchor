@@ -85,7 +85,6 @@ export default function Editor({
       Placeholder.configure({
         placeholder: "Type something...",
       }),
-      WordSpan,
     ],
     immediatelyRender: false,
   });
