@@ -121,6 +121,9 @@ export default function HandleInput({
     const x = 0; // probably fetch these from the movement event or from the mouse position
     const y = 0; // or state or wherever you decide to store the position
 
+    // note, most of this logic can also be moved into the dependancy array of setHandlePosition,
+    // the above useMutation takes a second dependancy list parameter, and that can be used to run the mutation
+    // on change of the above x, y values. Read https://liveblocks.io/docs/api-reference/liveblocks-react
     setHandlePosition(x, y);
   };
 
