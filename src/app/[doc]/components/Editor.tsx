@@ -29,7 +29,6 @@ import {
 import { getContents } from "@/app/actions";
 import { useParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
-import { WordSpan } from "./extensions/WordSpanExtension";
 
 function wrapWordsInSpans(editor: EditorType) {
   const words = editor.getText().split(/\s+/);
