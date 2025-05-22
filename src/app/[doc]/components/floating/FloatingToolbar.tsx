@@ -75,21 +75,6 @@ export default function FloatingToolbar({
           active={editor.isActive("codeBlock")}
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
         />
-        <Divider />
-        {/* <TabbarItem
-          text="Comment"
-          children={<ChatBubbleLeftRightIcon className="size-5 shrink-0" />}
-          active={editor.isActive("liveblocksCommentMark")}
-          onClick={() => editor.chain().focus().addPendingComment().run()}
-        /> */}
-        <TabbarItem
-          text="Snapshot"
-          children={<ViewfinderCircleIcon className="size-5 shrink-0" />}
-          active={false}
-          onClick={() => {
-            open();
-          }}
-        />
       </div>
     </div>
   );

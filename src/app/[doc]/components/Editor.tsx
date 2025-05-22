@@ -90,23 +90,6 @@ export default function Editor({
         </article>
       </div>
 
-      <>
-        <FloatingComposer editor={editor} />
-        <AnchoredThreads
-          editor={editor}
-          threads={threads || []}
-          className="fixed top-20 w-full right-0 z-20 h-32"
-          components={{
-            Thread: (props) => (
-              <div className="flex items-center justify-end gap-2 -mr-80">
-                {props.thread.comments.map((comment) => (
-                  <CommentBlock key={comment.id} comment={comment} />
-                ))}
-              </div>
-            ),
-          }}
-        />
-      </>
       <FloatingToolbar editor={editor} open={open} />
     </>
   );
