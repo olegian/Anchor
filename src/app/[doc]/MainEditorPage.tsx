@@ -97,8 +97,9 @@ function EditingInterface({ doc }: { doc: string }) {
             title={title ?? ""}
             setTitle={setTitle}
             open={open}
-            field="maindoc"
             loaded={title !== null}
+            anchorHandles={anchorHandles}
+            setAnchorHandles={setAnchorHandles}
           />
         </div>
       </div>
@@ -106,15 +107,6 @@ function EditingInterface({ doc }: { doc: string }) {
       {handles?.keys().map((handleId: string) => {
         return <HandleInput docId={doc} handleId={handleId} />;
       })}
-      <InteractionLayer anchorHandles={anchorHandles} />
     </>
   );
-}
-
-function InteractionLayer({
-  anchorHandles,
-}: {
-  anchorHandles: Map<string, { x: number; y: number }>;
-}) {
-  return <div></div>;
 }

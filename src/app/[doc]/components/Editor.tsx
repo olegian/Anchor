@@ -1,13 +1,18 @@
 "use client";
 import { Comment } from "@liveblocks/react-ui/primitives";
 import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, Extension, useEditor } from "@tiptap/react";
+import {
+  Editor as EditorType,
+  EditorContent,
+  Extension,
+  useEditor,
+} from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import InlineAIExtension from "./extensions/InlineAIExtension";
 import FloatingToolbar from "./floating/FloatingToolbar";
 
-import { XMarkIcon } from "@heroicons/react/16/solid";
+import { PlusIcon, XMarkIcon } from "@heroicons/react/16/solid";
 import { CommentData } from "@liveblocks/core";
 import {
   useDeleteComment,
@@ -23,22 +28,49 @@ import {
 } from "@liveblocks/react-tiptap";
 import { getContents } from "@/app/actions";
 import { useParams } from "next/navigation";
+import { useHotkeys } from "react-hotkeys-hook";
+import { WordSpan } from "./extensions/WordSpanExtension";
+
+function wrapWordsInSpans(editor: EditorType) {
+  const words = editor.getText().split(/\s+/);
+  editor.commands.clearContent();
+
+  words.forEach((word, index) => {
+    editor.commands.insertContent({
+      type: "text",
+      text: word,
+      marks: [
+        {
+          type: "wordSpan",
+        },
+      ],
+    });
+
+    if (index < words.length - 1) {
+      editor.commands.insertContent(" ");
+    }
+  });
+}
 
 export default function Editor({
   title,
   setTitle,
   open,
-  field,
   loaded,
+  anchorHandles,
+  setAnchorHandles,
 }: {
   title: string;
   setTitle: (title: string) => void;
   open: () => void;
-  field: string;
   loaded: boolean;
+  anchorHandles: Map<string, { x: number; y: number }>;
+  setAnchorHandles: React.Dispatch<
+    React.SetStateAction<Map<string, { x: number; y: number }>>
+  >;
 }) {
-  const liveblocks = useLiveblocksExtension({ field });
-  const params = useParams<{ doc: string; snapshot?: string }>();
+  const liveblocks = useLiveblocksExtension({ field: "maindoc" });
+  const params = useParams<{ doc: string }>();
   const [myPresence, updateMyPresence] = useMyPresence();
   const [isEditorReady, setEditorReady] = useState(false);
 
@@ -54,9 +86,8 @@ export default function Editor({
       Placeholder.configure({
         placeholder: "Type something...",
       }),
-    ].concat(
-      field !== "maindoc" ? [InlineAIExtension as unknown as Extension] : []
-    ),
+      WordSpan,
+    ],
     immediatelyRender: false,
   });
 
@@ -68,16 +99,52 @@ export default function Editor({
     }
   }, [editor]);
 
-  const { threads } = useThreads();
+  function wrapEveryWordInSpansPreserveHTML(html: string) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
 
-  useEffect(() => {
-    if (editor && field === "maindoc") {
-      setEditorReady(true);
+    function processNode(node: Node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || "";
+        const tokens = text.split(/(\s+)/); // split into words and spaces
+        const fragment = document.createDocumentFragment();
+
+        tokens.forEach((token) => {
+          if (/\s+/.test(token)) {
+            fragment.appendChild(document.createTextNode(token));
+          } else {
+            const span = document.createElement("span");
+            span.textContent = token;
+            span.className = "text-white/0";
+            fragment.appendChild(span);
+          }
+        });
+
+        if (node.parentNode) {
+          node.parentNode.replaceChild(fragment, node);
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // recursively process children
+        Array.from(node.childNodes).forEach(processNode);
+      }
     }
-  }, [editor, field]);
+
+    processNode(doc.body);
+
+    return doc.body.innerHTML;
+  }
 
   return (
     <>
+      {editor && loaded ? (
+        <div
+          id="overlay-editor"
+          className="absolute max-w-3xl pointer-events-none select-none w-full h-80 mx-auto top-[12.35rem] px-2 prose"
+          dangerouslySetInnerHTML={{
+            __html: wrapEveryWordInSpansPreserveHTML(editor.getHTML()),
+          }}
+        />
+      ) : null}
       <div className="relative">
         <SkeletonEditor loaded={loaded} />
         <article
@@ -89,9 +156,176 @@ export default function Editor({
           <EditorContent editor={editor} className="px-2" />
         </article>
       </div>
-
       <FloatingToolbar editor={editor} open={open} />
+      <InteractionLayer
+        anchorHandles={anchorHandles}
+        setAnchorHandles={setAnchorHandles}
+        editor={editor}
+      />
     </>
+  );
+}
+
+function InteractionLayer({
+  anchorHandles,
+  setAnchorHandles,
+  editor,
+}: {
+  anchorHandles: Map<string, { x: number; y: number }>;
+  setAnchorHandles: React.Dispatch<
+    React.SetStateAction<Map<string, { x: number; y: number }>>
+  >;
+  editor: EditorType | null;
+}) {
+  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+
+  // Track mouse position
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
+  // Handle hotkey "a"
+  useHotkeys("a", () => {
+    const id = crypto.randomUUID(); // Unique ID for the new anchor
+    setAnchorHandles((prev) => {
+      const next = new Map(prev);
+      next.set(id, { x: mousePos.x, y: mousePos.y });
+      return next;
+    });
+  });
+
+  return (
+    <>
+      {anchorHandles?.keys().map((handleId: string) => {
+        const { x, y } = anchorHandles.get(handleId)!;
+        return (
+          <AnchorHandle
+            key={handleId}
+            x={x}
+            y={y}
+            id={handleId}
+            setAnchorHandles={setAnchorHandles}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function AnchorHandle({
+  x,
+  y,
+  id,
+  setAnchorHandles,
+}: {
+  x: number;
+  y: number;
+  id: string;
+  setAnchorHandles: React.Dispatch<
+    React.SetStateAction<Map<string, { x: number; y: number }>>
+  >;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [dragging, setDragging] = useState(false);
+  const offset = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragging) return;
+      const newX = e.clientX - offset.current.x;
+      const newY = e.clientY - offset.current.y;
+
+      setAnchorHandles((prev) => {
+        const next = new Map(prev);
+        next.set(id, { x: newX, y: newY });
+        return next;
+      });
+
+      const centerX = newX;
+      const centerY = newY;
+
+      const overlayContainer = document.getElementById("overlay-editor");
+      if (!overlayContainer) return;
+      const paragraphs = overlayContainer.querySelectorAll("p");
+      if (!paragraphs) return;
+
+      for (let i = 0; i < paragraphs.length; i++) {
+        const paragraph = paragraphs[i];
+        const spans = paragraph.getElementsByTagName("span");
+        for (let j = 0; j < spans.length; j++) {
+          const span = spans[j];
+          const rect = span.getBoundingClientRect();
+          if (
+            centerX >= rect.left &&
+            centerX <= rect.right &&
+            centerY >= rect.top &&
+            centerY <= rect.bottom
+          ) {
+            console.log(
+              `Over Paragraph: ${i + 1}, Word: ${j + 1} - ${span.textContent}`
+            );
+            span.className =
+              "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colorsa";
+
+            return;
+          } else {
+            span.className = "transition-colors";
+          }
+        }
+      }
+    };
+
+    const onMouseUp = () => setDragging(false);
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [dragging]);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (rect) {
+      // Instead of using `rect.left` and `rect.top` directly,
+      // add half the width and height to get the visual center
+      offset.current = {
+        x: e.clientX - (rect.left + rect.width / 2),
+        y: e.clientY - (rect.top + rect.height / 2),
+      };
+    }
+    setDragging(true);
+  };
+
+  return (
+    <div
+      ref={ref}
+      className="absolute origin-center z-40 "
+      style={{
+        left: x,
+        top: y,
+        transform: "translate(-50%, -50%)",
+      }}
+      onMouseDown={onMouseDown}
+    >
+      <div className="flex flex-col items-center justify-center group relative space-y-1.5">
+        <div className="select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 font-medium transform text-[8px] px-1.5 py-0.5 border border-zinc-200 bg-white shadow-sm origin-center rounded-md text-zinc-500 transition-all duration-200 ease-in-out">
+          Anchor
+        </div>
+
+        <div className="flex items-center justify-center border bg-white/50 backdrop-blur-sm origin-center border-zinc-200 opacity-50 rounded-full transition-all duration-200 ease-in-out cursor-pointer group-hover:scale-125 group-hover:opacity-100 size-5">
+          <PlusIcon className="absolute size-3 text-zinc-500 shrink-0 transition-all group-hover:scale-125" />
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -115,45 +349,6 @@ function SkeletonEditor({ loaded }: { loaded: boolean }) {
             )
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function CommentBlock({ comment }: { comment: CommentData }) {
-  const deleteComment = useDeleteComment();
-
-  return (
-    <div
-      key={comment.id}
-      className="p-4 space-y-4 w-full relative max-w-72 border border-zinc-200 bg-white rounded-xl hover:shadow-lg transition-shadow"
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center justify-start gap-2">
-          <div className="uppercase flex items-center justify-center w-8 h-8 rounded-full bg-indigo-500 border border-white/50 text-white font-semibold text-sm">
-            GH
-          </div>
-          <div>
-            <h4 className="font-semibold text-sm">Greg Heffley</h4>
-            <p className="text-xs text-zinc-500">
-              {new Date(comment.createdAt).toLocaleDateString("en-US")}
-            </p>
-          </div>
-        </div>
-        <button
-          className="bg-white border cursor-pointer hover:opacity-75 transition-opacity border-zinc-200 p-1 rounded-full text-xs font-medium text-zinc-700"
-          onClick={() =>
-            deleteComment({
-              threadId: comment.threadId,
-              commentId: comment.id,
-            })
-          }
-        >
-          <XMarkIcon className="size-4 shrink-0" />
-        </button>
-      </div>
-      <div className="text-zinc-700">
-        <Comment.Body body={comment.body} />
       </div>
     </div>
   );
