@@ -1,23 +1,33 @@
 // Define Liveblocks types for your application
 
-import {
-    LiveList,
-    LiveMap,
-    LiveObject
-} from "@liveblocks/client";
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 
 export type Conversation = LiveObject<{
-    isPending: boolean;  // whether there is a request that is currently outstanding
-    exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>; // in order
-    handleName: string;  // optional name for the handle
-    x: number; // on screen x-position
-    y: number; // on screen y-position
+  isPending: boolean; // whether there is a request that is currently outstanding
+  exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>; // in order
+  handleName: string; // optional name for the handle
+  x: number; // on screen x-position
+  y: number; // on screen y-position
 }>;
 
 export type Handles = LiveMap<
   string, // handleId
   Conversation
 >;
+
+export type HandlesMap = ReadonlyMap<
+  string,
+  {
+    readonly isPending: boolean;
+    readonly exchanges: readonly {
+      readonly prompt: string;
+      readonly response: string;
+    }[];
+    readonly handleName: string;
+    readonly x: number;
+    readonly y: number;
+  }
+> | null;
 
 // https://liveblocks.io/docs/api-reference/liveblocks-react#Typing-your-data
 declare global {
@@ -26,7 +36,7 @@ declare global {
     Presence: {
       // Example, real-time cursor coordinates
       // cursor: { x: number; y: number };
-      currentHandle: string | null;  // in case we want to track who has what handle open
+      currentHandle: string | null; // in case we want to track who has what handle open
       name: string;
     };
 
