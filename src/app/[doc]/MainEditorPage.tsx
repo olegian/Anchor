@@ -2,7 +2,7 @@
 
 import { Session } from "next-auth";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DocMenu from "./components/DocMenu";
 import Editor from "./components/Editor";
 import FloatingMenu from "./components/floating/FloatingMenu";
@@ -34,16 +34,14 @@ export default function MainEditorPage({ session }: { session: Session }) {
 
 function EditingInterface({ doc }: { doc: string }) {
   const router = useRouter();
-
   const [myPresence, updateMyPresence] = useMyPresence();
 
   const title = useStorage((root) => root.docTitle);
-  const handles = useStorage((root) => root.docHandles);
-
   const setTitle = useMutation(({ storage }, newTitle) => {
     storage.set("docTitle", newTitle);
   }, []);
 
+  const handles = useStorage((root) => root.docHandles);
   const addHandle = useMutation(
     ({ storage }, newHandleId: string, x: number, y: number) => {
       const handles = storage.get("docHandles");
@@ -63,19 +61,6 @@ function EditingInterface({ doc }: { doc: string }) {
     },
     []
   );
-
-  // funny ass name!
-  const createHandleHandler = () => {
-    const x = 0; // TODO: set these values to be wherever we want to hook the new handle to
-    const y = 0;
-    const newHandleId = crypto.randomUUID();
-
-    addHandle(newHandleId, x, y);
-  };
-
-  const [anchorHandles, setAnchorHandles] = useState<
-    Map<string, { x: number; y: number }>
-  >(new Map());
 
   return (
     <>
@@ -97,16 +82,12 @@ function EditingInterface({ doc }: { doc: string }) {
             title={title ?? ""}
             setTitle={setTitle}
             open={open}
-            loaded={title !== null}
-            anchorHandles={anchorHandles}
-            setAnchorHandles={setAnchorHandles}
+            loaded={title !== null && handles !== null}
+            anchorHandles={handles}
+            addHandle={addHandle}
           />
         </div>
       </div>
-      {/* TODO: style and attach handlers inside this component */}
-      {handles?.keys().map((handleId: string) => {
-        return <HandleInput docId={doc} handleId={handleId} />;
-      })}
     </>
   );
 }

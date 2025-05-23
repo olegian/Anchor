@@ -1,34 +1,29 @@
 "use client";
-import { Comment } from "@liveblocks/react-ui/primitives";
 import Placeholder from "@tiptap/extension-placeholder";
-import {
-  Editor as EditorType,
-  EditorContent,
-  Extension,
-  useEditor,
-} from "@tiptap/react";
+import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useRef, useState } from "react";
-import InlineAIExtension from "./extensions/InlineAIExtension";
 import FloatingToolbar from "./floating/FloatingToolbar";
 
-import { PlusIcon, XMarkIcon } from "@heroicons/react/16/solid";
-import { CommentData } from "@liveblocks/core";
-import {
-  useDeleteComment,
-  useMutation,
-  useMyPresence,
-  useStorage,
-  useThreads,
-} from "@liveblocks/react";
-import {
-  AnchoredThreads,
-  FloatingComposer,
-  useLiveblocksExtension,
-} from "@liveblocks/react-tiptap";
-import { getContents } from "@/app/actions";
+import { PlusIcon } from "@heroicons/react/16/solid";
+import { useMutation, useMyPresence } from "@liveblocks/react";
+import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
 import { useParams } from "next/navigation";
 import { useHotkeys } from "react-hotkeys-hook";
+
+type HandlesMap = ReadonlyMap<
+  string,
+  {
+    readonly isPending: boolean;
+    readonly exchanges: readonly {
+      readonly prompt: string;
+      readonly response: string;
+    }[];
+    readonly handleName: string;
+    readonly x: number;
+    readonly y: number;
+  }
+> | null;
 
 export default function Editor({
   title,
@@ -36,16 +31,14 @@ export default function Editor({
   open,
   loaded,
   anchorHandles,
-  setAnchorHandles,
+  addHandle,
 }: {
   title: string;
   setTitle: (title: string) => void;
   open: () => void;
   loaded: boolean;
-  anchorHandles: Map<string, { x: number; y: number }>;
-  setAnchorHandles: React.Dispatch<
-    React.SetStateAction<Map<string, { x: number; y: number }>>
-  >;
+  anchorHandles: HandlesMap;
+  addHandle: (newHandleId: string, x: number, y: number) => void;
 }) {
   const [draggingAnchor, setDraggingAnchor] = useState(false);
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
@@ -142,7 +135,7 @@ export default function Editor({
       <FloatingToolbar editor={editor} open={open} />
       <InteractionLayer
         anchorHandles={anchorHandles}
-        setAnchorHandles={setAnchorHandles}
+        addHandle={addHandle}
         draggingAnchor={draggingAnchor}
         setDraggingAnchor={setDraggingAnchor}
       />
@@ -152,14 +145,12 @@ export default function Editor({
 
 function InteractionLayer({
   anchorHandles,
-  setAnchorHandles,
+  addHandle,
   draggingAnchor,
   setDraggingAnchor,
 }: {
-  anchorHandles: Map<string, { x: number; y: number }>;
-  setAnchorHandles: React.Dispatch<
-    React.SetStateAction<Map<string, { x: number; y: number }>>
-  >;
+  anchorHandles: HandlesMap;
+  addHandle: (newHandleId: string, x: number, y: number) => void;
   draggingAnchor: boolean;
   setDraggingAnchor: (dragging: boolean) => void;
 }) {
@@ -180,11 +171,7 @@ function InteractionLayer({
   // Handle hotkey "a"
   useHotkeys("a", () => {
     const id = crypto.randomUUID(); // Unique ID for the new anchor
-    setAnchorHandles((prev) => {
-      const next = new Map(prev);
-      next.set(id, { x: mousePos.x, y: mousePos.y });
-      return next;
-    });
+    addHandle(id, mousePos.x - window.innerWidth / 2, mousePos.y);
   });
 
   return (
@@ -197,7 +184,6 @@ function InteractionLayer({
             x={x}
             y={y}
             id={handleId}
-            setAnchorHandles={setAnchorHandles}
             setDraggingAnchor={setDraggingAnchor}
           />
         );
@@ -210,36 +196,64 @@ function AnchorHandle({
   x,
   y,
   id,
-  setAnchorHandles,
   setDraggingAnchor,
 }: {
   x: number;
   y: number;
   id: string;
-  setAnchorHandles: React.Dispatch<
-    React.SetStateAction<Map<string, { x: number; y: number }>>
-  >;
   setDraggingAnchor: (dragging: boolean) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const offset = useRef({ x: 0, y: 0 });
+  const writePos = useMutation(({ storage }, targetX, targetY) => {
+    const handle = storage.get("docHandles").get(id);
+    const x = (handle?.get("x") || targetX) + window.innerWidth / 2;
+    const y = handle?.get("y") || targetY;
+
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+    const newX = lerp(x, targetX, 0.2);
+    const newY = lerp(y, targetY, 0.2);
+
+    handle?.set("x", newX - window.innerWidth / 2);
+    handle?.set("y", newY);
+  }, []);
+
+  const deleteAnchor = useMutation(({ storage }) => {
+    storage.get("docHandles").delete(id);
+  }, []);
+
+  const updatePos = (x: number, y: number) => {
+    let isThrottled = false;
+    const throttleUpdate = (...args: any) => {
+      if (isThrottled) return;
+      isThrottled = true;
+      writePos(x, y);
+      setTimeout(() => {
+        isThrottled = false;
+      }, 50);
+    };
+
+    throttleUpdate();
+  };
 
   useEffect(() => {
     let animationFrame: number | null = null;
 
     const smoothMove = (targetX: number, targetY: number) => {
       setDraggingAnchor(true);
-      setAnchorHandles((prev) => {
-        const next = new Map(prev);
-        const current = next.get(id) || { x: targetX, y: targetY };
-        // Interpolate towards the target
-        const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-        const newX = lerp(current.x, targetX, 0.2);
-        const newY = lerp(current.y, targetY, 0.2);
-        next.set(id, { x: newX, y: newY });
-        return next;
-      });
+      //   setAnchorHandles((prev) => {
+      //     const next = new Map(prev);
+      //     const current = next.get(id) || { x: targetX, y: targetY };
+      //     // Interpolate towards the target
+      //     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+      //     const newX = lerp(current.x, targetX, 0.2);
+      //     const newY = lerp(current.y, targetY, 0.2);
+      //     next.set(id, { x: newX, y: newY });
+      //     return next;
+      //   });
+
+      updatePos(targetX, targetY);
       setDraggingAnchor(false);
     };
 
@@ -310,9 +324,16 @@ function AnchorHandle({
     };
 
     const onMouseUp = () => {
-      setDragging(false);
-      setDraggingAnchor(false);
-      if (animationFrame) cancelAnimationFrame(animationFrame);
+      const leftToAnchor = x + window.innerWidth / 2;
+      if (leftToAnchor < 50) {
+        // doesnt matter if state isnt cleaned, about to be destroyed but...
+        // TODO: animation before it disappears?
+        deleteAnchor()
+      } else {
+        setDragging(false);
+        setDraggingAnchor(false);
+        if (animationFrame) cancelAnimationFrame(animationFrame);
+      }
     };
 
     window.addEventListener("mousemove", onMouseMove);
@@ -322,27 +343,32 @@ function AnchorHandle({
       window.removeEventListener("mouseup", onMouseUp);
       if (animationFrame) cancelAnimationFrame(animationFrame);
     };
-  }, [dragging, id, setAnchorHandles]);
+  }, [dragging, id, updatePos]);
 
   const onMouseDown = (e: React.MouseEvent) => {
     const rect = ref.current?.getBoundingClientRect();
     if (rect) {
       // Instead of using `rect.left` and `rect.top` directly,
       // add half the width and height to get the visual center
+      const screenCenter = window.innerWidth / 2;
+      const leftToHandle = e.clientX - (rect.left + rect.width / 2);
+      const handleToCenter = leftToHandle - screenCenter;
+
       offset.current = {
-        x: e.clientX - (rect.left + rect.width / 2),
+        x: handleToCenter,
         y: e.clientY - (rect.top + rect.height / 2),
       };
     }
     setDragging(true);
   };
 
+  const leftToAnchor = x + window.innerWidth / 2;
   return (
     <div
       ref={ref}
-      className="absolute origin-center z-40 "
+      className="absolute origin-center z-40"
       style={{
-        left: x,
+        left: leftToAnchor,
         top: y,
         transform: "translate(-50%, -50%)",
       }}
@@ -351,11 +377,11 @@ function AnchorHandle({
       <div className="flex flex-col items-center justify-center group relative space-y-1.5">
         <div className="select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 font-medium transform text-[8px] px-1.5 py-0.5 border border-zinc-200 bg-white shadow-sm origin-center rounded-md text-zinc-500 transition-all duration-200 ease-in-out">
           {/* ({x}, {y}) */}
-          {x > 280 && x < 320
+          {leftToAnchor > 280 && leftToAnchor < 320
             ? "Paragraph"
-            : x > 50 && x < 280
+            : leftToAnchor > 50 && leftToAnchor < 280
             ? "Document"
-            : x < 50
+            : leftToAnchor < 50
             ? "Delete?"
             : "Word"}
         </div>
