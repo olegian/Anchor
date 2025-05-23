@@ -355,7 +355,9 @@ function AnchorHandle({
   return (
     <div
       ref={ref}
-      className="absolute origin-center z-40"
+      className={`absolute origin-center z-40 ${
+        dragging ? "cursor-grabbing" : "hover:cursor-grab"
+      }`}
       style={{
         left: leftToAnchor,
         top: y,
@@ -372,7 +374,7 @@ function AnchorHandle({
             leftToAnchor < 50
               ? "text-white border-red-600 bg-red-500"
               : "text-zinc-700 border-zinc-200 bg-white"
-          } select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md`}
+          } select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 transition-all font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md`}
         >
           {/* ({x}, {y}) */}
           {leftToAnchor < 50 ? "Delete?" : text}
