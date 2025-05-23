@@ -215,7 +215,7 @@ function AnchorHandle({
 
       const editorLeftEdge = paragraphs[0].getBoundingClientRect().x;
       const editorRightEdge = 752 + editorLeftEdge;
-      console.log(editorLeftEdge, targetX, editorRightEdge);
+      // console.log(editorLeftEdge, targetX, editorRightEdge);
 
       const anchorOnLeft = targetX < editorLeftEdge;
       const anchorOnRight = targetX > editorRightEdge;
@@ -225,29 +225,23 @@ function AnchorHandle({
       // Should we snap to the left side of the editor?
       if (anchorOnLeft && !anchorOnRight) {
         if (editorLeftEdge - targetX < editorLeftEdge / 6) {
-          console.log("near left side of the editor"); // we should snap to the left side!
+          // console.log("near left side of the editor"); // we should snap to the left side!
           setText("Paragraph");
         } else {
-          console.log("on the left side"); // we are outside the editor!
+          // console.log("on the left side"); // we are outside the editor!
           setText("Document");
         }
       } else if (anchorOnRight && !anchorOnLeft) {
         if (targetX < editorRightEdge + editorRightEdge / 6) {
-          console.log("near right side of the editor"); // we should snap to the right side!
+          // console.log("near right side of the editor"); // we should snap to the right side!
           setText("Paragraph");
         } else {
-          console.log("on the right side"); // we are outside the editor!
+          // console.log("on the right side"); // we are outside the editor!
           setText("Document");
         }
       } else if (anchorInEditor) {
-        console.log("inside the editor"); // we are inside the editor!
+        // console.log("inside the editor"); // we are inside the editor!
         setText("Word");
-
-        for (let i = 0; i < paragraphs.length; i++) {
-          const paragraph = paragraphs[i];
-          const spans = paragraph.getElementsByTagName("span");
-          for (let j = 0; j < spans.length; j++) {}
-        }
       }
 
       // for (let i = 0; i < paragraphs.length; i++) {
@@ -378,7 +372,7 @@ function AnchorHandle({
             leftToAnchor < 50
               ? "text-white border-red-600 bg-red-500"
               : "text-zinc-700 border-zinc-200 bg-white"
-          } select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md transition-all`}
+          } select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md`}
         >
           {/* ({x}, {y}) */}
           {leftToAnchor < 50 ? "Delete?" : text}
@@ -387,7 +381,7 @@ function AnchorHandle({
         <div className="flex items-center justify-center border bg-white/50 backdrop-blur-sm origin-center border-zinc-200 opacity-50 rounded-full transition-all duration-200 ease-in-out cursor-pointer group-hover:scale-125 group-hover:opacity-100 size-5">
           <PlusIcon
             className={`absolute size-3 text-zinc-500 shrink-0 transition-all group-hover:scale-125 ${
-              leftToAnchor < 50 ? "rotate-45" : ""
+              leftToAnchor < 50 ? "rotate-45" : "rotate-0"
             }`}
           />
         </div>
