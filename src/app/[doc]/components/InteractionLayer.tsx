@@ -4,7 +4,60 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useMutation } from "@liveblocks/react";
 import { PlusIcon } from "@heroicons/react/16/solid";
 
-export default function InteractionLayer({
+export function EditorMirrorLayer({ html }: { html: string }) {
+  function wrapEveryWordInSpansPreserveHTML(html: string) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+
+    function processNode(node: Node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent || "";
+        const tokens = text.split(/(\s+)/); // split into words and spaces
+        const fragment = document.createDocumentFragment();
+
+        tokens.forEach((token) => {
+          if (/\s+/.test(token)) {
+            fragment.appendChild(document.createTextNode(token));
+          } else {
+            const span = document.createElement("span");
+            span.textContent = token;
+            // span.className = "text-black/25";
+            // span.style.background = "red";
+            span.className = "text-black/0";
+            span.style.whiteSpace = "normal";
+            span.style.overflowWrap = "break-word";
+            fragment.appendChild(span);
+          }
+        });
+
+        if (node.parentNode) {
+          node.parentNode.replaceChild(fragment, node);
+        }
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        // recursively process children
+        Array.from(node.childNodes).forEach(processNode);
+      }
+    }
+
+    processNode(doc.body);
+
+    return doc.body.innerHTML;
+  }
+
+  return (
+    <div
+      id="overlay-editor"
+      className="absolute max-w-3xl pointer-events-none select-none w-full h-80 mx-auto top-[12.35rem] px-2 prose"
+      dangerouslySetInnerHTML={{
+        __html: wrapEveryWordInSpansPreserveHTML(
+          html.replaceAll("<p></p>", "<p><br /></p>")
+        ),
+      }}
+    />
+  );
+}
+
+export function AnchorLayer({
   anchorHandles,
   addHandle,
   draggingAnchor,
@@ -102,7 +155,6 @@ function AnchorHandle({
     let animationFrame: number | null = null;
 
     const smoothMove = (targetX: number, targetY: number) => {
-      setDraggingAnchor(true);
       //   setAnchorHandles((prev) => {
       //     const next = new Map(prev);
       //     const current = next.get(id) || { x: targetX, y: targetY };
@@ -115,13 +167,10 @@ function AnchorHandle({
       //   });
 
       updatePos(targetX, targetY);
-      setDraggingAnchor(false);
     };
 
     const onMouseMove = (e: MouseEvent) => {
       if (!dragging) return;
-
-      setDraggingAnchor(true);
 
       const overlayContainer = document.getElementById("overlay-editor");
       if (!overlayContainer) return;
@@ -169,6 +218,7 @@ function AnchorHandle({
           // Highlight the left side
           paragraph.className =
             "border-l-4 border-zinc-300 -ml-2 transition-colors";
+          paragraph.after;
           targetX = paraRect.left - 20;
           targetY = paraRect.top + paraRect.height / 2 - 10;
         }
@@ -179,9 +229,11 @@ function AnchorHandle({
       const animate = () => {
         smoothMove(targetX, targetY);
         animationFrame = requestAnimationFrame(animate);
-        setDraggingAnchor(false);
+        // setDraggingAnchor(false);
       };
       animate();
+
+      // setDraggingAnchor(true);
     };
 
     const onMouseUp = () => {
@@ -189,7 +241,19 @@ function AnchorHandle({
       if (leftToAnchor < 50) {
         // doesnt matter if state isnt cleaned, about to be destroyed but...
         // TODO: animation before it disappears?
-        deleteAnchor();
+        // Animate before deleting the anchor
+        if (ref.current) {
+          ref.current.style.transition = "transform 0.5s, opacity 0.5s";
+          ref.current.style.transform = "translateX(-50%) scale(0.5)";
+          ref.current.style.opacity = "0";
+          ref.current.style.transformOrigin = "left center";
+          ref.current.style.left = `${leftToAnchor}px`;
+          ref.current.style.top = `${y}px`;
+          ref.current.style.pointerEvents = "none";
+          setTimeout(() => {
+            deleteAnchor();
+          }, 500);
+        }
       } else {
         setDragging(false);
         setDraggingAnchor(false);

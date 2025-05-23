@@ -9,7 +9,7 @@ import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
 import { useParams } from "next/navigation";
 import Title from "./Title";
 import SkeletonEditor from "./SkeletonEditor";
-import InteractionLayer from "./InteractionLayer";
+import { EditorMirrorLayer, AnchorLayer } from "./InteractionLayer";
 import { HandlesMap } from "../../../../liveblocks.config";
 
 export default function Editor({
@@ -42,9 +42,9 @@ export default function Editor({
         },
         history: false,
       }),
-      Placeholder.configure({
-        placeholder: "Type something...",
-      }),
+      // Placeholder.configure({
+      //   placeholder: "Type something...",
+      // }),
     ],
     immediatelyRender: false,
     editable: !draggingAnchor,
@@ -58,52 +58,12 @@ export default function Editor({
     }
   }, [editor]);
 
-  function wrapEveryWordInSpansPreserveHTML(html: string) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-
-    function processNode(node: Node) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent || "";
-        const tokens = text.split(/(\s+)/); // split into words and spaces
-        const fragment = document.createDocumentFragment();
-
-        tokens.forEach((token) => {
-          if (/\s+/.test(token)) {
-            fragment.appendChild(document.createTextNode(token));
-          } else {
-            const span = document.createElement("span");
-            span.textContent = token;
-            span.className = "text-white/0";
-            fragment.appendChild(span);
-          }
-        });
-
-        if (node.parentNode) {
-          node.parentNode.replaceChild(fragment, node);
-        }
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        // recursively process children
-        Array.from(node.childNodes).forEach(processNode);
-      }
-    }
-
-    processNode(doc.body);
-
-    return doc.body.innerHTML;
-  }
-
   return (
     <>
-      {editor && loaded ? (
-        <div
-          id="overlay-editor"
-          className="absolute max-w-3xl pointer-events-none select-none w-full h-80 mx-auto top-[12.35rem] px-2 prose"
-          dangerouslySetInnerHTML={{
-            __html: wrapEveryWordInSpansPreserveHTML(editor.getHTML()),
-          }}
-        />
-      ) : null}
+      {editor && loaded ? <EditorMirrorLayer html={editor.getHTML()} /> : null}
+      <p className="fixed top-32 left-32">
+        {draggingAnchor ? "true" : "false"}
+      </p>
       <div className="relative">
         <SkeletonEditor loaded={loaded} />
         <article
@@ -120,7 +80,7 @@ export default function Editor({
         </article>
       </div>
       <FloatingToolbar editor={editor} open={open} />
-      <InteractionLayer
+      <AnchorLayer
         anchorHandles={anchorHandles}
         addHandle={addHandle}
         draggingAnchor={draggingAnchor}
