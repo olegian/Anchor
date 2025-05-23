@@ -151,23 +151,56 @@ function AnchorHandle({
     throttleUpdate();
   };
 
+  const [rotation, setRotation] = useState(0);
+  const lastPos = useRef<{ x: number; y: number }>({ x, y });
+  const animationRef = useRef<number | null>(null);
+
+  // --- Rotation animation effect ---
+  useEffect(() => {
+    if (!dragging) return;
+
+    function animateRotation() {
+      // Calculate velocity
+      const dx = x - lastPos.current.x;
+      const dy = y - lastPos.current.y;
+      // Use horizontal velocity for rotation (or combine dx/dy for more effect)
+      const velocity = dx; // or Math.sqrt(dx*dx + dy*dy)
+      // Clamp and scale for effect
+      const maxDeg = 30;
+      const newRotation = Math.max(-maxDeg, Math.min(maxDeg, velocity * 2));
+      setRotation(newRotation);
+
+      lastPos.current = { x, y };
+
+      animationRef.current = requestAnimationFrame(animateRotation);
+    }
+
+    animationRef.current = requestAnimationFrame(animateRotation);
+
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
+    };
+  }, [dragging, x, y]);
+
+  // Ease rotation back to zero when not dragging
+  useEffect(() => {
+    if (dragging) return;
+    let raf: number;
+    function easeBack() {
+      setRotation((r) => {
+        if (Math.abs(r) < 0.5) return 0;
+        return r * 0.85;
+      });
+      raf = requestAnimationFrame(easeBack);
+    }
+    easeBack();
+    return () => cancelAnimationFrame(raf);
+  }, [dragging]);
+
+  const [text, setText] = useState("Drag me!");
+
   useEffect(() => {
     let animationFrame: number | null = null;
-
-    const smoothMove = (targetX: number, targetY: number) => {
-      //   setAnchorHandles((prev) => {
-      //     const next = new Map(prev);
-      //     const current = next.get(id) || { x: targetX, y: targetY };
-      //     // Interpolate towards the target
-      //     const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-      //     const newX = lerp(current.x, targetX, 0.2);
-      //     const newY = lerp(current.y, targetY, 0.2);
-      //     next.set(id, { x: newX, y: newY });
-      //     return next;
-      //   });
-
-      updatePos(targetX, targetY);
-    };
 
     const onMouseMove = (e: MouseEvent) => {
       if (!dragging) return;
@@ -180,54 +213,95 @@ function AnchorHandle({
       let targetX = e.clientX;
       let targetY = e.clientY;
 
-      let found = false;
-      for (let i = 0; i < paragraphs.length; i++) {
-        const paragraph = paragraphs[i];
-        const spans = paragraph.getElementsByTagName("span");
-        for (let j = 0; j < spans.length; j++) {
-          const span = spans[j];
-          const rect = span.getBoundingClientRect();
-          if (
-            e.clientX >= rect.left &&
-            e.clientX <= rect.right &&
-            e.clientY >= rect.top &&
-            e.clientY <= rect.bottom
-          ) {
-            // Snap target is the center of the span
-            targetX = rect.left + rect.width / 2;
-            targetY = rect.top + rect.height / 2;
+      const editorLeftEdge = paragraphs[0].getBoundingClientRect().x;
+      const editorRightEdge = 752 + editorLeftEdge;
+      console.log(editorLeftEdge, targetX, editorRightEdge);
 
-            // Highlight the span
-            span.className =
-              "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colors";
-            found = true;
-          } else {
-            span.className = "transition-colors";
-          }
+      const anchorOnLeft = targetX < editorLeftEdge;
+      const anchorOnRight = targetX > editorRightEdge;
+      const anchorInEditor =
+        targetX >= editorLeftEdge && targetX <= editorRightEdge;
+
+      // Should we snap to the left side of the editor?
+      if (anchorOnLeft && !anchorOnRight) {
+        if (editorLeftEdge - targetX < editorLeftEdge / 6) {
+          console.log("near left side of the editor"); // we should snap to the left side!
+          setText("Paragraph");
+        } else {
+          console.log("on the left side"); // we are outside the editor!
+          setText("Document");
         }
+      } else if (anchorOnRight && !anchorOnLeft) {
+        if (targetX < editorRightEdge + editorRightEdge / 6) {
+          console.log("near right side of the editor"); // we should snap to the right side!
+          setText("Paragraph");
+        } else {
+          console.log("on the right side"); // we are outside the editor!
+          setText("Document");
+        }
+      } else if (anchorInEditor) {
+        console.log("inside the editor"); // we are inside the editor!
+        setText("Word");
 
-        // if to the left of the paragraph, highlight the left side
-        const paraRect = paragraph.getBoundingClientRect();
-        if (
-          !found &&
-          e.clientX < paraRect.left &&
-          e.clientX > paraRect.left - 120 &&
-          e.clientY > paraRect.top &&
-          e.clientY < paraRect.bottom
-        ) {
-          // Highlight the left side
-          paragraph.className =
-            "border-l-4 border-zinc-300 -ml-2 transition-colors";
-          paragraph.after;
-          targetX = paraRect.left - 20;
-          targetY = paraRect.top + paraRect.height / 2 - 10;
+        for (let i = 0; i < paragraphs.length; i++) {
+          const paragraph = paragraphs[i];
+          const spans = paragraph.getElementsByTagName("span");
+          for (let j = 0; j < spans.length; j++) {}
         }
       }
 
+      // for (let i = 0; i < paragraphs.length; i++) {
+      //   const paragraph = paragraphs[i];
+      // }
+
+      // let found = false;
+      // for (let i = 0; i < paragraphs.length; i++) {
+      //   const paragraph = paragraphs[i];
+      //   const spans = paragraph.getElementsByTagName("span");
+      //   for (let j = 0; j < spans.length; j++) {
+      //     const span = spans[j];
+      //     const rect = span.getBoundingClientRect();
+      //     if (
+      //       e.clientX >= rect.left &&
+      //       e.clientX <= rect.right &&
+      //       e.clientY >= rect.top &&
+      //       e.clientY <= rect.bottom
+      //     ) {
+      //       // Snap target is the center of the span
+      //       targetX = rect.left + rect.width / 2;
+      //       targetY = rect.top + rect.height / 2;
+
+      //       // Highlight the span
+      //       span.className =
+      //         "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colors";
+      //       found = true;
+      //     } else {
+      //       span.className = "transition-colors";
+      //     }
+      //   }
+
+      //   // if to the left of the paragraph, highlight the left side
+      //   const paraRect = paragraph.getBoundingClientRect();
+      //   if (
+      //     !found &&
+      //     e.clientX < paraRect.left &&
+      //     e.clientX > paraRect.left - 120 &&
+      //     e.clientY > paraRect.top &&
+      //     e.clientY < paraRect.bottom
+      //   ) {
+      //     // Highlight the left side
+      //     paragraph.className =
+      //       "border-l-4 border-zinc-300 -ml-2 transition-colors";
+      //     paragraph.after;
+      //     targetX = paraRect.left - 20;
+      //     targetY = paraRect.top + paraRect.height / 2 - 10;
+      //   }
+      // }
+
       // Animate toward the target position
-      if (animationFrame) cancelAnimationFrame(animationFrame);
+      else if (animationFrame) cancelAnimationFrame(animationFrame);
       const animate = () => {
-        smoothMove(targetX, targetY);
+        updatePos(targetX, targetY);
         animationFrame = requestAnimationFrame(animate);
         // setDraggingAnchor(false);
       };
@@ -243,12 +317,8 @@ function AnchorHandle({
         // TODO: animation before it disappears?
         // Animate before deleting the anchor
         if (ref.current) {
-          ref.current.style.transition = "transform 0.5s, opacity 0.5s";
-          ref.current.style.transform = "translateX(-50%) scale(0.5)";
+          ref.current.style.transition = "opacity 0.5s";
           ref.current.style.opacity = "0";
-          ref.current.style.transformOrigin = "left center";
-          ref.current.style.left = `${leftToAnchor}px`;
-          ref.current.style.top = `${y}px`;
           ref.current.style.pointerEvents = "none";
           setTimeout(() => {
             deleteAnchor();
@@ -295,24 +365,31 @@ function AnchorHandle({
       style={{
         left: leftToAnchor,
         top: y,
-        transform: "translate(-50%, -50%)",
+        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+        transition: dragging
+          ? "none"
+          : "transform 0.4s cubic-bezier(.4,2,.6,1)",
       }}
       onMouseDown={onMouseDown}
     >
-      <div className="flex flex-col items-center justify-center group relative space-y-1.5">
-        <div className="select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 font-medium transform text-[8px] px-1.5 py-0.5 border border-zinc-200 bg-white shadow-sm origin-center rounded-md text-zinc-500 transition-all duration-200 ease-in-out">
+      <div className="flex flex-col items-center justify-center group relative space-y-2">
+        <div
+          className={`${
+            leftToAnchor < 50
+              ? "text-white border-red-600 bg-red-500"
+              : "text-zinc-700 border-zinc-200 bg-white"
+          } select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md transition-all`}
+        >
           {/* ({x}, {y}) */}
-          {leftToAnchor > 280 && leftToAnchor < 320
-            ? "Paragraph"
-            : leftToAnchor > 50 && leftToAnchor < 280
-            ? "Document"
-            : leftToAnchor < 50
-            ? "Delete?"
-            : "Word"}
+          {leftToAnchor < 50 ? "Delete?" : text}
         </div>
 
         <div className="flex items-center justify-center border bg-white/50 backdrop-blur-sm origin-center border-zinc-200 opacity-50 rounded-full transition-all duration-200 ease-in-out cursor-pointer group-hover:scale-125 group-hover:opacity-100 size-5">
-          <PlusIcon className="absolute size-3 text-zinc-500 shrink-0 transition-all group-hover:scale-125" />
+          <PlusIcon
+            className={`absolute size-3 text-zinc-500 shrink-0 transition-all group-hover:scale-125 ${
+              leftToAnchor < 50 ? "rotate-45" : ""
+            }`}
+          />
         </div>
       </div>
     </div>

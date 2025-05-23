@@ -61,9 +61,9 @@ export default function Editor({
   return (
     <>
       {editor && loaded ? <EditorMirrorLayer html={editor.getHTML()} /> : null}
-      <p className="fixed top-32 left-32">
+      {/* <p className="fixed top-32 left-32">
         {draggingAnchor ? "true" : "false"}
-      </p>
+      </p> */}
       <div className="relative">
         <SkeletonEditor loaded={loaded} />
         <article
