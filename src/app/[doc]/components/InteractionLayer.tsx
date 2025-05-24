@@ -7,9 +7,10 @@ import {
   useOthers,
   useStorage,
 } from "@liveblocks/react";
-import { PlusIcon } from "@heroicons/react/16/solid";
+import { ArrowsPointingOutIcon, PlusIcon } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
+import { users } from "@/app/auth";
 
 export function EditorMirrorLayer({ html }: { html: string }) {
   function wrapEveryWordInSpansPreserveHTML(html: string) {
@@ -179,17 +180,49 @@ function AnchorHandle({
   });
 
   // syncronize to live position when changed
+  // useEffect(() => {
+  //   if (!dragging) {
+  //     // we are receiving position changes from someone else's anchor movements
+  //     // so reflect them on our end by updating the local position
+  //     console.log("<<< PULLING:", liveHandleInfo.x, liveHandleInfo.y);
+  //     setLocalCoords({
+  //       x: liveHandleInfo.x + window.innerWidth / 2,
+  //       y: liveHandleInfo.y,
+  //     });
+  //   }
+  // }, [liveHandleInfo.x, liveHandleInfo.y]);
+
+  // Interpolate position changes to make it smooth remotely
   useEffect(() => {
-    if (!dragging) {
-      // we are receiving position changes from someone else's anchor movements
-      // so reflect them on our end by updating the local position
-      console.log("<<< PULLING:", liveHandleInfo.x, liveHandleInfo.y);
-      setLocalCoords({
-        x: liveHandleInfo.x + window.innerWidth / 2,
-        y: liveHandleInfo.y,
+    if (dragging) return; // Only interpolate when NOT dragging locally
+
+    let animationFrame: number | null = null;
+
+    function animate() {
+      setLocalCoords((prev) => {
+        const targetX = liveHandleInfo!.x + window.innerWidth / 2;
+        const targetY = liveHandleInfo!.y;
+        // Lerp factor: 0.2 is smooth, 1 is instant
+        const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+        const newX =
+          Math.abs(prev.x - targetX) < 0.5
+            ? targetX
+            : lerp(prev.x, targetX, 0.2);
+        const newY =
+          Math.abs(prev.y - targetY) < 0.5
+            ? targetY
+            : lerp(prev.y, targetY, 0.2);
+        return { x: newX, y: newY };
       });
+      animationFrame = requestAnimationFrame(animate);
     }
-  }, [liveHandleInfo.x, liveHandleInfo.y]);
+
+    animationFrame = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrame) cancelAnimationFrame(animationFrame);
+    };
+  }, [liveHandleInfo.x, liveHandleInfo.y, dragging]);
 
   useEffect(() => {
     console.log(
@@ -431,16 +464,16 @@ function AnchorHandle({
     setDragging(true);
   };
 
+  const owned = liveHandleInfo.owner != "";
+  const isOwner = liveHandleInfo.owner === session.data?.user?.id;
+  const ownerData = users.find(
+    (user) => user.username === liveHandleInfo.owner
+  );
+
   return (
     <div
       ref={ref}
-<<<<<<< HEAD
-      className={`absolute origin-center z-40 ${
-        dragging ? "cursor-grabbing" : "hover:cursor-grab"
-      }`}
-=======
       className="absolute origin-center z-40 transition-transform duration-300"
->>>>>>> c739415ea28c38eaa5c525f8bfdc389258159b47
       style={{
         left: localCoords.x,
         top: localCoords.y,
@@ -454,21 +487,48 @@ function AnchorHandle({
       <div className="flex flex-col items-center justify-center group relative space-y-2">
         <div
           className={`${
-            localCoords.x < 50
-              ? "text-white border-red-600 bg-red-500"
-              : "text-zinc-700 border-zinc-200 bg-white"
-          } select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 transition-all font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md`}
+            owned && !isOwner && localCoords.x >= 50
+              ? "text-white"
+              : localCoords.x < 50
+              ? "opacity-0 text-white border-red-600 bg-red-500"
+              : "opacity-0 text-zinc-700 border-zinc-200 bg-white"
+          } select-none group-hover:opacity-100 translate-y-0  transition-all font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md`}
+          style={{
+            borderColor: owned && !isOwner ? ownerData?.color : "",
+            backgroundColor: owned && !isOwner ? ownerData?.color : "",
+          }}
         >
-          {/* ({x}, {y}) */}
-          {localCoords.x < 50 ? "Delete?" : text}
+          {owned && !isOwner
+            ? ownerData?.name
+            : liveHandleInfo.handleName || localCoords.x < 50
+            ? "Delete?"
+            : text}
         </div>
 
-        <div className="flex items-center justify-center border bg-white/50 backdrop-blur-sm origin-center border-zinc-200 opacity-50 rounded-full transition-all duration-200 ease-in-out cursor-pointer group-hover:scale-125 group-hover:opacity-100 size-5">
-          <PlusIcon
-            className={`absolute size-3 text-zinc-500 shrink-0 transition-all group-hover:scale-125 ${
-              localCoords.x < 50 ? "rotate-45" : "rotate-0"
-            }`}
-          />
+        <div
+          className={`${
+            owned && !isOwner
+              ? "border-2 text-white"
+              : "border-zinc-200 opacity-50 text-zinc-500"
+          } flex items-center justify-center bg-white/50 backdrop-blur-sm  border origin-center rounded-full transition-all duration-200 ease-in-out cursor-pointer ${
+            dragging || owned
+              ? "scale-125 opacity-100"
+              : "group-hover:scale-125 group-hover:opacity-100"
+          } size-5`}
+          style={{
+            borderColor: owned && !isOwner ? ownerData?.color : "",
+            backgroundColor: owned && !isOwner ? ownerData?.color : "",
+          }}
+        >
+          {(dragging || owned) && localCoords.x >= 50 ? (
+            <ArrowsPointingOutIcon className="absolute shrink-0 size-2.5 transition-all group-hover:scale-125 rotate-45" />
+          ) : (
+            <PlusIcon
+              className={`absolute size-3 shrink-0 transition-all group-hover:scale-125 ${
+                localCoords.x < 50 ? "rotate-45" : "rotate-0"
+              }`}
+            />
+          )}
         </div>
       </div>
     </div>
