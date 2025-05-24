@@ -1,12 +1,10 @@
 "use client";
 import { useSession } from "next-auth/react";
 // import { AuthGuard } from "../components/AuthGuard";
-import useSWR from "swr";
-import { Room } from "@liveblocks/client";
+import { PlusIcon } from "@heroicons/react/20/solid";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
-import { PlusIcon, UserCircleIcon } from "@heroicons/react/20/solid";
 import { useState } from "react";
+import useSWR from "swr";
 
 import dynamic from "next/dynamic";
 import UserMenu from "./components/UserMenu";

@@ -53,6 +53,7 @@ function EditingInterface({ doc }: { doc: string }) {
             // initialize first prompt structure
             new LiveObject({ prompt: "", response: "" }),
           ]),
+          owner: "",
           handleName: "",
           x: x,
           y: y,
