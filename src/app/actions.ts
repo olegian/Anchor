@@ -329,6 +329,460 @@
 //   // if we want to do something with registering user permissions on doc creation
 //   // it would have to be done here
 // }
+
+
+
+
+
+// "use server";
+
+// import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
+// import { GoogleGenerativeAI } from "@google/generative-ai";
+// import { liveblocks } from "./liveblocks";
+// import { LiveObject } from "@liveblocks/client";
+
+// const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
+
+// // Store conversation history per handle ID
+// const conversationHistory = new Map<
+//   string,
+//   Array<{ role: string; parts: { text: string }[] }>
+// >();
+
+// interface PromptResponse {
+//   text: string;
+//   status: "success" | "error";
+//   message?: string;
+// }
+
+// interface DocumentContext {
+//   content: string;
+//   contextType: "word" | "paragraph" | "document";
+// }
+
+// // Parse ProseMirror JSON to extract text content and create context mapping
+// function parseDocumentContent(docJson: any): {
+//   fullText: string;
+//   paragraphs: Array<{ content: string; startPos: number; endPos: number }>;
+//   words: Array<{ content: string; startPos: number; endPos: number; paragraphIndex: number }>;
+// } {
+//   const paragraphs: Array<{ content: string; startPos: number; endPos: number }> = [];
+//   const words: Array<{ content: string; startPos: number; endPos: number; paragraphIndex: number }> = [];
+//   let fullText = "";
+//   let currentPos = 0;
+
+//   function traverseNode(node: any) {
+//     if (node.type === "paragraph") {
+//       const paragraphStart = currentPos;
+//       let paragraphText = "";
+//       let paragraphWords: Array<{ content: string; startPos: number; endPos: number }> = [];
+
+//       if (node.content) {
+//         node.content.forEach((child: any) => {
+//           if (child.type === "text" && child.text) {
+//             const text = child.text;
+//             paragraphText += text;
+            
+//             // Split text into words while preserving positions
+//             const wordMatches = [...text.matchAll(/\S+/g)];
+//             wordMatches.forEach(match => {
+//               if (match.index !== undefined) {
+//                 const wordStart = currentPos + match.index;
+//                 const wordEnd = wordStart + match[0].length;
+//                 paragraphWords.push({
+//                   content: match[0],
+//                   startPos: wordStart,
+//                   endPos: wordEnd
+//                 });
+//               }
+//             });
+            
+//             currentPos += text.length;
+//           }
+//         });
+//       }
+
+//       if (paragraphText.trim()) {
+//         const paragraphEnd = currentPos;
+//         paragraphs.push({
+//           content: paragraphText,
+//           startPos: paragraphStart,
+//           endPos: paragraphEnd
+//         });
+
+//         // Add paragraph words to global words array
+//         paragraphWords.forEach(word => {
+//           words.push({
+//             ...word,
+//             paragraphIndex: paragraphs.length - 1
+//           });
+//         });
+//       }
+
+//       fullText += paragraphText + "\n";
+//       currentPos += 1; // Account for paragraph break
+//     } else if (node.content) {
+//       node.content.forEach(traverseNode);
+//     }
+//   }
+
+//   if (docJson.content) {
+//     docJson.content.forEach(traverseNode);
+//   }
+
+//   return { fullText: fullText.trim(), paragraphs, words };
+// }
+
+// // Map Y position to document context
+// // function getDocumentContext(
+// //   yPosition: number | undefined,
+// //   xPosition: number | undefined,
+// //   contextType: "word" | "paragraph" | "document",
+// //   parsedDoc: ReturnType<typeof parseDocumentContent>
+// // ): DocumentContext {
+// //   // If no position specified or contextType is document, return full document
+// //   if (yPosition === undefined || contextType === "document") {
+// //     return {
+// //       content: parsedDoc.fullText,
+// //       contextType: "document"
+// //     };
+// //   }
+
+// //   // For paragraph context
+// //   if (contextType === "paragraph") {
+// //     // Find the paragraph that contains this Y position
+// //     // This is a simplified mapping - in real implementation, you'd need to map
+// //     // Y coordinates to actual paragraph positions in the rendered document
+// //     const paragraphIndex = Math.floor(yPosition / 50); // Approximate line height
+// //     const targetParagraph = parsedDoc.paragraphs[paragraphIndex];
+    
+// //     if (targetParagraph) {
+// //       return {
+// //         content: targetParagraph.content,
+// //         contextType: "paragraph"
+// //       };
+// //     }
+// //   }
+
+// //   // For word context
+// //   if (contextType === "word" && xPosition !== undefined) {
+// //     // Find the word at the given position
+// //     // This would need more sophisticated mapping in real implementation
+// //     const paragraphIndex = Math.floor(yPosition / 50);
+// //     const wordsInParagraph = parsedDoc.words.filter(w => w.paragraphIndex === paragraphIndex);
+    
+// //     if (wordsInParagraph.length > 0) {
+// //       // Simple approximation - map X position to word index
+// //       const wordIndex = Math.floor((xPosition / 10)) % wordsInParagraph.length;
+// //       const targetWord = wordsInParagraph[wordIndex];
+      
+// //       if (targetWord) {
+// //         return {
+// //           content: targetWord.content,
+// //           contextType: "word"
+// //         };
+// //       }
+// //     }
+// //   }
+
+// //   // Fallback to document context
+// //   return {
+// //     content: parsedDoc.fullText,
+// //     contextType: "document"
+// //   };
+// // }
+// function getDocumentContext(
+//   yPosition: number | undefined,
+//   xPosition: number | undefined,
+//   contextType: "word" | "paragraph" | "document",
+//   parsedDoc: ReturnType<typeof parseDocumentContent>
+// ): DocumentContext {
+//   if (yPosition === undefined || contextType === "document") {
+//     return {
+//       content: parsedDoc.fullText,
+//       contextType: "document"
+//     };
+//   }
+
+//   const paragraphIndex = Math.floor(yPosition / 50); // Simplified mapping
+
+//   if (contextType === "paragraph") {
+//     const targetParagraph = parsedDoc.paragraphs[paragraphIndex];
+//     console.log("target paragraph = " + targetParagraph);
+//     if (targetParagraph) {
+//       return {
+//         content: targetParagraph.content,
+//         contextType: "paragraph"
+//       };
+//     }
+//   }
+
+//   if (contextType === "word" && xPosition !== undefined) {
+//     const wordsInParagraph = parsedDoc.words.filter(w => w.paragraphIndex === paragraphIndex);
+//     if (wordsInParagraph.length > 0) {
+//       const wordIndex = Math.floor(xPosition / 10) % wordsInParagraph.length;
+//       const targetWord = wordsInParagraph[wordIndex];
+//       if (targetWord) {
+//         return {
+//           content: targetWord.content,
+//           contextType: "word"
+//         };
+//       }
+//     }
+//   }
+
+//   return {
+//     content: parsedDoc.fullText,
+//     contextType: "document"
+//   };
+// }
+
+
+// // Main prompt function
+// export async function prompt(
+//   docId: string,
+//   handleId: string,
+//   env?: string
+// ): Promise<PromptResponse> {
+//   try {
+//     docId = "bc8eb889-6d61-4bd9-9389-7d84558c8685";
+//     // Get document contents and storage
+//     //const docContents = await getContents(docId);
+//     const docContents = await getContents("bc8eb889-6d61-4bd9-9389-7d84558c8685");
+//     const docStorage = await liveblocks.getStorageDocument(docId, "json");
+//     const handleInfo = docStorage.docHandles[handleId];
+    
+//     if (!handleInfo) {
+//       throw new Error(`Handle ${handleId} not found`);
+//     }
+
+//     const { prompt: userPrompt } = handleInfo.exchanges[handleInfo.exchanges.length - 1];
+//     const yPosition = handleInfo.y;
+//     const xPosition = handleInfo.x;
+    
+//     // Parse document content
+//     const docJson = JSON.parse(docContents);
+//     const parsedDoc = parseDocumentContent(docJson);
+    
+//     // Determine context type based on handle position (this would come from client)
+//     // For now, using a simple heuristic based on position
+//     let contextType: "word" | "paragraph" | "document" = "document";
+//     if (yPosition !== undefined) {
+//       if (xPosition !== undefined && Math.abs(xPosition) < 50) {
+//         contextType = "word";
+//       } else if (Math.abs(xPosition || 0) < 200) {
+//         contextType = "paragraph";
+//       }
+//     }
+//     console.log("context type = " + contextType);
+    
+//     // Get appropriate context
+//     const documentContext = getDocumentContext(yPosition, xPosition, contextType, parsedDoc);
+    
+//     // Get or initialize conversation history for this handle
+//     if (!conversationHistory.has(handleId)) {
+//       conversationHistory.set(handleId, []);
+//     }
+//     const history = conversationHistory.get(handleId)!;
+
+//     // Create context-aware prompt
+//     // let contextPrompt = "";
+//     // switch (documentContext.contextType) {
+//     //   case "word":
+//     //     contextPrompt = `Focus on this word: "${documentContext.content}"\n\nFull document context:\n${parsedDoc.fullText}\n\n`;
+//     //     break;
+//     //   case "paragraph":
+//     //     contextPrompt = `Focus on this paragraph:\n"${documentContext.content}"\n\nFull document context:\n${parsedDoc.fullText}\n\n`;
+//     //     break;
+//     //   case "document":
+//     //     contextPrompt = `Document content:\n${documentContext.content}\n\n`;
+//     //     break;
+//     // }
+
+//     // // Add environment variables if provided
+//     // if (env) {
+//     //   contextPrompt += `Environment Variables:\n${env}\n\n`;
+//     // }
+
+//     // // Create the complete prompt
+//     // const fullPrompt = `${contextPrompt}User Query: ${userPrompt}`;
+//     let contextPrompt = "";
+//     switch (documentContext.contextType) {
+//       case "word":
+//         contextPrompt = `Focus on this word: "${documentContext.content}"`;
+//         break;
+//       case "paragraph":
+//         contextPrompt = `Focus only on this paragraph:\n"${documentContext.content}"`;
+//         break;
+//       case "document":
+//         contextPrompt = `Document content:\n${documentContext.content}`;
+//         break;
+//     }
+
+//     if (env) {
+//       contextPrompt += `\n\nEnvironment Variables:\n${env}`;
+//     }
+
+//     const fullPrompt = `${contextPrompt}\n\nUser Query: ${userPrompt}`;
+
+
+//     // Add user message to history
+//     history.push({
+//       role: "user",
+//       parts: [{ text: fullPrompt }],
+//     });
+
+//     // Set up Gemini model with system instruction
+//     const model = genAI.getGenerativeModel({
+//       model: "gemini-1.5-flash",
+//       systemInstruction: {
+//         role: "system",
+//         parts: [{
+//           text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, or full document) and tailor your response accordingly. Be concise but thorough.`
+//         }]
+//       }
+//     });
+
+//     // Create chat session with history
+//     const chat = model.startChat({
+//       history,
+//       generationConfig: {
+//         maxOutputTokens: 2048,
+//       },
+//     });
+
+//     // Generate response
+//     const result = await chat.sendMessage(userPrompt);
+//     const response = result.response;
+//     const text = response.text();
+//     console.log("response text = " + text);
+
+//     // Add response to history
+//     history.push({
+//       role: "model",
+//       parts: [{ text }],
+//     });
+
+//     // Update conversation history
+//     conversationHistory.set(handleId, history);
+
+//     // Update storage with response
+//     await liveblocks.mutateStorage(docId, ({ root }) => {
+//       const handleInfo = root.get("docHandles").get(handleId);
+//       const exchanges = handleInfo?.get("exchanges");
+      
+//       if (exchanges && exchanges.length > 0) {
+//         exchanges.get(exchanges.length - 1)?.set("response", text);
+//       }
+//     });
+
+//     return {
+//       text,
+//       status: "success",
+//     };
+//   } catch (error) {
+//     console.error("Error in Gemini API call:", error);
+//     return {
+//       text: "Sorry, there was an error processing your request.",
+//       status: "error",
+//       message: (error as Error).message,
+//     };
+//   }
+// }
+
+// export async function resetConversation(handleId: string): Promise<void> {
+//   conversationHistory.delete(handleId);
+// }
+
+// export async function getContents(roomId: string) {
+//   return await withProsemirrorDocument(
+//     {
+//       roomId: roomId,
+//       field: "maindoc",
+//       client: liveblocks,
+//     },
+//     (api) => {
+//       const contents = api.toJSON();
+//       return JSON.stringify(contents);
+//     }
+//   );
+// }
+
+// // Helper function to create a new conversation exchange
+// export async function createExchange(
+//   docId: string,
+//   handleId: string,
+//   promptText: string
+// ): Promise<void> {
+//   docId = "bc8eb889-6d61-4bd9-9389-7d84558c8685"
+//   await liveblocks.mutateStorage(docId, ({ root }) => {
+//     const handleInfo = root.get("docHandles").get(handleId);
+//     const exchanges = handleInfo?.get("exchanges");
+
+//     if (exchanges) {
+//       exchanges.push(
+//         new LiveObject({
+//           prompt: promptText,
+//           response: "",
+//           timestamp: Date.now(),
+//         })
+//       );
+//     }
+//   });
+// }
+
+// // Clean up old conversations to prevent memory leaks
+// export async function cleanupOldConversations(): Promise<void> {
+//   const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+//   const cutoff = Date.now() - maxAge;
+  
+//   for (const [handleId, history] of conversationHistory.entries()) {
+//     // Simple cleanup - remove conversations older than 24 hours
+//     // In a real app, you might want to store timestamps with conversations
+//     if (history.length === 0) {
+//       conversationHistory.delete(handleId);
+//     }
+//   }
+// }
+
+// // Legacy functions for compatibility
+// export async function deleteAnnotation(
+//   roomId: string,
+//   threadId: string,
+//   commentId: string
+// ) {
+//   const endpoint = `https://api.liveblocks.io/v2/rooms/${roomId}/threads/${threadId}/comments/${commentId}`;
+
+//   const response = await fetch(endpoint, {
+//     method: "DELETE",
+//     headers: {
+//       Authorization: `Bearer ${process.env.LB_KEY}`,
+//     },
+//   });
+
+//   return response;
+// }
+
+// export async function invokeAllPrompts(
+//   docId: string,
+//   handleId: string,
+//   env?: string
+// ): Promise<string[]> {
+//   try {
+//     const response = await prompt(docId, handleId, env);
+//     return response.status === "success" ? [response.text] : [];
+//   } catch (error) {
+//     console.error("Error in invokeAllPrompts:", error);
+//     return [];
+//   }
+// }
+
+// export async function createDoc(tempDocTitle: string) {
+//   // Document creation logic would go here
+//   // This might involve setting up initial storage structure, permissions, etc.
+// }
+
+
 "use server";
 
 import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
@@ -358,13 +812,14 @@ interface DocumentContext {
 // Parse ProseMirror JSON to extract text content and create context mapping
 function parseDocumentContent(docJson: any): {
   fullText: string;
-  paragraphs: Array<{ content: string; startPos: number; endPos: number }>;
+  paragraphs: Array<{ content: string; startPos: number; endPos: number; index: number }>;
   words: Array<{ content: string; startPos: number; endPos: number; paragraphIndex: number }>;
 } {
-  const paragraphs: Array<{ content: string; startPos: number; endPos: number }> = [];
+  const paragraphs: Array<{ content: string; startPos: number; endPos: number; index: number }> = [];
   const words: Array<{ content: string; startPos: number; endPos: number; paragraphIndex: number }> = [];
   let fullText = "";
   let currentPos = 0;
+  let paragraphIndex = 0;
 
   function traverseNode(node: any) {
     if (node.type === "paragraph") {
@@ -400,18 +855,21 @@ function parseDocumentContent(docJson: any): {
       if (paragraphText.trim()) {
         const paragraphEnd = currentPos;
         paragraphs.push({
-          content: paragraphText,
+          content: paragraphText.trim(),
           startPos: paragraphStart,
-          endPos: paragraphEnd
+          endPos: paragraphEnd,
+          index: paragraphIndex
         });
 
         // Add paragraph words to global words array
         paragraphWords.forEach(word => {
           words.push({
             ...word,
-            paragraphIndex: paragraphs.length - 1
+            paragraphIndex: paragraphIndex
           });
         });
+
+        paragraphIndex++;
       }
 
       fullText += paragraphText + "\n";
@@ -428,70 +886,15 @@ function parseDocumentContent(docJson: any): {
   return { fullText: fullText.trim(), paragraphs, words };
 }
 
-// Map Y position to document context
-// function getDocumentContext(
-//   yPosition: number | undefined,
-//   xPosition: number | undefined,
-//   contextType: "word" | "paragraph" | "document",
-//   parsedDoc: ReturnType<typeof parseDocumentContent>
-// ): DocumentContext {
-//   // If no position specified or contextType is document, return full document
-//   if (yPosition === undefined || contextType === "document") {
-//     return {
-//       content: parsedDoc.fullText,
-//       contextType: "document"
-//     };
-//   }
-
-//   // For paragraph context
-//   if (contextType === "paragraph") {
-//     // Find the paragraph that contains this Y position
-//     // This is a simplified mapping - in real implementation, you'd need to map
-//     // Y coordinates to actual paragraph positions in the rendered document
-//     const paragraphIndex = Math.floor(yPosition / 50); // Approximate line height
-//     const targetParagraph = parsedDoc.paragraphs[paragraphIndex];
-    
-//     if (targetParagraph) {
-//       return {
-//         content: targetParagraph.content,
-//         contextType: "paragraph"
-//       };
-//     }
-//   }
-
-//   // For word context
-//   if (contextType === "word" && xPosition !== undefined) {
-//     // Find the word at the given position
-//     // This would need more sophisticated mapping in real implementation
-//     const paragraphIndex = Math.floor(yPosition / 50);
-//     const wordsInParagraph = parsedDoc.words.filter(w => w.paragraphIndex === paragraphIndex);
-    
-//     if (wordsInParagraph.length > 0) {
-//       // Simple approximation - map X position to word index
-//       const wordIndex = Math.floor((xPosition / 10)) % wordsInParagraph.length;
-//       const targetWord = wordsInParagraph[wordIndex];
-      
-//       if (targetWord) {
-//         return {
-//           content: targetWord.content,
-//           contextType: "word"
-//         };
-//       }
-//     }
-//   }
-
-//   // Fallback to document context
-//   return {
-//     content: parsedDoc.fullText,
-//     contextType: "document"
-//   };
-// }
+// Updated function to properly map positions to document context
 function getDocumentContext(
   yPosition: number | undefined,
   xPosition: number | undefined,
   contextType: "word" | "paragraph" | "document",
   parsedDoc: ReturnType<typeof parseDocumentContent>
 ): DocumentContext {
+  console.log(`Getting context for position (${xPosition}, ${yPosition}) with type ${contextType}`);
+  
   if (yPosition === undefined || contextType === "document") {
     return {
       content: parsedDoc.fullText,
@@ -499,15 +902,30 @@ function getDocumentContext(
     };
   }
 
-  const paragraphIndex = Math.floor(yPosition / 50); // Simplified mapping
+  // More accurate paragraph mapping based on actual document structure
+  // Assuming each paragraph has roughly 50px height (you can adjust this based on your UI)
+  const estimatedParagraphHeight = 50;
+  const paragraphIndex = Math.floor(Math.abs(yPosition) / estimatedParagraphHeight);
+  
+  console.log(`Calculated paragraph index: ${paragraphIndex} from yPosition: ${yPosition}`);
+  console.log(`Total paragraphs available: ${parsedDoc.paragraphs.length}`);
 
   if (contextType === "paragraph") {
-    const targetParagraph = parsedDoc.paragraphs[paragraphIndex];
-    console.log("target paragraph = " + targetParagraph);
-    if (targetParagraph) {
+    // Ensure we have a valid paragraph index
+    if (paragraphIndex >= 0 && paragraphIndex < parsedDoc.paragraphs.length) {
+      const targetParagraph = parsedDoc.paragraphs[paragraphIndex];
+      console.log(`Found target paragraph: "${targetParagraph.content}"`);
+      
       return {
         content: targetParagraph.content,
         contextType: "paragraph"
+      };
+    } else {
+      console.log(`Paragraph index ${paragraphIndex} out of bounds, falling back to document`);
+      // If paragraph index is out of bounds, fall back to document context
+      return {
+        content: parsedDoc.fullText,
+        contextType: "document"
       };
     }
   }
@@ -515,8 +933,22 @@ function getDocumentContext(
   if (contextType === "word" && xPosition !== undefined) {
     const wordsInParagraph = parsedDoc.words.filter(w => w.paragraphIndex === paragraphIndex);
     if (wordsInParagraph.length > 0) {
-      const wordIndex = Math.floor(xPosition / 10) % wordsInParagraph.length;
-      const targetWord = wordsInParagraph[wordIndex];
+      // Better word mapping - approximate character width
+      const avgCharWidth = 8; // pixels per character (approximate)
+      const charPosition = Math.floor(Math.abs(xPosition) / avgCharWidth);
+      
+      // Find word at character position
+      let targetWord = wordsInParagraph[0]; // default to first word
+      for (const word of wordsInParagraph) {
+        const relativeStart = word.startPos - parsedDoc.paragraphs[paragraphIndex].startPos;
+        const relativeEnd = word.endPos - parsedDoc.paragraphs[paragraphIndex].startPos;
+        
+        if (charPosition >= relativeStart && charPosition <= relativeEnd) {
+          targetWord = word;
+          break;
+        }
+      }
+      
       if (targetWord) {
         return {
           content: targetWord.content,
@@ -526,23 +958,24 @@ function getDocumentContext(
     }
   }
 
+  // Fallback to document context
   return {
     content: parsedDoc.fullText,
     contextType: "document"
   };
 }
 
-
-// Main prompt function
+// Updated main prompt function to accept position parameters
 export async function prompt(
   docId: string,
   handleId: string,
+  xPosition?: number,
+  yPosition?: number,
   env?: string
 ): Promise<PromptResponse> {
   try {
     docId = "bc8eb889-6d61-4bd9-9389-7d84558c8685";
     // Get document contents and storage
-    //const docContents = await getContents(docId);
     const docContents = await getContents("bc8eb889-6d61-4bd9-9389-7d84558c8685");
     const docStorage = await liveblocks.getStorageDocument(docId, "json");
     const handleInfo = docStorage.docHandles[handleId];
@@ -552,27 +985,38 @@ export async function prompt(
     }
 
     const { prompt: userPrompt } = handleInfo.exchanges[handleInfo.exchanges.length - 1];
-    const yPosition = handleInfo.y;
-    const xPosition = handleInfo.x;
+    
+    // Use passed positions or fall back to stored positions
+    const finalYPosition = yPosition !== undefined ? yPosition : handleInfo.y;
+    const finalXPosition = xPosition !== undefined ? xPosition : handleInfo.x;
+    
+    console.log(`Using position: x=${finalXPosition}, y=${finalYPosition}`);
     
     // Parse document content
     const docJson = JSON.parse(docContents);
     const parsedDoc = parseDocumentContent(docJson);
     
-    // Determine context type based on handle position (this would come from client)
-    // For now, using a simple heuristic based on position
+    console.log(`Parsed document with ${parsedDoc.paragraphs.length} paragraphs`);
+    parsedDoc.paragraphs.forEach((p, i) => {
+      console.log(`Paragraph ${i}: "${p.content.substring(0, 50)}..."`);
+    });
+    
+    // Determine context type based on handle position
     let contextType: "word" | "paragraph" | "document" = "document";
-    if (yPosition !== undefined) {
-      if (xPosition !== undefined && Math.abs(xPosition) < 50) {
+    if (finalYPosition !== undefined) {
+      if (finalXPosition !== undefined && Math.abs(finalXPosition) < 100) {
         contextType = "word";
-      } else if (Math.abs(xPosition || 0) < 200) {
+      } else {
         contextType = "paragraph";
       }
     }
-    console.log("context type = " + contextType);
+    
+    console.log(`Determined context type: ${contextType}`);
     
     // Get appropriate context
-    const documentContext = getDocumentContext(yPosition, xPosition, contextType, parsedDoc);
+    const documentContext = getDocumentContext(finalYPosition, finalXPosition, contextType, parsedDoc);
+    
+    console.log(`Final context: ${documentContext.contextType} - "${documentContext.content.substring(0, 100)}..."`);
     
     // Get or initialize conversation history for this handle
     if (!conversationHistory.has(handleId)) {
@@ -581,33 +1025,13 @@ export async function prompt(
     const history = conversationHistory.get(handleId)!;
 
     // Create context-aware prompt
-    // let contextPrompt = "";
-    // switch (documentContext.contextType) {
-    //   case "word":
-    //     contextPrompt = `Focus on this word: "${documentContext.content}"\n\nFull document context:\n${parsedDoc.fullText}\n\n`;
-    //     break;
-    //   case "paragraph":
-    //     contextPrompt = `Focus on this paragraph:\n"${documentContext.content}"\n\nFull document context:\n${parsedDoc.fullText}\n\n`;
-    //     break;
-    //   case "document":
-    //     contextPrompt = `Document content:\n${documentContext.content}\n\n`;
-    //     break;
-    // }
-
-    // // Add environment variables if provided
-    // if (env) {
-    //   contextPrompt += `Environment Variables:\n${env}\n\n`;
-    // }
-
-    // // Create the complete prompt
-    // const fullPrompt = `${contextPrompt}User Query: ${userPrompt}`;
     let contextPrompt = "";
     switch (documentContext.contextType) {
       case "word":
         contextPrompt = `Focus on this word: "${documentContext.content}"`;
         break;
       case "paragraph":
-        contextPrompt = `Focus only on this paragraph:\n"${documentContext.content}"`;
+        contextPrompt = `Focus specifically on this paragraph:\n"${documentContext.content}"`;
         break;
       case "document":
         contextPrompt = `Document content:\n${documentContext.content}`;
@@ -619,7 +1043,6 @@ export async function prompt(
     }
 
     const fullPrompt = `${contextPrompt}\n\nUser Query: ${userPrompt}`;
-
 
     // Add user message to history
     history.push({
@@ -633,7 +1056,11 @@ export async function prompt(
       systemInstruction: {
         role: "system",
         parts: [{
-          text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, or full document) and tailor your response accordingly. Be concise but thorough.`
+          text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, or full document) and tailor your response accordingly. 
+
+When focusing on a paragraph, discuss only that specific paragraph and its content. When focusing on a word, discuss that word in the context of its paragraph. When given the full document, you can discuss the entire document.
+
+Be concise but thorough in your analysis.`
         }]
       }
     });
@@ -685,6 +1112,7 @@ export async function prompt(
   }
 }
 
+// Rest of the functions remain the same...
 export async function resetConversation(handleId: string): Promise<void> {
   conversationHistory.delete(handleId);
 }
@@ -703,7 +1131,6 @@ export async function getContents(roomId: string) {
   );
 }
 
-// Helper function to create a new conversation exchange
 export async function createExchange(
   docId: string,
   handleId: string,
@@ -726,21 +1153,17 @@ export async function createExchange(
   });
 }
 
-// Clean up old conversations to prevent memory leaks
 export async function cleanupOldConversations(): Promise<void> {
   const maxAge = 24 * 60 * 60 * 1000; // 24 hours
   const cutoff = Date.now() - maxAge;
   
   for (const [handleId, history] of conversationHistory.entries()) {
-    // Simple cleanup - remove conversations older than 24 hours
-    // In a real app, you might want to store timestamps with conversations
     if (history.length === 0) {
       conversationHistory.delete(handleId);
     }
   }
 }
 
-// Legacy functions for compatibility
 export async function deleteAnnotation(
   roomId: string,
   threadId: string,
@@ -764,7 +1187,7 @@ export async function invokeAllPrompts(
   env?: string
 ): Promise<string[]> {
   try {
-    const response = await prompt(docId, handleId, env);
+    const response = await prompt(docId, handleId, undefined, undefined, env);
     return response.status === "success" ? [response.text] : [];
   } catch (error) {
     console.error("Error in invokeAllPrompts:", error);
@@ -774,5 +1197,4 @@ export async function invokeAllPrompts(
 
 export async function createDoc(tempDocTitle: string) {
   // Document creation logic would go here
-  // This might involve setting up initial storage structure, permissions, etc.
 }
