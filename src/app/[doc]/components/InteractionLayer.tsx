@@ -116,7 +116,7 @@ function ConversationUI({
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const exchanges = useStorage((root) => root.docHandles.get(handleId)?.exchanges);
-  const currentExchange = exchanges?.at(exchanges.length - 1);
+  const currentExchange = exchanges?.at(exchanges.length - 1);  // just for easier access
 
   if (!exchanges) {
     return null;
