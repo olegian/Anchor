@@ -193,6 +193,9 @@ function ConversationUI({
 
     try {
       // Send prompt to LLM
+      // TODO: does this try catch actually catch thrown errors, or are errors returned 
+      // via the return value of this await statement? this is important cause the only way 
+      // that openNewPrompt fails is if this errors, where then we technically dont want that to run
       await prompt(docId, handleId);
 
       // create new exchange after response is received

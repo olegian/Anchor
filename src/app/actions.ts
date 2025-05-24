@@ -202,6 +202,7 @@ export async function prompt(
     // TODO: you have these available now, if theyre helpful, note if the handle is on a paragraph
     // but not a word, then wordIdx is -1, same reasoning for if the handle is not on anything, then
     // -1, -1 for both. apologize in advance for it not being undefined, but that plays better with livestorage
+    // (this is to say that you can determine what like granularity you want to focus on)
     const paragraphIdx = handleInfo.paragraphIdx;  // i think this can directly index the docContents json string
     const wordIdx = handleInfo.wordIdx;
     
