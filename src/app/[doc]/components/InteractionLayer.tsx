@@ -1,8 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { HandlesMap } from "../../../../liveblocks.config";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useMutation, useMyPresence, useOthers, useStorage } from "@liveblocks/react";
-import { PlusIcon, PaperAirplaneIcon, XMarkIcon } from "@heroicons/react/16/solid";
+import {
+  useMutation,
+  useMyPresence,
+  useOthers,
+  useStorage,
+} from "@liveblocks/react";
+import {
+  PlusIcon,
+  PaperAirplaneIcon,
+  XMarkIcon,
+} from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
 import { prompt, createExchange } from "../../actions";
@@ -47,9 +56,11 @@ export function EditorMirrorLayer({ html }: { html: string }) {
   return (
     <div
       id="overlay-editor"
-      className="absolute max-w-3xl pointer-events-none select-none w-full h-80 mx-auto top-[12.35rem] px-2 prose"
+      className="absolute max-w-[765px] pointer-events-none select-none w-full h-80 mx-auto top-[12.35rem] px-2 prose"
       dangerouslySetInnerHTML={{
-        __html: wrapEveryWordInSpansPreserveHTML(html.replaceAll("<p></p>", "<p><br /></p>")),
+        __html: wrapEveryWordInSpansPreserveHTML(
+          html.replaceAll("<p></p>", "<p><br /></p>")
+        ),
       }}
     />
   );
@@ -115,8 +126,10 @@ function ConversationUI({
   position: { x: number; y: number };
 }) {
   const [isLoading, setIsLoading] = useState(false);
-  const exchanges = useStorage((root) => root.docHandles.get(handleId)?.exchanges);
-  const currentExchange = exchanges?.at(exchanges.length - 1);  // just for easier access
+  const exchanges = useStorage(
+    (root) => root.docHandles.get(handleId)?.exchanges
+  );
+  const currentExchange = exchanges?.at(exchanges.length - 1); // just for easier access
 
   if (!exchanges) {
     return null;
@@ -187,22 +200,22 @@ function ConversationUI({
 
     if (!setPending(true)) {
       // TODO: report that there is already a prompt pending from some other client
-      setIsLoading(false)
+      setIsLoading(false);
       return;
     }
 
     try {
       // Send prompt to LLM
-      // TODO: does this try catch actually catch thrown errors, or are errors returned 
-      // via the return value of this await statement? this is important cause the only way 
+      // TODO: does this try catch actually catch thrown errors, or are errors returned
+      // via the return value of this await statement? this is important cause the only way
       // that openNewPrompt fails is if this errors, where then we technically dont want that to run
       await prompt(docId, handleId);
 
       // create new exchange after response is received
       if (!openNewPrompt()) {
-          // TODO: this should never happen, but just in case leave this for now
-          // its for if somehow we end up trying to start a new prompt without resolving the previous one
-          console.log("Prompt state is weird!!! Check that out ASAP!")
+        // TODO: this should never happen, but just in case leave this for now
+        // its for if somehow we end up trying to start a new prompt without resolving the previous one
+        console.log("Prompt state is weird!!! Check that out ASAP!");
       }
     } catch (error) {
       console.error("Error sending prompt:", error);
@@ -239,21 +252,31 @@ function ConversationUI({
           exchanges.map((exchange: any, index: number) => (
             <div key={index} className="space-y-2">
               <div className="bg-blue-50 p-2 rounded-lg">
-                <div className="text-xs text-blue-600 font-medium mb-1">You</div>
+                <div className="text-xs text-blue-600 font-medium mb-1">
+                  You
+                </div>
                 <div className="text-sm">{exchange.prompt}</div>
               </div>
               {exchange.response && (
                 <div className="bg-gray-50 p-2 rounded-lg">
-                  <div className="text-xs text-gray-600 font-medium mb-1">AI</div>
-                  <div className="text-sm whitespace-pre-wrap">{exchange.response}</div>
+                  <div className="text-xs text-gray-600 font-medium mb-1">
+                    AI
+                  </div>
+                  <div className="text-sm whitespace-pre-wrap">
+                    {exchange.response}
+                  </div>
                 </div>
               )}
-              {!exchange.response && isLoading && index === exchanges.length - 1 && (
-                <div className="bg-gray-50 p-2 rounded-lg">
-                  <div className="text-xs text-gray-600 font-medium mb-1">AI</div>
-                  <div className="text-sm text-gray-500">Thinking...</div>
-                </div>
-              )}
+              {!exchange.response &&
+                isLoading &&
+                index === exchanges.length - 1 && (
+                  <div className="bg-gray-50 p-2 rounded-lg">
+                    <div className="text-xs text-gray-600 font-medium mb-1">
+                      AI
+                    </div>
+                    <div className="text-sm text-gray-500">Thinking...</div>
+                  </div>
+                )}
             </div>
           ))
         )}
@@ -308,7 +331,9 @@ function AnchorHandle({
 
   const closeConversation = () => {
     updatePresense({
-      openHandles: (presence.openHandles || []).filter((handleId) => handleId !== id),
+      openHandles: (presence.openHandles || []).filter(
+        (handleId) => handleId !== id
+      ),
     });
     setShowConversation(false);
   };
@@ -348,7 +373,7 @@ function AnchorHandle({
       targetX: number,
       targetY: number,
       wordIdx: number = -1,
-      paragraphIdx: number = -1, 
+      paragraphIdx: number = -1
     ) => {
       const handle = storage.get("docHandles").get(id);
       handle?.set("x", targetX - window.innerWidth / 2);
@@ -384,7 +409,8 @@ function AnchorHandle({
 
     const anchorOnLeft = localCoords.x < editorLeftEdge;
     const anchorOnRight = localCoords.x > editorRightEdge;
-    const anchorInEditor = localCoords.x >= editorLeftEdge && localCoords.x <= editorRightEdge;
+    const anchorInEditor =
+      localCoords.x >= editorLeftEdge && localCoords.x <= editorRightEdge;
 
     if (anchorInEditor) return "word";
     if (
@@ -461,7 +487,8 @@ function AnchorHandle({
 
       const anchorOnLeft = targetX < editorLeftEdge;
       const anchorOnRight = targetX > editorRightEdge;
-      const anchorInEditor = targetX >= editorLeftEdge && targetX <= editorRightEdge;
+      const anchorInEditor =
+        targetX >= editorLeftEdge && targetX <= editorRightEdge;
 
       // Update text based on position
       if (anchorOnLeft && !anchorOnRight) {
@@ -487,7 +514,7 @@ function AnchorHandle({
       let found = false;
       let paragraphIdx: number | undefined = undefined;
       let wordIdx: number | undefined = undefined;
-      for (let i = 0; i < paragraphs.length; i++) {
+      outer: for (let i = 0; i < paragraphs.length; i++) {
         const paragraph = paragraphs[i];
         const spans = paragraph.getElementsByTagName("span");
         for (let j = 0; j < spans.length; j++) {
@@ -507,10 +534,11 @@ function AnchorHandle({
             span.className =
               "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colors";
             found = true;
-            wordIdx = j
+            wordIdx = j;
             paragraphIdx = i;
+            break outer;
           } else {
-            span.className = "transition-colors";
+            span.className = "transition-colors text-white/0";
           }
         }
 
@@ -601,7 +629,9 @@ function AnchorHandle({
           left: localCoords.x,
           top: localCoords.y,
           transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-          transition: dragging ? "none" : "transform 0.4s cubic-bezier(.4,2,.6,1)",
+          transition: dragging
+            ? "none"
+            : "transform 0.4s cubic-bezier(.4,2,.6,1)",
         }}
         onMouseDown={onMouseDown}
         onDoubleClick={handleDoubleClick}
@@ -615,6 +645,7 @@ function AnchorHandle({
             } select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md`}
           >
             {localCoords.x < 50 ? "Delete?" : text}
+            {liveHandleInfo.paragraphIdx ?? ""}-{liveHandleInfo.wordIdx ?? ""}
           </div>
 
           <div className="flex items-center justify-center border bg-white/50 backdrop-blur-sm origin-center border-zinc-200 opacity-50 rounded-full transition-all duration-200 ease-in-out cursor-pointer group-hover:scale-125 group-hover:opacity-100 size-5">
