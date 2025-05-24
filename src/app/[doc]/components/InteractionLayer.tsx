@@ -11,6 +11,7 @@ import { ArrowsPointingOutIcon, PlusIcon } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
 import { users } from "@/app/auth";
+import { User } from "@liveblocks/client";
 
 export function EditorMirrorLayer({ html }: { html: string }) {
   function wrapEveryWordInSpansPreserveHTML(html: string) {
@@ -96,6 +97,10 @@ export function AnchorLayer({
     addHandle(id, mousePos.x - window.innerWidth / 2, mousePos.y);
   });
 
+  const session = useSession();
+  const [presence, updatePresense] = useMyPresence();
+  const othersPresense = useOthers();
+
   return (
     <>
       {anchorHandles?.keys().map((handleId: string) => {
@@ -104,6 +109,10 @@ export function AnchorLayer({
             key={handleId}
             id={handleId}
             setDraggingAnchor={setDraggingAnchor}
+            session={session}
+            presence={presence} // Only pass the state, not the tuple
+            updatePresense={updatePresense}
+            othersPresense={othersPresense.slice()}
           />
         );
       })}
@@ -114,16 +123,33 @@ export function AnchorLayer({
 function AnchorHandle({
   id,
   setDraggingAnchor,
+  session,
+  presence,
+  updatePresense,
+  othersPresense,
 }: {
   id: string;
   setDraggingAnchor: (dragging: boolean) => void;
+  session: ReturnType<typeof useSession>;
+  presence: {
+    openHandles: string[];
+    name: string;
+  };
+  updatePresense: (presence: any) => void;
+  othersPresense: User<
+    {
+      openHandles: string[];
+      name: string;
+    },
+    {
+      id: string;
+      info: {};
+    }
+  >[];
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const offset = useRef({ x: 0, y: 0 });
-  const session = useSession();
-  const [presence, updatePresense] = useMyPresence();
-  const othersPresense = useOthers();
 
   // TODO: make a conversation UI
   // below are helpers for managing presense for these things
@@ -239,7 +265,7 @@ function AnchorHandle({
     handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
     handle?.set("y", targetY);
   }, []);
-  const debouncedWritePos = useDebounce(writePos, 20); // TODO: tune out this parameter to make the sync movement feel nice
+  const debouncedWritePos = useDebounce(writePos, 10); // TODO: tune out this parameter to make the sync movement feel nice
 
   const deleteAnchor = useMutation(({ storage }) => {
     storage.get("docHandles").delete(id);
