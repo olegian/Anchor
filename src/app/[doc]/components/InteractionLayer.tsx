@@ -159,6 +159,10 @@ function AnchorHandle({
     }
   }, [liveHandleInfo.x, liveHandleInfo.y]);
 
+  useEffect(() => {
+    console.log("local coords converted", localCoords.x - window.innerWidth / 2, localCoords.y)
+  }, [localCoords.x, localCoords.y])
+
   // update live position, debounce to not send 20 billion requests
   const writePos = useMutation(({ storage }, targetX, targetY) => {
     const handle = storage.get("docHandles").get(id);
@@ -318,8 +322,10 @@ function AnchorHandle({
       // }
 
       // Animate toward the target position
-      else if (animationFrame) cancelAnimationFrame(animationFrame);
+
+      if (animationFrame) cancelAnimationFrame(animationFrame);
       const animate = () => {
+        console.log("animate ", targetX, targetY)
         setLocalCoords({ x: targetX, y: targetY });
         animationFrame = requestAnimationFrame(animate);
         // setDraggingAnchor(false);
