@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { HandlesMap } from "../../../../liveblocks.config";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useMutation } from "@liveblocks/react";
+import {
+  useMutation,
+  useMyPresence,
+  useOthers,
+  useStorage,
+} from "@liveblocks/react";
 import { PlusIcon } from "@heroicons/react/16/solid";
+import { useSession } from "next-auth/react";
+import { useDebounce } from "./useDebounce";
 
 export function EditorMirrorLayer({ html }: { html: string }) {
   function wrapEveryWordInSpansPreserveHTML(html: string) {
@@ -91,12 +98,9 @@ export function AnchorLayer({
   return (
     <>
       {anchorHandles?.keys().map((handleId: string) => {
-        const { x, y } = anchorHandles.get(handleId)!;
         return (
           <AnchorHandle
             key={handleId}
-            x={x}
-            y={y}
             id={handleId}
             setDraggingAnchor={setDraggingAnchor}
           />
@@ -107,52 +111,112 @@ export function AnchorLayer({
 }
 
 function AnchorHandle({
-  x,
-  y,
   id,
   setDraggingAnchor,
 }: {
-  x: number;
-  y: number;
   id: string;
   setDraggingAnchor: (dragging: boolean) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const offset = useRef({ x: 0, y: 0 });
+  const session = useSession();
+  const [presence, updatePresense] = useMyPresence();
+  const othersPresense = useOthers();
+
+  // TODO: make a conversation UI
+  // below are helpers for managing presense for these things
+  // you can also use liveHandleInfo.get("owner") if you want to show
+  // who is currently *dragging* a given handle
+  const openConversation = () => {
+    // add this anchor handle to opened handles by user
+    updatePresense({ openHandles: [...presence.openHandles, id] });
+
+    // use localCoords.y to determine where to open the actual chat ui
+    // use this to display information on others
+    const otherUsersViewingConversation = othersPresense
+      .filter((userInfo) => userInfo.presence.openHandles.includes(id))
+      .map((userInfo) => {
+        userInfo.id;
+      });
+  };
+
+  const closeConversation = () => {
+    updatePresense({
+      // on first glance this feels inefficient but also you would need to find the
+      // id in the list anyways to call .pop, so reconstructing via a filter is equally ok
+      openHandles: presence.openHandles.filter((handleId) => handleId !== id),
+    });
+  };
+
+  // refetch info from id, so that this component reloads only when ***this*** anchor handle is affected
+  const liveHandleInfo = useStorage((root) => root.docHandles.get(id));
+  if (!liveHandleInfo) {
+    return null;
+  }
+
+  const setAnchorOwner = useMutation(({ storage }, userId: string) => {
+    const handle = storage.get("docHandles").get(id);
+    if (userId === "" && handle?.get("owner") === session.data?.user?.id) {
+      // we previously held the anchor as the owner, and now we want to release it
+      handle?.set("owner", "");
+      return true;
+    } else if (userId !== "" && handle?.get("owner") === "") {
+      // we are trying to become the owner, and no one previously held it
+      handle?.set("owner", userId);
+      return true;
+    }
+
+    // ignore all other cases, return unsuccesful attempt
+    return false;
+  }, []);
+
+  // --- Handle Position Tracking ---
+  // local copy of coordinates, for fast access for animations
+  const [localCoords, setLocalCoords] = useState<{ x: number; y: number }>({
+    x: liveHandleInfo.x + window.innerWidth / 2,
+    y: liveHandleInfo.y,
+  });
+
+  // syncronize to live position when changed
+  useEffect(() => {
+    if (!dragging) {
+      // we are receiving position changes from someone else's anchor movements
+      // so reflect them on our end by updating the local position
+      console.log("<<< PULLING:", liveHandleInfo.x, liveHandleInfo.y);
+      setLocalCoords({
+        x: liveHandleInfo.x + window.innerWidth / 2,
+        y: liveHandleInfo.y,
+      });
+    }
+  }, [liveHandleInfo.x, liveHandleInfo.y]);
+
+  useEffect(() => {
+    console.log(
+      "local coords converted",
+      localCoords.x - window.innerWidth / 2,
+      localCoords.y
+    );
+  }, [localCoords.x, localCoords.y]);
+
+  // update live position, debounce to not send 20 billion requests
   const writePos = useMutation(({ storage }, targetX, targetY) => {
     const handle = storage.get("docHandles").get(id);
-    const x = (handle?.get("x") || targetX) + window.innerWidth / 2;
-    const y = handle?.get("y") || targetY;
-
-    const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-    const newX = lerp(x, targetX, 0.2);
-    const newY = lerp(y, targetY, 0.2);
-
-    handle?.set("x", newX - window.innerWidth / 2);
-    handle?.set("y", newY);
+    console.log(">>> PUSHING:", targetX - window.innerWidth / 2, targetY);
+    handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
+    handle?.set("y", targetY);
   }, []);
+  const debouncedWritePos = useDebounce(writePos, 20); // TODO: tune out this parameter to make the sync movement feel nice
 
   const deleteAnchor = useMutation(({ storage }) => {
     storage.get("docHandles").delete(id);
   }, []);
 
-  const updatePos = (x: number, y: number) => {
-    let isThrottled = false;
-    const throttleUpdate = (...args: any) => {
-      if (isThrottled) return;
-      isThrottled = true;
-      writePos(x, y);
-      setTimeout(() => {
-        isThrottled = false;
-      }, 50);
-    };
-
-    throttleUpdate();
-  };
-
   const [rotation, setRotation] = useState(0);
-  const lastPos = useRef<{ x: number; y: number }>({ x, y });
+  const lastPos = useRef<{ x: number; y: number }>({
+    x: localCoords.x,
+    y: localCoords.y,
+  });
   const animationRef = useRef<number | null>(null);
 
   // --- Rotation animation effect ---
@@ -161,8 +225,8 @@ function AnchorHandle({
 
     function animateRotation() {
       // Calculate velocity
-      const dx = x - lastPos.current.x;
-      const dy = y - lastPos.current.y;
+      const dx = localCoords.x - lastPos.current.x;
+      const dy = localCoords.y - lastPos.current.y;
       // Use horizontal velocity for rotation (or combine dx/dy for more effect)
       const velocity = dx; // or Math.sqrt(dx*dx + dy*dy)
       // Clamp and scale for effect
@@ -170,7 +234,7 @@ function AnchorHandle({
       const newRotation = Math.max(-maxDeg, Math.min(maxDeg, velocity * 2));
       setRotation(newRotation);
 
-      lastPos.current = { x, y };
+      lastPos.current = { x: localCoords.x, y: localCoords.y };
 
       animationRef.current = requestAnimationFrame(animateRotation);
     }
@@ -180,7 +244,7 @@ function AnchorHandle({
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [dragging, x, y]);
+  }, [dragging, localCoords.x, localCoords.y]);
 
   // Ease rotation back to zero when not dragging
   useEffect(() => {
@@ -293,22 +357,24 @@ function AnchorHandle({
       // }
 
       // Animate toward the target position
-      else if (animationFrame) cancelAnimationFrame(animationFrame);
+
+      if (animationFrame) cancelAnimationFrame(animationFrame);
       const animate = () => {
-        updatePos(targetX, targetY);
+        console.log("animate ", targetX, targetY);
+        setLocalCoords({ x: targetX, y: targetY });
         animationFrame = requestAnimationFrame(animate);
         // setDraggingAnchor(false);
       };
+
+      // write new position to live
+      debouncedWritePos(targetX, targetY);
       animate();
 
       // setDraggingAnchor(true);
     };
 
     const onMouseUp = () => {
-      const leftToAnchor = x + window.innerWidth / 2;
-      if (leftToAnchor < 50) {
-        // doesnt matter if state isnt cleaned, about to be destroyed but...
-        // TODO: animation before it disappears?
+      if (localCoords.x < 50) {
         // Animate before deleting the anchor
         if (ref.current) {
           ref.current.style.transition = "opacity 0.5s";
@@ -321,6 +387,7 @@ function AnchorHandle({
       } else {
         setDragging(false);
         setDraggingAnchor(false);
+        setAnchorOwner(""); // release ownership, allow others to grab it
         if (animationFrame) cancelAnimationFrame(animationFrame);
       }
     };
@@ -332,35 +399,51 @@ function AnchorHandle({
       window.removeEventListener("mouseup", onMouseUp);
       if (animationFrame) cancelAnimationFrame(animationFrame);
     };
-  }, [dragging, id, updatePos]);
+  }, [dragging, id, debouncedWritePos]);
 
   const onMouseDown = (e: React.MouseEvent) => {
+    if (liveHandleInfo.owner !== "") {
+      // someone is already moving the handle, need to disallow concurrent grab and just
+      // wait till they release it
+      return;
+    }
+
+    if (
+      session.data &&
+      session.data.user &&
+      session.data.user.id &&
+      !setAnchorOwner(session.data.user.id)
+    ) {
+      // unable to get ownership of the anchor, someone else is already moving it, even if the position
+      // changes are yet to propogate
+      return;
+    }
+
     const rect = ref.current?.getBoundingClientRect();
     if (rect) {
       // Instead of using `rect.left` and `rect.top` directly,
       // add half the width and height to get the visual center
-      const screenCenter = window.innerWidth / 2;
-      const leftToHandle = e.clientX - (rect.left + rect.width / 2);
-      const handleToCenter = leftToHandle - screenCenter;
-
       offset.current = {
-        x: handleToCenter,
+        x: e.clientX - (rect.left + rect.width / 2),
         y: e.clientY - (rect.top + rect.height / 2),
       };
     }
     setDragging(true);
   };
 
-  const leftToAnchor = x + window.innerWidth / 2;
   return (
     <div
       ref={ref}
+<<<<<<< HEAD
       className={`absolute origin-center z-40 ${
         dragging ? "cursor-grabbing" : "hover:cursor-grab"
       }`}
+=======
+      className="absolute origin-center z-40 transition-transform duration-300"
+>>>>>>> c739415ea28c38eaa5c525f8bfdc389258159b47
       style={{
-        left: leftToAnchor,
-        top: y,
+        left: localCoords.x,
+        top: localCoords.y,
         transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
         transition: dragging
           ? "none"
@@ -371,19 +454,19 @@ function AnchorHandle({
       <div className="flex flex-col items-center justify-center group relative space-y-2">
         <div
           className={`${
-            leftToAnchor < 50
+            localCoords.x < 50
               ? "text-white border-red-600 bg-red-500"
               : "text-zinc-700 border-zinc-200 bg-white"
           } select-none opacity-0 group-hover:opacity-100 translate-y-5 group-hover:translate-y-0 transition-all font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md`}
         >
           {/* ({x}, {y}) */}
-          {leftToAnchor < 50 ? "Delete?" : text}
+          {localCoords.x < 50 ? "Delete?" : text}
         </div>
 
         <div className="flex items-center justify-center border bg-white/50 backdrop-blur-sm origin-center border-zinc-200 opacity-50 rounded-full transition-all duration-200 ease-in-out cursor-pointer group-hover:scale-125 group-hover:opacity-100 size-5">
           <PlusIcon
             className={`absolute size-3 text-zinc-500 shrink-0 transition-all group-hover:scale-125 ${
-              leftToAnchor < 50 ? "rotate-45" : "rotate-0"
+              localCoords.x < 50 ? "rotate-45" : "rotate-0"
             }`}
           />
         </div>

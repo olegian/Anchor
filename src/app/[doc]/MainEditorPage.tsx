@@ -2,7 +2,6 @@
 
 import { Session } from "next-auth";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import DocMenu from "./components/DocMenu";
 import Editor from "./components/Editor";
 import FloatingMenu from "./components/floating/FloatingMenu";
@@ -13,8 +12,6 @@ import { LiveList, LiveObject } from "@liveblocks/client";
 import { useMutation, useMyPresence, useStorage } from "@liveblocks/react";
 import { useScrollPosition } from "../components/hooks/useScrollPosition";
 import BackButton from "./components/floating/BackButton";
-import HandleInput from "./components/dialog/HandleInput";
-import { Conversation } from "../../../liveblocks.config";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
@@ -53,6 +50,7 @@ function EditingInterface({ doc }: { doc: string }) {
             // initialize first prompt structure
             new LiveObject({ prompt: "", response: "" }),
           ]),
+          owner: "",
           handleName: "",
           x: x,
           y: y,
@@ -64,7 +62,7 @@ function EditingInterface({ doc }: { doc: string }) {
 
   return (
     <>
-      <div className="py-4 px-2 md:py-8 md:px-6 ">
+      <div className="py-4 px-2 md:py-8 md:px-6 select-none">
         <div className="max-w-3xl mx-auto py-16 space-y-4">
           <div className="space-y-4 px-2">
             <div className="flex items-center justify-between">

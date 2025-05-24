@@ -5,6 +5,7 @@ import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 export type Conversation = LiveObject<{
   isPending: boolean; // whether there is a request that is currently outstanding
   exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>; // in order
+  owner: string; //  userid of person who is currently moving a specific anchor, or "" for no owner
   handleName: string; // optional name for the handle
   x: number; // on screen x-position
   y: number; // on screen y-position
@@ -24,6 +25,7 @@ export type HandlesMap = ReadonlyMap<
       readonly response: string;
     }[];
     readonly handleName: string;
+    readonly owner: string;
     readonly x: number;
     readonly y: number;
   }
@@ -36,7 +38,7 @@ declare global {
     Presence: {
       // Example, real-time cursor coordinates
       // cursor: { x: number; y: number };
-      currentHandle: string | null; // in case we want to track who has what handle open
+      openHandles: string[]; // ids of all actively opened handles
       name: string;
     };
 
