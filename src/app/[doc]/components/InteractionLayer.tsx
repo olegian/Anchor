@@ -259,11 +259,13 @@ function AnchorHandle({
   }, [localCoords.x, localCoords.y]);
 
   // update live position, debounce to not send 20 billion requests
-  const writePos = useMutation(({ storage }, targetX, targetY) => {
+  const writePos = useMutation(({ storage }, targetX, targetY, paragraphIdx = -1, wordIdx = -1) => {
     const handle = storage.get("docHandles").get(id);
-    console.log(">>> PUSHING:", targetX - window.innerWidth / 2, targetY);
+    console.log(">>> PUSHING:", targetX - window.innerWidth / 2, targetY, paragraphIdx, wordIdx);
     handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
     handle?.set("y", targetY);
+    handle?.set("paragraphIdx", paragraphIdx);
+    handle?.set("wordIdx", wordIdx);
   }, []);
   const debouncedWritePos = useDebounce(writePos, 12.5); // TODO: tune out this parameter to make the sync movement feel nice
 
@@ -367,53 +369,62 @@ function AnchorHandle({
         setText("Word");
       }
 
-      // for (let i = 0; i < paragraphs.length; i++) {
-      //   const paragraph = paragraphs[i];
-      // }
+      // determine and set wordidx + paraidx
+      let paragraphIdx = -1;
+      let wordIdx = -1;
+      if (anchorInEditor) {
+        // no need to try to identify if we already know we aren't over the editor
+        outer: for (let i = 0; i < paragraphs.length; i++) {
+          const paragraph = paragraphs[i];
+          const spans = paragraph.getElementsByTagName("span");
+          const paraRect = paragraph.getBoundingClientRect();
+          if (
+            targetX < paraRect.right &&
+            targetX > paraRect.left - 120 && // buffer allows for paragraph only selection to the left of it
+            targetY > paraRect.top &&
+            targetY < paraRect.bottom
+          ) {
+            paragraphIdx = i;
+            if (targetX <= paraRect.left) { // hovering in the paragraph zone, no need to search for word
+              paragraph.className =
+                "border-l-4 border-zinc-300 -ml-2 transition-colors";
+              paragraph.after;
 
-      // let found = false;
-      // for (let i = 0; i < paragraphs.length; i++) {
-      //   const paragraph = paragraphs[i];
-      //   const spans = paragraph.getElementsByTagName("span");
-      //   for (let j = 0; j < spans.length; j++) {
-      //     const span = spans[j];
-      //     const rect = span.getBoundingClientRect();
-      //     if (
-      //       e.clientX >= rect.left &&
-      //       e.clientX <= rect.right &&
-      //       e.clientY >= rect.top &&
-      //       e.clientY <= rect.bottom
-      //     ) {
-      //       // Snap target is the center of the span
-      //       targetX = rect.left + rect.width / 2;
-      //       targetY = rect.top + rect.height / 2;
+              targetX = paraRect.left - 20;
+              targetY = paraRect.top + paraRect.height / 2 - 10;
 
-      //       // Highlight the span
-      //       span.className =
-      //         "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colors";
-      //       found = true;
-      //     } else {
-      //       span.className = "transition-colors";
-      //     }
-      //   }
+              break outer;
+            }
 
-      //   // if to the left of the paragraph, highlight the left side
-      //   const paraRect = paragraph.getBoundingClientRect();
-      //   if (
-      //     !found &&
-      //     e.clientX < paraRect.left &&
-      //     e.clientX > paraRect.left - 120 &&
-      //     e.clientY > paraRect.top &&
-      //     e.clientY < paraRect.bottom
-      //   ) {
-      //     // Highlight the left side
-      //     paragraph.className =
-      //       "border-l-4 border-zinc-300 -ml-2 transition-colors";
-      //     paragraph.after;
-      //     targetX = paraRect.left - 20;
-      //     targetY = paraRect.top + paraRect.height / 2 - 10;
-      //   }
-      // }
+            // hovering in the editor, need to search for word
+            for (let j = 0; j < spans.length; j++) {
+              const word = spans[j];
+              const rect = word.getBoundingClientRect();
+              if (
+                targetX >= rect.left &&
+                targetX <= rect.right &&
+                targetY >= rect.top &&
+                targetY <= rect.bottom
+              ) {
+                // we found a word to snap to!
+                // Snap target is the center of the span
+                wordIdx = j;
+
+                // Highlight the span
+                word.className =
+                  "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colors";
+
+                targetX = rect.left + rect.width / 2;
+                targetY = rect.top + rect.height / 2;
+
+                break outer;
+              } else {
+                word.className = "transition-colors text-white/0";
+              }
+            }
+          }
+        }
+      }
 
       // Animate toward the target position
 
@@ -426,7 +437,7 @@ function AnchorHandle({
       };
 
       // write new position to live
-      debouncedWritePos(targetX, targetY);
+      debouncedWritePos(targetX, targetY, wordIdx, paragraphIdx);
       animate();
 
       // setDraggingAnchor(true);

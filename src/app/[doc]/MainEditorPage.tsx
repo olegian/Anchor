@@ -51,6 +51,8 @@ function EditingInterface({ doc }: { doc: string }) {
             new LiveObject({ prompt: "", response: "" }),
           ]),
           owner: "",
+          wordIdx: -1,
+          paragraphIdx: -1,
           handleName: "",
           x: x,
           y: y,

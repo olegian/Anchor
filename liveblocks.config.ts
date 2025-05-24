@@ -7,6 +7,8 @@ export type Conversation = LiveObject<{
   exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>; // in order
   owner: string; //  userid of person who is currently moving a specific anchor, or "" for no owner
   handleName: string; // optional name for the handle
+  wordIdx: number; // -1 if not handle is not hooked onto any word
+  paragraphIdx: number; // same as ^
   x: number; // on screen x-position
   y: number; // on screen y-position
 }>;
