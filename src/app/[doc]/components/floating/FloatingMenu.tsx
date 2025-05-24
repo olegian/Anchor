@@ -13,7 +13,7 @@ export default function FloatingMenu() {
   );
 
   return (
-    <div className="fixed flex items-center justify-end top-4 right-4 z-20 space-x-2">
+    <div className="fixed flex items-center justify-end top-4 right-4 z-50 space-x-2">
       <Users hover={true} usersList={usersOnDoc} />
       {usersOnDoc !== undefined && usersOnDoc.length > 0 ? (
         <div className="w-px h-8 bg-zinc-200" />
