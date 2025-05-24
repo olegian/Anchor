@@ -265,7 +265,7 @@ function AnchorHandle({
     handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
     handle?.set("y", targetY);
   }, []);
-  const debouncedWritePos = useDebounce(writePos, 10); // TODO: tune out this parameter to make the sync movement feel nice
+  const debouncedWritePos = useDebounce(writePos, 12.5); // TODO: tune out this parameter to make the sync movement feel nice
 
   const deleteAnchor = useMutation(({ storage }) => {
     storage.get("docHandles").delete(id);

@@ -11,7 +11,7 @@ export default async function Page() {
 
   return (
     <AuthGuard redirectTo="/">
-      <MainEditorPage session={session} />;
+      <MainEditorPage session={session} />
     </AuthGuard>
   );
 }
