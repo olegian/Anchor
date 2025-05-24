@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { HandlesMap } from "../../../../liveblocks.config";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useMutation, useStorage } from "@liveblocks/react";
+import {
+  useMutation,
+  useMyPresence,
+  useOthers,
+  useStorage,
+} from "@liveblocks/react";
 import { PlusIcon } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
@@ -116,6 +121,33 @@ function AnchorHandle({
   const [dragging, setDragging] = useState(false);
   const offset = useRef({ x: 0, y: 0 });
   const session = useSession();
+  const [presence, updatePresense] = useMyPresence();
+  const othersPresense = useOthers();
+
+  // TODO: make a conversation UI
+  // below are helpers for managing presense for these things
+  // you can also use liveHandleInfo.get("owner") if you want to show
+  // who is currently *dragging* a given handle
+  const openConversation = () => {
+    // add this anchor handle to opened handles by user
+    updatePresense({ openHandles: [...presence.openHandles, id] });
+
+    // use localCoords.y to determine where to open the actual chat ui
+    // use this to display information on others
+    const otherUsersViewingConversation = othersPresense
+      .filter((userInfo) => userInfo.presence.openHandles.includes(id))
+      .map((userInfo) => {
+        userInfo.id;
+      });
+  };
+
+  const closeConversation = () => {
+    updatePresense({
+      // on first glance this feels inefficient but also you would need to find the
+      // id in the list anyways to call .pop, so reconstructing via a filter is equally ok
+      openHandles: presence.openHandles.filter((handleId) => handleId !== id),
+    });
+  };
 
   // refetch info from id, so that this component reloads only when ***this*** anchor handle is affected
   const liveHandleInfo = useStorage((root) => root.docHandles.get(id));
@@ -151,7 +183,7 @@ function AnchorHandle({
     if (!dragging) {
       // we are receiving position changes from someone else's anchor movements
       // so reflect them on our end by updating the local position
-      console.log("<<< PULLING:", liveHandleInfo.x, liveHandleInfo.y)
+      console.log("<<< PULLING:", liveHandleInfo.x, liveHandleInfo.y);
       setLocalCoords({
         x: liveHandleInfo.x + window.innerWidth / 2,
         y: liveHandleInfo.y,
@@ -160,18 +192,21 @@ function AnchorHandle({
   }, [liveHandleInfo.x, liveHandleInfo.y]);
 
   useEffect(() => {
-    console.log("local coords converted", localCoords.x - window.innerWidth / 2, localCoords.y)
-  }, [localCoords.x, localCoords.y])
+    console.log(
+      "local coords converted",
+      localCoords.x - window.innerWidth / 2,
+      localCoords.y
+    );
+  }, [localCoords.x, localCoords.y]);
 
   // update live position, debounce to not send 20 billion requests
   const writePos = useMutation(({ storage }, targetX, targetY) => {
     const handle = storage.get("docHandles").get(id);
-    console.log(">>> PUSHING:", targetX - window.innerWidth / 2, targetY)
+    console.log(">>> PUSHING:", targetX - window.innerWidth / 2, targetY);
     handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
     handle?.set("y", targetY);
   }, []);
-  const debouncedWritePos = useDebounce(writePos, 200); // TODO: tune out this parameter to make the sync movement feel nice
-
+  const debouncedWritePos = useDebounce(writePos, 20); // TODO: tune out this parameter to make the sync movement feel nice
 
   const deleteAnchor = useMutation(({ storage }) => {
     storage.get("docHandles").delete(id);
@@ -325,7 +360,7 @@ function AnchorHandle({
 
       if (animationFrame) cancelAnimationFrame(animationFrame);
       const animate = () => {
-        console.log("animate ", targetX, targetY)
+        console.log("animate ", targetX, targetY);
         setLocalCoords({ x: targetX, y: targetY });
         animationFrame = requestAnimationFrame(animate);
         // setDraggingAnchor(false);

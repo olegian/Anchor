@@ -38,7 +38,7 @@ declare global {
     Presence: {
       // Example, real-time cursor coordinates
       // cursor: { x: number; y: number };
-      currentHandle: string | null; // in case we want to track who has what handle open
+      openHandles: string[]; // ids of all actively opened handles
       name: string;
     };
 

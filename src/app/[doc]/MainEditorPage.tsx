@@ -2,7 +2,6 @@
 
 import { Session } from "next-auth";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import DocMenu from "./components/DocMenu";
 import Editor from "./components/Editor";
 import FloatingMenu from "./components/floating/FloatingMenu";
@@ -13,8 +12,6 @@ import { LiveList, LiveObject } from "@liveblocks/client";
 import { useMutation, useMyPresence, useStorage } from "@liveblocks/react";
 import { useScrollPosition } from "../components/hooks/useScrollPosition";
 import BackButton from "./components/floating/BackButton";
-import HandleInput from "./components/dialog/HandleInput";
-import { Conversation } from "../../../liveblocks.config";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
