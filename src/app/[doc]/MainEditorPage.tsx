@@ -65,7 +65,7 @@ function EditingInterface({ doc }: { doc: string }) {
 
   return (
     <>
-      <div className="py-4 px-2 md:py-8 md:px-6 ">
+      <div className="py-4 px-2 md:py-8 md:px-6 select-none">
         <div className="max-w-3xl mx-auto py-16 space-y-4">
           <div className="space-y-4 px-2">
             <div className="flex items-center justify-between">
