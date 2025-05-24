@@ -52,6 +52,8 @@ function EditingInterface({ doc }: { doc: string }) {
           ]),
           owner: "",
           handleName: "",
+          wordIdx: -1,
+          paragraphIdx: -1,
           x: x,
           y: y,
         })

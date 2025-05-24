@@ -85,6 +85,7 @@ export default function Editor({
         addHandle={addHandle}
         draggingAnchor={draggingAnchor}
         setDraggingAnchor={setDraggingAnchor}
+        docId={params.doc}
       />
     </>
   );

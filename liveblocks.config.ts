@@ -9,12 +9,15 @@ export type Conversation = LiveObject<{
   handleName: string; // optional name for the handle
   x: number; // on screen x-position
   y: number; // on screen y-position
+  wordIdx: number;  // -1 when not hovering word, nit: undefined isnt a valid LSON value, so live storage doesnt fw it
+  paragraphIdx: number;
 }>;
 
 export type Handles = LiveMap<
   string, // handleId
   Conversation
 >;
+
 
 export type HandlesMap = ReadonlyMap<
   string,

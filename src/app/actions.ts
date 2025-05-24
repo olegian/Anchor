@@ -189,9 +189,8 @@ export async function prompt(
   env?: string
 ): Promise<PromptResponse> {
   try {
-    docId = "bc8eb889-6d61-4bd9-9389-7d84558c8685";
     // Get document contents and storage
-    const docContents = await getContents("bc8eb889-6d61-4bd9-9389-7d84558c8685");
+    const docContents = await getContents(docId);
     const docStorage = await liveblocks.getStorageDocument(docId, "json");
     const handleInfo = docStorage.docHandles[handleId];
     
@@ -200,6 +199,11 @@ export async function prompt(
     }
 
     const { prompt: userPrompt } = handleInfo.exchanges[handleInfo.exchanges.length - 1];
+    // TODO: you have these available now, if theyre helpful, note if the handle is on a paragraph
+    // but not a word, then wordIdx is -1, same reasoning for if the handle is not on anything, then
+    // -1, -1 for both. apologize in advance for it not being undefined, but that plays better with livestorage
+    const paragraphIdx = handleInfo.paragraphIdx;  // i think this can directly index the docContents json string
+    const wordIdx = handleInfo.wordIdx;
     
     // Use passed positions or fall back to stored positions
     const finalYPosition = yPosition !== undefined ? yPosition : handleInfo.y;

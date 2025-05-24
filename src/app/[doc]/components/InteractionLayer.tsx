@@ -1,16 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { HandlesMap } from "../../../../liveblocks.config";
 import { useHotkeys } from "react-hotkeys-hook";
-import {
-  useMutation,
-  useMyPresence,
-  useOthers,
-  useStorage,
-} from "@liveblocks/react";
+import { useMutation, useMyPresence, useOthers, useStorage } from "@liveblocks/react";
 import { PlusIcon, PaperAirplaneIcon, XMarkIcon } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
 import { prompt, createExchange } from "../../actions";
+import { LiveObject } from "@liveblocks/client";
 
 export function EditorMirrorLayer({ html }: { html: string }) {
   function wrapEveryWordInSpansPreserveHTML(html: string) {
@@ -53,9 +49,7 @@ export function EditorMirrorLayer({ html }: { html: string }) {
       id="overlay-editor"
       className="absolute max-w-3xl pointer-events-none select-none w-full h-80 mx-auto top-[12.35rem] px-2 prose"
       dangerouslySetInnerHTML={{
-        __html: wrapEveryWordInSpansPreserveHTML(
-          html.replaceAll("<p></p>", "<p><br /></p>")
-        ),
+        __html: wrapEveryWordInSpansPreserveHTML(html.replaceAll("<p></p>", "<p><br /></p>")),
       }}
     />
   );
@@ -120,15 +114,66 @@ function ConversationUI({
   onClose: () => void;
   position: { x: number; y: number };
 }) {
-  const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const liveHandleInfo = useStorage((root) => root.docHandles.get(handleId));
-  const exchanges = liveHandleInfo?.exchanges || [];
+  const exchanges = useStorage((root) => root.docHandles.get(handleId)?.exchanges);
+  const currentExchange = exchanges?.at(exchanges.length - 1);
+
+  if (!exchanges) {
+    return null;
+  }
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  // --- Live Storage Mutations ---
+  // This isn't an ideal solution, cursors won't show up in prompt boxes, and concurrent edits (probably)
+  // wont look that clean, but the alternative is to use a whole ass editor as the prompt box,
+  // and I would rather not do that for now. I think we can pivot to that if this
+  // doesnt work too well
+  const changeCurrentPrompt = useMutation(({ storage }, newPrompt) => {
+    const exchanges = storage.get("docHandles").get(handleId)?.get("exchanges");
+
+    // note that the first element of exchanges should have been initialized when the handle was created
+    // so this is actually a safe access. Typescript moment in having to type this comment out.
+    exchanges?.get(exchanges.length - 1)?.set("prompt", newPrompt);
+  }, []);
+
+  const setPending = useMutation(({ storage }, isPending) => {
+    const handleInfo = storage.get("docHandles").get(handleId);
+
+    if (isPending) {
+      // trying to acquire lock
+      const handleInfo = storage.get("docHandles").get(handleId);
+      if (handleInfo?.get("isPending")) {
+        // someone already grabbed it
+        return false;
+      } else {
+        handleInfo?.set("isPending", true);
+      }
+
+      return true;
+    } else {
+      // trying to release lock, just do it unconditionally.
+      // i've written this comment a bunch -- this is not that cool to do from a concurrency standpoint but eh
+
+      handleInfo?.set("isPending", false);
+      return true;
+    }
+  }, []);
+
+  const openNewPrompt = useMutation(({ storage }) => {
+    const exchanges = storage.get("docHandles").get(handleId)?.get("exchanges");
+    if (!exchanges?.get(exchanges?.length - 1)?.get("response")) {
+      // trying to open new a prompt without getting response from previous one
+      return false;
+    } else {
+      exchanges.push(new LiveObject({ prompt: "", response: "" }));
+      return true;
+    }
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -136,21 +181,30 @@ function ConversationUI({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
-
-    const promptText = inputValue.trim();
-    setInputValue("");
+    const promptText = currentExchange?.prompt || "";
+    if (promptText.length == 0 || isLoading) return;
     setIsLoading(true);
 
+    if (!setPending(true)) {
+      // TODO: report that there is already a prompt pending from some other client
+      setIsLoading(false)
+      return;
+    }
+
     try {
-      // Create new exchange
-      await createExchange(docId, handleId, promptText);
-      
       // Send prompt to LLM
       await prompt(docId, handleId);
+
+      // create new exchange after response is received
+      if (!openNewPrompt()) {
+          // TODO: this should never happen, but just in case leave this for now
+          // its for if somehow we end up trying to start a new prompt without resolving the previous one
+          console.log("Prompt state is weird!!! Check that out ASAP!")
+      }
     } catch (error) {
       console.error("Error sending prompt:", error);
     } finally {
+      setPending(false);
       setIsLoading(false);
     }
   };
@@ -167,10 +221,7 @@ function ConversationUI({
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b">
         <h3 className="font-semibold text-sm">AI Assistant</h3>
-        <button
-          onClick={onClose}
-          className="p-1 hover:bg-gray-100 rounded"
-        >
+        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
           <XMarkIcon className="w-4 h-4" />
         </button>
       </div>
@@ -211,15 +262,15 @@ function ConversationUI({
         <form onSubmit={handleSubmit} className="flex space-x-2">
           <input
             type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            value={currentExchange?.prompt || ""}
+            onChange={(e) => changeCurrentPrompt(e.target.value)}
             placeholder="Ask the AI about this content..."
             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isLoading}
           />
           <button
             type="submit"
-            disabled={!inputValue.trim() || isLoading}
+            disabled={(currentExchange?.prompt || "").length == 0 || isLoading} // Theres gotta be a better way to express that length check
             className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <PaperAirplaneIcon className="w-4 h-4" />
@@ -288,11 +339,22 @@ function AnchorHandle({
     }
   }, [liveHandleInfo.x, liveHandleInfo.y, dragging]);
 
-  const writePos = useMutation(({ storage }, targetX, targetY) => {
-    const handle = storage.get("docHandles").get(id);
-    handle?.set("x", targetX - window.innerWidth / 2);
-    handle?.set("y", targetY);
-  }, []);
+  const writePos = useMutation(
+    (
+      { storage },
+      targetX: number,
+      targetY: number,
+      wordIdx: number = -1,
+      paragraphIdx: number = -1, 
+    ) => {
+      const handle = storage.get("docHandles").get(id);
+      handle?.set("x", targetX - window.innerWidth / 2);
+      handle?.set("y", targetY);
+      handle?.set("wordIdx", wordIdx);
+      handle?.set("paragraphIdx", paragraphIdx);
+    },
+    []
+  );
   const debouncedWritePos = useDebounce(writePos, 20);
 
   const deleteAnchor = useMutation(({ storage }) => {
@@ -310,7 +372,7 @@ function AnchorHandle({
   const getContextType = (): "word" | "paragraph" | "document" => {
     const overlayContainer = document.getElementById("overlay-editor");
     if (!overlayContainer) return "document";
-    
+
     const paragraphs = overlayContainer.querySelectorAll("p");
     if (!paragraphs.length) return "document";
 
@@ -322,8 +384,10 @@ function AnchorHandle({
     const anchorInEditor = localCoords.x >= editorLeftEdge && localCoords.x <= editorRightEdge;
 
     if (anchorInEditor) return "word";
-    if ((anchorOnLeft && editorLeftEdge - localCoords.x < editorLeftEdge / 6) ||
-        (anchorOnRight && localCoords.x < editorRightEdge + editorRightEdge / 6)) {
+    if (
+      (anchorOnLeft && editorLeftEdge - localCoords.x < editorLeftEdge / 6) ||
+      (anchorOnRight && localCoords.x < editorRightEdge + editorRightEdge / 6)
+    ) {
       return "paragraph";
     }
     return "document";
@@ -335,8 +399,8 @@ function AnchorHandle({
   useEffect(() => {
     const contextLabels = {
       word: "Word",
-      paragraph: "Paragraph", 
-      document: "Document"
+      paragraph: "Paragraph",
+      document: "Document",
     };
     setText(contextLabels[contextType]);
   }, [contextType, localCoords.x]);
@@ -344,7 +408,7 @@ function AnchorHandle({
   // Rotation animation and drag handling
   useEffect(() => {
     if (!dragging) return;
-    
+
     function animateRotation() {
       const dx = localCoords.x - lastPos.current.x;
       const velocity = dx;
@@ -354,7 +418,7 @@ function AnchorHandle({
       lastPos.current = { x: localCoords.x, y: localCoords.y };
       animationRef.current = requestAnimationFrame(animateRotation);
     }
-    
+
     animationRef.current = requestAnimationFrame(animateRotation);
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
@@ -413,13 +477,67 @@ function AnchorHandle({
         setText("Word");
       }
 
+      for (let i = 0; i < paragraphs.length; i++) {
+        const paragraph = paragraphs[i];
+      }
+
+      let found = false;
+      let paragraphIdx: number | undefined = undefined;
+      let wordIdx: number | undefined = undefined;
+      for (let i = 0; i < paragraphs.length; i++) {
+        const paragraph = paragraphs[i];
+        const spans = paragraph.getElementsByTagName("span");
+        for (let j = 0; j < spans.length; j++) {
+          const span = spans[j];
+          const rect = span.getBoundingClientRect();
+          if (
+            e.clientX >= rect.left &&
+            e.clientX <= rect.right &&
+            e.clientY >= rect.top &&
+            e.clientY <= rect.bottom
+          ) {
+            // Snap target is the center of the span
+            targetX = rect.left + rect.width / 2;
+            targetY = rect.top + rect.height / 2;
+
+            // Highlight the span
+            span.className =
+              "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colors";
+            found = true;
+            wordIdx = j
+            paragraphIdx = i;
+          } else {
+            span.className = "transition-colors";
+          }
+        }
+
+        // if to the left of the paragraph, highlight the left side
+        const paraRect = paragraph.getBoundingClientRect();
+        if (
+          !found &&
+          e.clientX < paraRect.left &&
+          e.clientX > paraRect.left - 120 &&
+          e.clientY > paraRect.top &&
+          e.clientY < paraRect.bottom
+        ) {
+          // Highlight the left side
+          paragraph.className =
+            "border-l-4 border-zinc-300 -ml-2 transition-colors";
+          paragraph.after;
+
+          paragraphIdx = i;
+          targetX = paraRect.left - 20;
+          targetY = paraRect.top + paraRect.height / 2 - 10;
+        }
+      }
+
       if (animationFrame) cancelAnimationFrame(animationFrame);
       const animate = () => {
         setLocalCoords({ x: targetX, y: targetY });
         animationFrame = requestAnimationFrame(animate);
       };
 
-      debouncedWritePos(targetX, targetY);
+      debouncedWritePos(targetX, targetY, wordIdx, paragraphIdx);
       animate();
     };
 
@@ -450,7 +568,7 @@ function AnchorHandle({
 
   const onMouseDown = (e: React.MouseEvent) => {
     if (liveHandleInfo.owner !== "") return;
-    
+
     if (session.data?.user?.id && !setAnchorOwner(session.data.user.id)) {
       return;
     }
