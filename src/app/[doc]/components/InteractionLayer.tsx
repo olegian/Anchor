@@ -437,7 +437,7 @@ function AnchorHandle({
       };
 
       // write new position to live
-      debouncedWritePos(targetX, targetY, wordIdx, paragraphIdx);
+      debouncedWritePos(targetX, targetY, paragraphIdx, wordIdx);
       animate();
 
       // setDraggingAnchor(true);
