@@ -175,7 +175,7 @@ export default function AnchorPopup({
           <div className="overflow-hidden rounded-full shrink-0 size-7">
             <div
               className={`${
-                liveHandleInfo?.isPending
+                isLoading
                   ? "animate-spin from-sky-400 to-pink-400 via-violet-400 bg-radial-[at_25%_75%]"
                   : "bg-zinc-300"
               }  size-7 rounded-full shrink-0 blur-xs transition-all`}
@@ -246,7 +246,7 @@ export default function AnchorPopup({
           </div>
         </div>
         <p className="border border-zinc-200 p-2 rounded-lg text-sm text-zinc-700 max-h-64 overflow-y-auto">
-          {liveHandleInfo?.isPending ? (
+          {isLoading ? (
             <div className="">
               <div className="animate-pulse flex flex-wrap items-start justify-start gap-1">
                 {Array(6)
