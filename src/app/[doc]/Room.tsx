@@ -65,7 +65,6 @@ export function Room({
         initialStorage={{
           docHandles: new LiveMap(),
           docTitle: "New Document",
-          pendingInsertion: new LiveObject(),
         }}
       >
         <ClientSideSuspense

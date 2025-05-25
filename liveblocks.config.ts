@@ -57,12 +57,6 @@ declare global {
       //paragraphs: LiveList<LiveObject<{ type: "paragraph", content: LiveList<LiveObject<{ type: "text", text: string }>> }>>;
       docHandles: Handles; // snapshotId -> snapshot information
       docTitle: string;
-      pendingInsertion: LiveObject<{
-        content: string;
-        paragraphIdx: number;
-        wordIdx: number;
-        timestamp: number;
-      }> | null;
     };
 
     // Custom user info set when authenticating with a secret key
