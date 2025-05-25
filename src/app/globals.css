@@ -19,16 +19,8 @@
   --font-display: "Inter", "SF Pro", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
 
-  --font-display--font-feature-settings: "ss01", "liga", "calt";
-  --font-display--font-variation-settings: "opsz" 32;
-
-  --font-display-length: 10;
-
   --font-sans: "Inter", "SF Pro", ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-sans--font-feature-settings: "ss01", "liga", "calt";
-  --font-sans--font-variation-settings: "opsz" 16;
-  --font-sans-length: 10;
 }
 
 @layer base {
