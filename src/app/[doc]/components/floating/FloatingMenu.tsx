@@ -43,14 +43,12 @@ export default function FloatingMenu({ docId }: { docId: string }) {
           Share
         </button>
       </div>
-      {openShareDialog ? (
-        <ShareDialog
-          title={title ?? "document"}
-          isOpen={openShareDialog}
-          close={() => setOpenShareDialog(false)}
-          docId={docId}
-        />
-      ) : null}
+      <ShareDialog
+        title={title ?? "document"}
+        isOpen={openShareDialog}
+        close={() => setOpenShareDialog(false)}
+        docId={docId}
+      />
     </>
   );
 }

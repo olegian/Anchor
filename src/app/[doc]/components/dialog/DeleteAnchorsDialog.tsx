@@ -9,11 +9,11 @@ import {
 import { XMarkIcon } from "@heroicons/react/16/solid";
 
 export default function DeleteDocDialog({
-  deleteDocHandler,
+  deleteAllAnchorsHandler,
   isOpen,
   close,
 }: {
-  deleteDocHandler: () => void;
+  deleteAllAnchorsHandler: () => void;
   isOpen: boolean;
   close: () => void;
 }) {
@@ -23,7 +23,7 @@ export default function DeleteDocDialog({
       open={isOpen}
       as="div"
       className="relative z-40 focus:outline-none"
-      onClose={close}
+      onClose={() => {}}
     >
       <DialogBackdrop className="fixed inset-0 bg-black/30" />
       <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
@@ -34,11 +34,11 @@ export default function DeleteDocDialog({
           >
             <div className="space-y-2">
               <DialogTitle as="h3" className="text-lg font-semibold text-black">
-                Delete document?
+                Delete all anchors?
               </DialogTitle>
               <p className="text-sm/6 text-zinc-600">
-                Are you sure you want to delete this document? This action
-                cannot be undone.
+                Are you sure you want to delete all anchors? This action cannot
+                be undone.
               </p>
             </div>
 
@@ -51,7 +51,7 @@ export default function DeleteDocDialog({
                 Cancel
               </Button>
               <Button
-                onClick={deleteDocHandler}
+                onClick={deleteAllAnchorsHandler}
                 className="border border-red-700 inline-flex items-center gap-2 rounded-lg bg-red-500 cursor-pointer px-2 py-1 text-sm font-medium text-white focus:not-data-focus:outline-none data-focus:outline data-hover:bg-red-600 data-open:bg-red-600"
               >
                 Delete
