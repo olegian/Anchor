@@ -9,6 +9,7 @@ import SkeletonEditor from "./SkeletonEditor";
 import { EditorMirrorLayer, AnchorLayer } from "./InteractionLayer";
 import { HandlesMap } from "../../../../liveblocks.config";
 import { useStorage } from "@liveblocks/react"; // Make sure this is imported
+import Placeholder from "@tiptap/extension-placeholder";
 
 export default function Editor({
   title,
@@ -52,6 +53,9 @@ export default function Editor({
           levels: [2],
         },
         history: false,
+      }),
+      Placeholder.configure({
+        placeholder: "Type your text here...",
       }),
     ],
     immediatelyRender: false,
@@ -148,7 +152,7 @@ export default function Editor({
           docId={docId}
           editor={editor}
           mousePos={mousePos}
-      />
+        />
       ) : null}
     </>
   );

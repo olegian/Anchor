@@ -33,21 +33,22 @@ export default function ShareDialog({
 
   return (
     <Dialog
+      id="share-doc-dialog"
       open={isOpen}
       as="div"
-      className="relative z-20 focus:outline-none"
+      className="relative z-40 focus:outline-none"
       onClose={close}
     >
       <DialogBackdrop className="fixed inset-0 bg-black/30" />
-      <div className="fixed inset-0 z-20 w-screen overflow-y-auto">
+      <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4">
           <DialogPanel
             transition
-            className="w-full space-y-4 max-w-sm rounded-xl bg-white p-8 backdrop-blur-2xl duration-300 ease-out data-closed:transform-[scale(95%)] data-closed:opacity-0"
+            className="w-full space-y-4 max-w-md rounded-xl bg-white p-8 backdrop-blur-2xl duration-300 ease-out data-closed:transform-[scale(95%)] data-closed:opacity-0"
           >
             <div className="space-y-2">
               <DialogTitle as="h3" className="text-lg font-semibold text-black">
-                Share {title}
+                Share "{title}"
               </DialogTitle>
               <p className="text-sm/6 text-zinc-600">
                 Who would you like to share this document with?
