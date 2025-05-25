@@ -99,13 +99,21 @@ function EditingInterface({ docId }: { docId: string }) {
       }
 
       if (
+        document.getElementById("delete-doc-dialog") ||
+        document.getElementById("share-doc-dialog")
+      ) {
+        // If the delete dialog is open, ignore clicks outside the border
+        return;
+      }
+
+      if (
         borderRef.current &&
         !borderRef.current.contains(event.target as Node)
       ) {
         if (
           mousePos.x < 50 + 24 ||
           mousePos.x > window.innerWidth - 50 - 24 ||
-          mousePos.y < 50 + 24
+          mousePos.y + window.scrollY < 200 + 24
         ) {
           return;
         }
@@ -142,6 +150,7 @@ function EditingInterface({ docId }: { docId: string }) {
 
   return (
     <>
+      <p className="fixed top-32 right-32">{mousePos.y + window.scrollY}</p>
       <div className="pt-4 px-2 md:pt-16 md:px-6 select-none">
         <div
           ref={borderRef}

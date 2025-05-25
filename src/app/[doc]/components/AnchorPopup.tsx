@@ -41,7 +41,9 @@ export default function AnchorPopup({
   const [viewedExchange, setViewedExchange] = useState(exchanges.length - 1); // TODO: initialize to last?
   const [isLoading, setIsLoading] = useState(false);
 
-  // if click outside, close the popup
+  // TODO: only one popup should be open?
+
+  // // if click outside, close the popup
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -129,7 +131,7 @@ export default function AnchorPopup({
     console.log(paragraphIdx, wordIdx);
 
     const response = exchanges.at(viewedExchange)?.response || "";
-    const formatResponse = response.replaceAll(/([\p{P}])  /ug, "$1 ").trim();
+    const formatResponse = response.replaceAll(/([\p{P}])  /gu, "$1 ").trim();
     if (paragraphIdx == -1) {
       // no paragraph is selected, insert to end of document
       editor.commands.insertContentAt(editor.state.doc.content.size, {
@@ -161,7 +163,7 @@ export default function AnchorPopup({
 
   return (
     <div
-      className="top-14 left-0 -translate-x-1/2 absolute w-xs z-50 bg-white border border-zinc-200 rounded-xl shadow-xl"
+      className="anchor-popup top-14 left-0 -translate-x-1/2 absolute w-xs z-50 bg-white border border-zinc-200 rounded-xl shadow-xl"
       ref={popupRef}
     >
       <div className="p-2">

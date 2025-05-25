@@ -11,15 +11,13 @@ import {
   ArrowPathIcon,
   ArrowsPointingOutIcon,
   ChevronRightIcon,
+  MinusIcon,
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
-import {
-  prompt,
-  createExchange,
-} from "../../actions";
+import { prompt, createExchange } from "../../actions";
 import { LiveObject, User } from "@liveblocks/client";
 import { Editor } from "@tiptap/react";
 import { users } from "@/app/auth";
@@ -145,7 +143,6 @@ export function AnchorLayer({
     </div>
   );
 }
-
 
 const ANCHOR_HANDLE_SIZE = 24; // Size of the anchor handle in pixels
 const PUNCTUATION = ". ,;:!?"; // Punctuation characters to ignore
@@ -599,19 +596,23 @@ function AnchorHandle({
       : "Document"
   }`;
 
+  const ownerColor = owned && !isOwner ? ownerData?.color : "";
+
+  const [openPopup, setOpenPopup] = useState<boolean>(false);
+
+  const showPopup = openPopup && !dragging && !deleteState;
+
   const icon = deleteState ? (
     <XMarkIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
   ) : liveHandleInfo.isPending ? (
     <ArrowPathIcon className="absolute size-3.5 shrink-0 animate-spin" />
   ) : dragging || owned ? (
     <ArrowsPointingOutIcon className="absolute shrink-0 size-3 transition-all group-hover:scale-125 rotate-45" />
+  ) : showPopup ? (
+    <MinusIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
   ) : (
     <PlusIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
   );
-
-  const ownerColor = owned && !isOwner ? ownerData?.color : "";
-
-  const [openPopup, setOpenPopup] = useState<boolean>(false);
 
   return (
     <>
@@ -691,14 +692,14 @@ function AnchorHandle({
           </div>
         </div>
         {/* {openPopup && !deleteState && !dragging ? ( */}
-        <Transition show={openPopup && !dragging && !deleteState} as="div">
+        <Transition show={showPopup} as="div">
           <AnchorPopup
             title={title}
             handleId={id}
             docId={docId}
             liveHandleInfo={liveHandleInfo}
             position={{ x: localCoords.x, y: localCoords.y }}
-            isOpen={openPopup && !deleteState && !dragging}
+            isOpen={showPopup}
             close={() => setOpenPopup(false)}
             editor={editor}
           />

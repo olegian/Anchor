@@ -10,7 +10,6 @@ import { User, Users } from "../Users";
 import { useSession } from "next-auth/react";
 import { useOthers, useStorage } from "@liveblocks/react";
 import { useState } from "react";
-import { shareDoc } from "@/app/actions";
 
 export default function FloatingMenu({ docId }: { docId: string }) {
   const session = useSession();
@@ -23,7 +22,7 @@ export default function FloatingMenu({ docId }: { docId: string }) {
 
   return (
     <>
-      <div className="fixed flex items-center justify-end top-4 right-4 z-50 space-x-4">
+      <div className="fixed flex items-center justify-end top-4 right-4 z-40 space-x-4">
         <Users hover={true} usersList={usersOnDoc} />
         {usersOnDoc !== undefined && usersOnDoc.length > 0 ? (
           <div className="w-px h-8 bg-zinc-200" />
@@ -36,22 +35,22 @@ export default function FloatingMenu({ docId }: { docId: string }) {
         ) : (
           <UserCircleIcon className="size-6 fill-zinc-500 animate-pulse" />
         )}
-        {/* <div className="bg-white w-8 h-8 transition-colors rounded-lg hover:bg-zinc-100 flex items-center justify-center">
-        <CogIcon className="size-5 text-zinc-700" />
-      </div> */}
+
         <button
           onClick={() => setOpenShareDialog(true)}
-          className="text-sm px-2 py-1 rounded-lg border-zinc-200 border font-medium hover:bg-zinc-100 transition-colors text-zinc-700 cursor-pointer"
+          className="text-sm px-2 py-1 rounded-lg bg-white border-zinc-200 border font-medium hover:bg-zinc-100 transition-colors text-zinc-700 cursor-pointer"
         >
           Share
         </button>
       </div>
-      <ShareDialog
-        title={title ?? "document"}
-        isOpen={openShareDialog}
-        close={() => setOpenShareDialog(false)}
-        docId={docId}
-      />
+      {openShareDialog ? (
+        <ShareDialog
+          title={title ?? "document"}
+          isOpen={openShareDialog}
+          close={() => setOpenShareDialog(false)}
+          docId={docId}
+        />
+      ) : null}
     </>
   );
 }
