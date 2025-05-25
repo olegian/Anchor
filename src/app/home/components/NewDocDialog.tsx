@@ -7,7 +7,7 @@ import {
   DialogPanel,
   DialogTitle,
 } from "@headlessui/react";
-import { XMarkIcon } from "@heroicons/react/16/solid";
+import { ArrowPathIcon, XMarkIcon } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { useState } from "react";
@@ -19,16 +19,19 @@ export default function NewDocDialog({
   isOpen: boolean;
   close: () => void;
 }) {
+  const [loading, setLoading] = useState(false);
+
   const [tempDocTitle, setTempDocTitle] = useState("");
   const session = useSession();
   const createDocHandler = async () => {
     const newDocId = crypto.randomUUID();
 
-    // TODO: display loading while this is being awaited?
+    setLoading(true);
     if (session && session.data && session.data.user && session.data.user.id) {
       await createDoc(newDocId, tempDocTitle, session.data.user.id);
       redirect(`/${newDocId}`); // auto creates doc on reroute
     }
+    setLoading(false);
   };
 
   return (
@@ -56,19 +59,27 @@ export default function NewDocDialog({
 
             <input
               type="text"
+              disabled={loading}
               value={tempDocTitle}
               onChange={(e) => setTempDocTitle(e.target.value)}
               placeholder="Document name"
-              className="w-full border border-zinc-200 rounded-lg px-4 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border disabled:opacity-50 disabled:pointer-events-none border-zinc-200 rounded-lg px-4 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
             <Button
               onClick={createDocHandler}
               type="button"
-              disabled={tempDocTitle.length < 1}
-              className="disabled:opacity-50 border border-zinc-200 inline-flex items-center gap-2 rounded-lg bg-white cursor-pointer px-2 py-1 text-sm font-medium text-black focus:not-data-focus:outline-none data-focus:outline data-hover:bg-zinc-100 data-open:bg-zinc-100"
+              disabled={tempDocTitle.length < 1 || loading}
+              className="disabled:opacity-50 disabled:pointer-events-none border border-zinc-200 inline-flex items-center gap-2 rounded-lg bg-white cursor-pointer px-2 py-1 text-sm font-medium text-black focus:not-data-focus:outline-none data-focus:outline data-hover:bg-zinc-100 data-open:bg-zinc-100"
             >
-              Create document
+              {loading ? (
+                <>
+                  Creating document{" "}
+                  <ArrowPathIcon className="animate-spin size-4 text-zinc-600" />
+                </>
+              ) : (
+                "Create Document"
+              )}
             </Button>
 
             <CloseButton
