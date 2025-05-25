@@ -32,8 +32,6 @@ export default function MainEditorPage({ session }: { session: Session }) {
 }
 
 function EditingInterface({ docId }: { docId: string }) {
-  const [myPresence, updateMyPresence] = useMyPresence();
-
   const title = useStorage((root) => root.docTitle);
   const setTitle = useMutation(({ storage }, newTitle) => {
     storage.set("docTitle", newTitle);

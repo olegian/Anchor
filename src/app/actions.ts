@@ -4,7 +4,7 @@ import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { liveblocks } from "./liveblocks";
 import { LiveObject, LiveList, toPlainLson, LiveMap, PlainLsonObject } from "@liveblocks/client";
-import { allowAccessToRoomId, disallowAccessToRoomId, getAvailableRoomIds } from "./firebase";
+import { allowAccessToRoomId, disallowAccessToRoomId, getAvailableRoomIds, getUserInfo } from "./firebase";
 import { RoomData } from "@liveblocks/node";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
@@ -250,7 +250,25 @@ export async function prompt(
 
 When focusing on a paragraph, discuss only that specific paragraph and its content. When focusing on a word, discuss that word in the context of its paragraph. When given the full document, you can discuss the entire document.
 
-Be concise but thorough in your analysis.`
+Be concise but thorough in your analysis.
+
+When focusing on a word, you may be asked to provide a synonym, which will be indicated by the user passing the word \"synonym\" into the model. If you 
+receive this prompt, you should provide a sample synonym for the word. You would not need any additional context in this situation, and should therefore not discuss this.
+For example: if the user enters "was", a synonym could be "existed". 
+
+This will be similar for other instances in which the context is only the word. You will only consider the word, and not focus on other context.
+
+If the context is a paragraph, you will also discuss only that specific paragraph and its content, while thinking through your reasoning. If the user asks you to provide
+additional text for that paragraph, only provide the additional text.
+
+For instance, if the paragraph is "\We want to remind you that midnight today, May 25, is the deadline for you to register/order cap and gown to attend the Commencement ceremony in Husky Stadium on June 14! 
+It is easy to sign up to share this special day with your friends and family.\",
+additional text for that paragraph may be \"Don't miss your chance to join us on this special day! We hope to see you there, and we are excited to have you join us. More information will be revealed shortly\";
+the user is also able to request for specific sentence lengths or for more information after this point. 
+
+If the context is the document, analyze the document fully, being sure to consider the perspective of the user and what goals they want, while thinking
+through your thought process.
+`
         }]
       }
     });
@@ -477,4 +495,13 @@ export async function getRoomStorage(roomId: string) {
     data: roomStorage,
     doc: doc,
   };
+}
+
+export async function getUser(username: string) {
+  return await getUserInfo(username)
+}
+
+export async function getUserColor(username: string) {
+  const res = await getUserInfo(username);
+  return res.color;
 }

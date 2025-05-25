@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowPathIcon } from "@heroicons/react/20/solid";
-import { LiveMap } from "@liveblocks/client";
+import { LiveMap, LiveObject } from "@liveblocks/client";
 import {
   ClientSideSuspense,
   LiveblocksProvider,
@@ -25,9 +25,9 @@ export function Room({
   const [authFailed, setAuthFailed] = useState(false);
   useEffect(() => {
     if (authFailed) {
-      redirect("/home")
+      redirect("/home");
     }
-  }, [authFailed])
+  }, [authFailed]);
 
   const authHandler = async (roomId: string | undefined) => {
     if (!session.user || !session.user.id) {
@@ -47,7 +47,7 @@ export function Room({
     });
 
     if (response.status !== 200) {
-      setAuthFailed(true)
+      setAuthFailed(true);
     }
 
     return await response.json();
@@ -59,10 +59,14 @@ export function Room({
       <RoomProvider
         initialPresence={{
           openHandles: [],
-          name: session.user?.name ?? "",
+          id: session.user?.id ?? "",
         }} // ?? should be unnecessary?
         id={docId}
-        initialStorage={{ docHandles: new LiveMap(), docTitle: "New Document" }}
+        initialStorage={{
+          docHandles: new LiveMap(),
+          docTitle: "New Document",
+          pendingInsertion: new LiveObject(),
+        }}
       >
         <ClientSideSuspense
           fallback={

@@ -1,13 +1,26 @@
-import { signOut, users } from "@/app/auth";
+import { getUser } from "@/app/actions";
+import { signOut } from "@/app/auth";
+import { getUserInfo } from "@/app/firebase";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 
 import { UserCircleIcon } from "@heroicons/react/20/solid";
 import { User } from "next-auth";
 import { redirect } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function UserMenu({ user }: { user: User | null }) {
-  const profile = users.find((u) => u.username === user?.id);
+  const [profile, setProfile] = useState<{name: string, color: string} | null>(null)
+  useEffect(() => {
+    if (user && user.id) {
+      console.log("getting userID", user.id);
+      getUser(user.id).then((res) => {
+        console.log("found");
+        setProfile(res);
+      })
+    }
+  }, [user])
   const [first = "", last = ""] = profile?.name.split(" ") || [];
+
   return (
     <Menu>
       <MenuButton>

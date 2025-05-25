@@ -1,4 +1,5 @@
-import { auth, users } from "@/app/auth";
+import { getUserColor } from "@/app/actions";
+import { auth } from "@/app/auth";
 import { getAvailableRoomIds } from "@/app/firebase";
 import { liveblocks } from "@/app/liveblocks";
 
@@ -13,10 +14,11 @@ export async function POST(request: Request) {
     return new Response("Specify roomId in auth request.", { status: 401 });
   }
 
+  const color = getUserColor(authRequest.userId);
   const session = liveblocks.prepareSession(authRequest.userId, {
     userInfo: {
       name: authRequest.userId,
-      color: users.find((u) => u.name === authRequest.userId)?.color ?? "black", // TODO: let users specify thier own cursors
+      color: color ?? "black",
     },
   });
 

@@ -17,10 +17,13 @@ import {
 } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
-import { prompt, createExchange } from "../../actions";
+import {
+  prompt,
+  createExchange,
+  getUser,
+} from "../../actions";
 import { LiveObject, User } from "@liveblocks/client";
 import { Editor } from "@tiptap/react";
-import { users } from "@/app/auth";
 import { Transition } from "@headlessui/react";
 import AnchorPopup from "./AnchorPopup";
 
@@ -162,13 +165,13 @@ function AnchorHandle({
   session: ReturnType<typeof useSession>;
   presence: {
     openHandles: string[];
-    name: string;
+    id: string;
   };
   updatePresense: (presence: any) => void;
   othersPresense: User<
     {
       openHandles: string[];
-      name: string;
+      id: string;
     },
     {
       id: string;
@@ -580,9 +583,16 @@ function AnchorHandle({
 
   const owned = liveHandleInfo.owner != "";
   const isOwner = liveHandleInfo.owner === session.data?.user?.id;
-  const ownerData = users.find(
-    (user) => user.username === liveHandleInfo.owner
-  );
+  const [ownerData, setOwnerData] = useState<{name: string, color: string} | null>(null);
+  useEffect(() => {
+    if (liveHandleInfo.owner) {
+      getUser(liveHandleInfo.owner).then((res) => {
+        setOwnerData(res)
+      }).catch((e) => {
+        setOwnerData(null)
+      })
+    }
+  }, [liveHandleInfo])
 
   const title = `${
     owned && !isOwner

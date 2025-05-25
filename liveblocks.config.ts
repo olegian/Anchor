@@ -46,7 +46,7 @@ declare global {
       // Example, real-time cursor coordinates
       // cursor: { x: number; y: number };
       openHandles: string[]; // ids of all actively opened handles
-      name: string;
+      id: string;
     };
 
     // The Storage tree for the room, for useMutation, useStorage, etc.

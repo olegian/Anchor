@@ -14,7 +14,7 @@ import { useState } from "react";
 export default function FloatingMenu({ docId }: { docId: string }) {
   const session = useSession();
   const usersOnDoc = useOthers((others) =>
-    others.map((other) => other.presence.name)
+    others.map((other) => other.presence.id)
   );
 
   const [openShareDialog, setOpenShareDialog] = useState<boolean>(false);
@@ -29,7 +29,7 @@ export default function FloatingMenu({ docId }: { docId: string }) {
         ) : null}
         {session && session.data && session.data.user ? (
           <User
-            name={session!.data!.user!.name ?? "Unknown User"}
+            id={session!.data!.user!.id ?? "Unknown User"}
             hover={true}
           />
         ) : (

@@ -5,7 +5,6 @@ import {
   TrashIcon,
   XMarkIcon,
 } from "@heroicons/react/16/solid";
-import { useMyPresence } from "@liveblocks/react";
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 const DeleteDocDialog = dynamic(() => import("./dialog/DeleteDocDialog"));
@@ -16,7 +15,6 @@ import { useState } from "react";
 
 export default function DocMenu({ showText = false }: { showText?: boolean }) {
   const params = useParams<{ doc: string }>();
-  const [myPresence, updateMyPresence] = useMyPresence();
   const router = useRouter();
 
   const deleteDocHandler = () => {
