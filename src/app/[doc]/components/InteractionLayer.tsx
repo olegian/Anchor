@@ -18,6 +18,8 @@ import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
 import { users } from "@/app/auth";
 import { User } from "@liveblocks/client";
+import AnchorPopup from "./AnchorPopup";
+import { Transition } from "@headlessui/react";
 
 export function EditorMirrorLayer({ html }: { html: string }) {
   function wrapEveryWordInSpansPreserveHTML(html: string) {
@@ -38,8 +40,8 @@ export function EditorMirrorLayer({ html }: { html: string }) {
             span.textContent = token;
             // Uncomment to see the spans visually
             // span.className = "text-black/25";
-            // span.style.background = "red";
-            span.className = "text-black/0";
+            // span.style.backgroundColor = "rgba(255,0,0,0.5)"; // light red background for visibility
+            // span.className = "text-black/25";
             span.style.whiteSpace = "pre-wrap";
             span.style.overflowWrap = "break-word";
             fragment.appendChild(span);
@@ -79,6 +81,7 @@ export function AnchorLayer({
   draggingAnchor,
   setDraggingAnchor,
   mousePos,
+  docId,
 }: {
   anchorHandles: HandlesMap;
   addHandle: (
@@ -91,6 +94,7 @@ export function AnchorLayer({
   draggingAnchor: boolean;
   setDraggingAnchor: (dragging: boolean) => void;
   mousePos: { x: number; y: number };
+  docId: string;
 }) {
   // Handle hotkey "a"
   useHotkeys("a", () => {
@@ -128,6 +132,7 @@ export function AnchorLayer({
             presence={presence} // Only pass the state, not the tuple
             updatePresense={updatePresense}
             othersPresense={othersPresense.slice()}
+            docId={docId}
           />
         );
       })}
@@ -145,6 +150,7 @@ function AnchorHandle({
   presence,
   updatePresense,
   othersPresense,
+  docId,
 }: {
   id: string;
   setDraggingAnchor: (dragging: boolean) => void;
@@ -164,6 +170,7 @@ function AnchorHandle({
       info: {};
     }
   >[];
+  docId: string;
 }) {
   const anchorRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
@@ -527,6 +534,7 @@ function AnchorHandle({
           ref.current.style.transition = "opacity 0.5s";
           ref.current.style.opacity = "0";
           ref.current.style.pointerEvents = "none";
+          setDraggingAnchor(false);
           setTimeout(() => {
             deleteAnchor();
           }, 500);
@@ -550,6 +558,12 @@ function AnchorHandle({
   }, [dragging, id, debouncedWritePos]);
 
   const onMouseDown = (e: React.MouseEvent) => {
+    if (!dragging) {
+      setOpenPopup((prev) => !prev); // close the popup if we are dragging
+    } else {
+      setOpenPopup(false); // close the popup if we are dragging
+    }
+
     if (liveHandleInfo.owner !== "") {
       // someone is already moving the handle, need to disallow concurrent grab and just
       // wait till they release it
@@ -586,28 +600,6 @@ function AnchorHandle({
     (user) => user.username === liveHandleInfo.owner
   );
 
-  // useEffect(() => {
-  //   const paragraphs = document.querySelectorAll("#overlay-editor p");
-  //   if (liveHandleInfo.paragraphIdx >= 0) {
-  //     const paragraph = paragraphs[liveHandleInfo.paragraphIdx];
-  //     if (!paragraph) return;
-  //     if (liveHandleInfo.wordIdx >= 0) {
-  //       // Highlight the word
-  //       const spans = paragraph.getElementsByTagName("span");
-  //       if (!spans) return;
-  //       const word = spans[liveHandleInfo.wordIdx];
-  //       if (word) {
-  //         word.className =
-  //           "bg-blue-500/100 blur-2xl px-2 py-1 text-white/0 -ml-2 transition-colors";
-  //       }
-  //     } else {
-  //       // Highlight the paragraph
-  //       // paragraph.className = "border-l-4 border-zinc-300 transition-colors";
-  //       // paragraph.after;
-  //     }
-  //   }
-  // }, [liveHandleInfo]);
-
   const title = `${
     owned && !isOwner
       ? ownerData?.name
@@ -618,7 +610,7 @@ function AnchorHandle({
       : liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx === -1
       ? "Paragraph"
       : "Document"
-  }${liveHandleInfo.isPending ? "(pending)" : ""}`;
+  }`;
 
   const icon = deleteState ? (
     <XMarkIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
@@ -632,95 +624,99 @@ function AnchorHandle({
 
   const ownerColor = owned && !isOwner ? ownerData?.color : "";
 
+  const [openPopup, setOpenPopup] = useState<boolean>(false);
+
   return (
-    <div
-      ref={ref}
-      className="absolute anchor-handle origin-center z-40 transition-transform duration-300"
-      style={{
-        left: localCoords.x,
-        top: localCoords.y,
-        transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-        transition: dragging
-          ? "none"
-          : "transform 0.4s cubic-bezier(.4,2,.6,1)",
-      }}
-    >
-      <div className="flex flex-col items-center justify-center group relative  space-y-2">
-        <div
-          className={`${
-            owned && !isOwner && !deleteState
-              ? ""
-              : deleteState
-              ? "opacity-0"
-              : "opacity-0"
-          } flex items-center justify-center group-hover:opacity-100 translate-y-0  space-x-1 transition-all font-semibold transform text-xs`}
-        >
+    <>
+      <div
+        ref={ref}
+        className="absolute anchor-handle origin-center z-40 transition-transform duration-300"
+        style={{
+          left: localCoords.x,
+          top: localCoords.y,
+          transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+          transition: dragging
+            ? "none"
+            : "transform 0.4s cubic-bezier(.4,2,.6,1)",
+        }}
+      >
+        <div className="flex flex-col items-center justify-center group relative  space-y-2">
           <div
             className={`${
               owned && !isOwner && !deleteState
-                ? "text-white"
+                ? ""
                 : deleteState
-                ? "text-white border-red-600 bg-red-500"
-                : "text-zinc-700 border-zinc-200 bg-white"
-            } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block`}
-            style={{
-              borderColor: ownerColor,
-              backgroundColor: ownerColor,
-            }}
+                ? "opacity-0"
+                : "opacity-0"
+            } flex items-center justify-center group-hover:opacity-100 translate-y-0  space-x-1 transition-all font-semibold transform text-xs`}
           >
-            {title}
-          </div>
-          {!dragging && !owned && !deleteState ? (
-            <button
-              onClick={() => {
-                console.log("Adding anchor handle");
-              }}
+            <div
               className={`${
                 owned && !isOwner && !deleteState
                   ? "text-white"
                   : deleteState
                   ? "text-white border-red-600 bg-red-500"
                   : "text-zinc-700 border-zinc-200 bg-white"
-              } px-0.5 py-0.5 border shadow-sm origin-center rounded-md block cursor-pointer hover:bg-zinc-100 transition-colors`}
+              } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block`}
+              style={{
+                borderColor: ownerColor,
+                backgroundColor: ownerColor,
+              }}
             >
-              <ChevronRightIcon className="size-4 shrink-0" />
-            </button>
-          ) : null}
+              {title}
+              {liveHandleInfo.isPending ? (
+                <ArrowPathIcon className="inline size-3 ml-1 animate-spin" />
+              ) : null}
+            </div>
+          </div>
+          <div
+            className={`${
+              owned && !isOwner
+                ? "text-white"
+                : deleteState
+                ? "text-white bg-red-500"
+                : `text-zinc-700 ${
+                    liveHandleInfo.paragraphIdx >= 0 &&
+                    liveHandleInfo.wordIdx >= 0
+                      ? "bg-black/10"
+                      : "bg-black/10 backdrop-blur-sm"
+                  }`
+            } flex items-center justify-center rounded-md origin-center transition-all duration-200 ease-in-out cursor-pointer ${
+              dragging || owned
+                ? "scale-125 opacity-100"
+                : "group-hover:scale-125 group-hover:opacity-100"
+            }`}
+            style={{
+              backgroundColor:
+                ownerColor +
+                (liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
+                  ? "25"
+                  : ""),
+              width: `${liveHandleInfo.width ?? ANCHOR_HANDLE_SIZE}px`,
+              height: `${liveHandleInfo.height ?? ANCHOR_HANDLE_SIZE}px`,
+            }}
+            ref={anchorRef}
+            onMouseDown={onMouseDown}
+          >
+            {liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
+              ? null
+              : icon}
+          </div>
         </div>
-        <div
-          className={`${
-            owned && !isOwner
-              ? "text-white"
-              : deleteState
-              ? "text-white bg-red-500"
-              : `text-zinc-700 ${
-                  liveHandleInfo.paragraphIdx >= 0 &&
-                  liveHandleInfo.wordIdx >= 0
-                    ? "bg-black/10"
-                    : "bg-black/10 backdrop-blur-sm"
-                }`
-          } flex items-center justify-center rounded-md origin-center transition-all duration-200 ease-in-out cursor-pointer ${
-            dragging || owned
-              ? "scale-125 opacity-100"
-              : "group-hover:scale-125 group-hover:opacity-100"
-          }`}
-          style={{
-            backgroundColor:
-              ownerColor +
-              (liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
-                ? "25"
-                : ""),
-            width: `${liveHandleInfo.width ?? ANCHOR_HANDLE_SIZE}px`,
-            height: `${liveHandleInfo.height ?? ANCHOR_HANDLE_SIZE}px`,
-          }}
-          ref={anchorRef}
-          onMouseDown={onMouseDown}
-        >
-          {liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
-            ? null
-            : icon}
-        </div>
+        {/* {openPopup && !deleteState && !dragging ? ( */}
+        <Transition show={openPopup && !dragging && !deleteState} as="div">
+          <AnchorPopup
+            title={title}
+            handleId={id}
+            docId={docId}
+            liveHandleInfo={liveHandleInfo}
+            position={{ x: localCoords.x, y: localCoords.y }}
+            isOpen={openPopup && !deleteState && !dragging}
+            close={() => setOpenPopup(false)}
+          />
+        </Transition>
+        {/* ) : null} */}
       </div>
-    </div>
+    </>
   );
 }

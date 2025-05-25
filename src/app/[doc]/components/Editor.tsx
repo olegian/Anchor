@@ -19,6 +19,7 @@ export default function Editor({
   mousePos,
   draggingAnchor,
   setDraggingAnchor,
+  docId,
 }: {
   title: string;
   setTitle: (title: string) => void;
@@ -35,6 +36,7 @@ export default function Editor({
   mousePos: { x: number; y: number };
   draggingAnchor: boolean;
   setDraggingAnchor: (dragging: boolean) => void;
+  docId: string;
 }) {
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
   // const params = useParams<{ doc: string }>();
@@ -95,6 +97,7 @@ export default function Editor({
         draggingAnchor={draggingAnchor}
         setDraggingAnchor={setDraggingAnchor}
         mousePos={mousePos}
+        docId={docId}
       />
     </>
   );
@@ -108,7 +111,7 @@ function DragToDeleteBounds({ draggingAnchor }: { draggingAnchor: boolean }) {
           draggingAnchor ? "opacity-100" : "opacity-0"
         }`}
       >
-        <p className="-rotate-90 whitespace-nowrap text-sm text-gray-700 font-medium">
+        <p className="-rotate-90 whitespace-nowrap text-sm text-zinc-700 font-medium">
           Drag to delete
         </p>
       </div>
@@ -117,7 +120,7 @@ function DragToDeleteBounds({ draggingAnchor }: { draggingAnchor: boolean }) {
           draggingAnchor ? "opacity-100" : "opacity-0"
         }`}
       >
-        <p className="rotate-90 whitespace-nowrap text-sm text-gray-700 font-medium">
+        <p className="rotate-90 whitespace-nowrap text-sm text-zinc-700 font-medium">
           Drag to delete
         </p>
       </div>

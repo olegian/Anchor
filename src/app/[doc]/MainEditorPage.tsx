@@ -22,7 +22,7 @@ export default function MainEditorPage({ session }: { session: Session }) {
     <>
       <Room docId={params.doc} session={session}>
         <BackButton />
-        <EditingInterface />
+        <EditingInterface docId={params.doc} />
         <FloatingMenu />
         <FloatingNavbar scrollPosition={scrollPosition} />
       </Room>
@@ -30,7 +30,7 @@ export default function MainEditorPage({ session }: { session: Session }) {
   );
 }
 
-function EditingInterface({}: {}) {
+function EditingInterface({ docId }: { docId: string }) {
   const [myPresence, updateMyPresence] = useMyPresence();
 
   const title = useStorage((root) => root.docTitle);
@@ -169,6 +169,7 @@ function EditingInterface({}: {}) {
               mousePos={mousePos}
               draggingAnchor={draggingAnchor}
               setDraggingAnchor={setDraggingAnchor}
+              docId={docId}
             />
           </div>
         </div>
