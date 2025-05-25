@@ -8,7 +8,7 @@ import {
 } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/16/solid";
 
-export default function DeleteDocDialog({
+export default function DeleteAnchorsDialog({
   deleteAllAnchorsHandler,
   isOpen,
   close,

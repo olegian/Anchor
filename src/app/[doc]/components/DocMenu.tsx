@@ -1,9 +1,17 @@
 import { deleteDoc } from "@/app/actions";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
-import { ChevronDownIcon, TrashIcon } from "@heroicons/react/16/solid";
+import {
+  ChevronDownIcon,
+  TrashIcon,
+  XMarkIcon,
+} from "@heroicons/react/16/solid";
 import { useMyPresence } from "@liveblocks/react";
 import { useParams, useRouter } from "next/navigation";
-import DeleteDocDialog from "./dialog/DeleteDocDialog";
+import dynamic from "next/dynamic";
+const DeleteDocDialog = dynamic(() => import("./dialog/DeleteDocDialog"));
+const DeleteAnchorsDialog = dynamic(
+  () => import("./dialog/DeleteAnchorsDialog")
+);
 import { useState } from "react";
 
 export default function DocMenu({ showText = false }: { showText?: boolean }) {
@@ -17,7 +25,13 @@ export default function DocMenu({ showText = false }: { showText?: boolean }) {
     });
   };
 
+  const deleteAnchorsHandler = () => {
+    // TODO: Delete all anchors
+  };
+
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleteAnchorsDialogOpen, setIsDeleteAnchorsDialogOpen] =
+    useState(false);
 
   return (
     <>
@@ -45,12 +59,26 @@ export default function DocMenu({ showText = false }: { showText?: boolean }) {
               Delete Document
             </button>
           </MenuItem>
+          <MenuItem>
+            <button
+              className="group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium cursor-pointer"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <XMarkIcon className="size-4 fill-red-500" />
+              Delete all Anchors
+            </button>
+          </MenuItem>
         </MenuItems>
       </Menu>
       <DeleteDocDialog
         deleteDocHandler={deleteDocHandler}
         isOpen={isDeleteDialogOpen}
         close={() => setIsDeleteDialogOpen(false)}
+      />
+      <DeleteAnchorsDialog
+        deleteAllAnchorsHandler={deleteAnchorsHandler}
+        isOpen={isDeleteAnchorsDialogOpen}
+        close={() => setIsDeleteAnchorsDialogOpen(false)}
       />
     </>
   );
