@@ -56,7 +56,7 @@ export function EditorMirrorLayer({ html }: { html: string }) {
   return (
     <div
       id="overlay-editor"
-      className="absolute max-w-3xl pointer-events-none select-none w-full h-80 mx-auto top-[12.35rem] px-2 prose"
+      className="absolute max-w-3xl pointer-events-none select-none w-full h-full mx-auto top-[12.35rem] px-2 prose"
       dangerouslySetInnerHTML={{
         __html: wrapEveryWordInSpansPreserveHTML(
           html.replaceAll("<p></p>", "<p><br /></p>")
@@ -94,7 +94,11 @@ export function AnchorLayer({
   // Handle hotkey "a"
   useHotkeys("a", () => {
     const id = crypto.randomUUID(); // Unique ID for the new anchor
-    addHandle(id, mousePos.x - window.innerWidth / 2, mousePos.y);
+    addHandle(
+      id,
+      mousePos.x - window.innerWidth / 2,
+      mousePos.y + window.scrollY
+    );
   });
 
   const session = useSession();
@@ -163,9 +167,7 @@ function AnchorHandle({
     // use this to display information on others
     const otherUsersViewingConversation = othersPresense
       .filter((userInfo) => userInfo.presence.openHandles.includes(id))
-      .map((userInfo) => {
-        userInfo.id;
-      });
+      .map((userInfo) => userInfo.id);
   };
 
   const closeConversation = () => {
@@ -250,23 +252,32 @@ function AnchorHandle({
     };
   }, [liveHandleInfo.x, liveHandleInfo.y, dragging]);
 
-  useEffect(() => {
-    console.log(
-      "local coords converted",
-      localCoords.x - window.innerWidth / 2,
-      localCoords.y
-    );
-  }, [localCoords.x, localCoords.y]);
+  // useEffect(() => {
+  //   console.log(
+  //     "local coords converted",
+  //     localCoords.x - window.innerWidth / 2,
+  //     localCoords.y
+  //   );
+  // }, [localCoords.x, localCoords.y]);
 
   // update live position, debounce to not send 20 billion requests
-  const writePos = useMutation(({ storage }, targetX, targetY, paragraphIdx = -1, wordIdx = -1) => {
-    const handle = storage.get("docHandles").get(id);
-    console.log(">>> PUSHING:", targetX - window.innerWidth / 2, targetY, paragraphIdx, wordIdx);
-    handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
-    handle?.set("y", targetY);
-    handle?.set("paragraphIdx", paragraphIdx);
-    handle?.set("wordIdx", wordIdx);
-  }, []);
+  const writePos = useMutation(
+    ({ storage }, targetX, targetY, paragraphIdx = -1, wordIdx = -1) => {
+      const handle = storage.get("docHandles").get(id);
+      // console.log(
+      //   ">>> PUSHING:",
+      //   targetX - window.innerWidth / 2,
+      //   targetY,
+      //   paragraphIdx,
+      //   wordIdx
+      // );
+      handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
+      handle?.set("y", targetY);
+      handle?.set("paragraphIdx", paragraphIdx);
+      handle?.set("wordIdx", wordIdx);
+    },
+    []
+  );
   const debouncedWritePos = useDebounce(writePos, 12.5); // TODO: tune out this parameter to make the sync movement feel nice
 
   const deleteAnchor = useMutation(({ storage }) => {
@@ -336,7 +347,9 @@ function AnchorHandle({
       if (!paragraphs) return;
 
       let targetX = e.clientX;
-      let targetY = e.clientY;
+      let targetY = e.clientY + window.scrollY;
+
+      // console.log(e.clientX, e.clientY);
 
       const editorLeftEdge = paragraphs[0].getBoundingClientRect().x;
       const editorRightEdge = 752 + editorLeftEdge;
@@ -385,7 +398,8 @@ function AnchorHandle({
             targetY < paraRect.bottom
           ) {
             paragraphIdx = i;
-            if (targetX <= paraRect.left) { // hovering in the paragraph zone, no need to search for word
+            if (targetX <= paraRect.left) {
+              // hovering in the paragraph zone, no need to search for word
               paragraph.className =
                 "border-l-4 border-zinc-300 -ml-2 transition-colors";
               paragraph.after;
@@ -429,7 +443,7 @@ function AnchorHandle({
       // Animate toward the target position
       if (animationFrame) cancelAnimationFrame(animationFrame);
       const animate = () => {
-        console.log("animate ", targetX, targetY);
+        // console.log("animate ", targetX, targetY);
         setLocalCoords({ x: targetX, y: targetY });
         animationFrame = requestAnimationFrame(animate);
         // setDraggingAnchor(false);
