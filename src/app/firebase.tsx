@@ -1,18 +1,14 @@
 import { initializeApp } from "firebase/app";
 import {
+  arrayRemove,
+  arrayUnion,
   collection,
-  getDocs,
   doc,
   getDoc,
-  setDoc,
+  getDocs,
   getFirestore,
+  setDoc,
   updateDoc,
-  Firestore,
-  FieldValue,
-  arrayUnion,
-  arrayRemove,
-  query,
-  where,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -20,7 +16,7 @@ const firebaseConfig = {
   authDomain: process.env.FIREBASE_PROJECT_ID + ".firebaseapp.com",
   projectId: process.env.FIREBASE_PROJECT_ID,
   storageBucket: process.env.FIREBASE_PROJECT_ID + ".firebasestorage.app",
-  messagingSenderId: "83232147437",  // honestly no clue what these are
+  messagingSenderId: "83232147437", // honestly no clue what these are
   appId: "1:83232147437:web:975a4f2d3083ff97d709e4",
 };
 
@@ -95,8 +91,8 @@ export async function disallowAccessToRoomId(roomId: string) {
   const userDocs = await getDocs(collection(db, "users"));
   const users: any = [];
   userDocs.forEach((user) => {
-    users.push(user.data())
-  })
+    users.push(user.data());
+  });
 
   // fuck this this is far from ideal but im so tired
   for (const idx in users) {
@@ -113,18 +109,29 @@ export async function updateColor(username: string, newColor: string) {
 }
 
 export async function getAvailableRoomIds(username: string) {
-  const userEntry = await getDoc(doc(db, "users", username))
+  const userEntry = await getDoc(doc(db, "users", username));
   return userEntry.get("allowedRooms");
 }
 
-export async function allowAccessToRoomId(username: string, roomId: string)  {
+export async function allowAccessToRoomId(username: string, roomId: string) {
   await updateDoc(doc(db, "users", username), {
-    allowedRooms: arrayUnion(roomId)
-  })
+    allowedRooms: arrayUnion(roomId),
+  });
 }
 
-export async function disallowUserAccessToRoomId(username: string, roomId: string) {
+export async function disallowUserAccessToRoomId(
+  username: string,
+  roomId: string
+) {
   await updateDoc(doc(db, "users", username), {
-    allowedRooms: arrayRemove(roomId)
-  })
+    allowedRooms: arrayRemove(roomId),
+  });
+}
+
+export async function getUserInfo(username: string): Promise<{name: string, color: string}>{
+  const userInfo = await getDoc(doc(db, "users", username));
+  return {
+    name: userInfo.get("fullname"),
+    color: userInfo.get("color"),
+  };
 }

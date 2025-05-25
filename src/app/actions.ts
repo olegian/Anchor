@@ -4,7 +4,7 @@ import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { liveblocks } from "./liveblocks";
 import { LiveObject, LiveList, toPlainLson, LiveMap, PlainLsonObject } from "@liveblocks/client";
-import { allowAccessToRoomId, disallowAccessToRoomId, getAvailableRoomIds } from "./firebase";
+import { allowAccessToRoomId, disallowAccessToRoomId, getAvailableRoomIds, getUserInfo } from "./firebase";
 import { RoomData } from "@liveblocks/node";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
@@ -477,4 +477,13 @@ export async function getRoomStorage(roomId: string) {
     data: roomStorage,
     doc: doc,
   };
+}
+
+export async function getUser(username: string) {
+  return await getUserInfo(username)
+}
+
+export async function getUserColor(username: string) {
+  const res = await getUserInfo(username);
+  return res.color;
 }

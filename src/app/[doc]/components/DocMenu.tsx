@@ -4,12 +4,10 @@ import {
   ChevronDownIcon,
   TrashIcon
 } from "@heroicons/react/16/solid";
-import { useMyPresence } from "@liveblocks/react";
 import { useParams, useRouter } from "next/navigation";
 
 export default function DocMenu({ showText = false }: { showText?: boolean }) {
   const params = useParams<{ doc: string }>();
-  const [myPresence, updateMyPresence] = useMyPresence();
   const router = useRouter();
 
   const deleteDocHandler = () => {
