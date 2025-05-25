@@ -9,7 +9,7 @@ import {
 } from "@liveblocks/react/suspense";
 import { Session } from "next-auth";
 import { redirect } from "next/navigation";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 const LB_AUTH_ENDPOINT = "/api/auth";
 
@@ -22,6 +22,13 @@ export function Room({
   docId: string;
   session: Session;
 }) {
+  const [authFailed, setAuthFailed] = useState(false);
+  useEffect(() => {
+    if (authFailed) {
+      redirect("/home")
+    }
+  }, [authFailed])
+
   const authHandler = async (roomId: string | undefined) => {
     if (!session.user || !session.user.id) {
       console.log("No user id in session: ", session);
@@ -38,6 +45,10 @@ export function Room({
         userId: session.user.id,
       }),
     });
+
+    if (response.status !== 200) {
+      setAuthFailed(true)
+    }
 
     return await response.json();
   };

@@ -10,12 +10,9 @@ import { User, Users } from "../Users";
 import { useSession } from "next-auth/react";
 import { useOthers, useStorage } from "@liveblocks/react";
 import { useState } from "react";
+import { shareDoc } from "@/app/actions";
 
-export default function FloatingMenu({
-  handleShareDocument,
-}: {
-  handleShareDocument: (userId: string) => void;
-}) {
+export default function FloatingMenu({ docId }: { docId: string }) {
   const session = useSession();
   const usersOnDoc = useOthers((others) =>
     others.map((other) => other.presence.name)
@@ -51,9 +48,9 @@ export default function FloatingMenu({
       </div>
       <ShareDialog
         title={title ?? "document"}
-        handleShareDocument={handleShareDocument}
         isOpen={openShareDialog}
         close={() => setOpenShareDialog(false)}
+        docId={docId}
       />
     </>
   );

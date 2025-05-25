@@ -11,6 +11,8 @@ import {
   FieldValue,
   arrayUnion,
   arrayRemove,
+  query,
+  where,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -89,6 +91,21 @@ export async function registerUser(
   });
 }
 
+export async function disallowAccessToRoomId(roomId: string) {
+  const userDocs = await getDocs(collection(db, "users"));
+  const users: any = [];
+  userDocs.forEach((user) => {
+    users.push(user.data())
+  })
+
+  // fuck this this is far from ideal but im so tired
+  for (const idx in users) {
+    if (users[idx]["name"]) {
+      await disallowUserAccessToRoomId(users[idx]["name"], roomId);
+    }
+  }
+}
+
 export async function updateColor(username: string, newColor: string) {
   await updateDoc(doc(db, "users", username), {
     color: newColor,
@@ -106,7 +123,7 @@ export async function allowAccessToRoomId(username: string, roomId: string)  {
   })
 }
 
-export async function disallowAccessToRoomId(username: string, roomId: string) {
+export async function disallowUserAccessToRoomId(username: string, roomId: string) {
   await updateDoc(doc(db, "users", username), {
     allowedRooms: arrayRemove(roomId)
   })

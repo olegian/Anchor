@@ -6,7 +6,7 @@ import { liveblocks } from "./liveblocks";
 import * as Y from "yjs";
 import { JsonObject, LiveMap, LiveObject, RoomData } from "@liveblocks/node";
 import { PlainLsonObject, toPlainLson } from "@liveblocks/client";
-import { allowAccessToRoomId, disallowAccessToRoomId, getAvailableRoomIds } from "./firebase";
+import { allowAccessToRoomId, disallowAccessToRoomId, disallowUserAccessToRoomId, getAvailableRoomIds } from "./firebase";
 
 const LB_DELETE_COMMENT_URL =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
@@ -356,15 +356,21 @@ export async function shareDoc(
   docId: string,
   userId: string,
 ) {
+  // technically, this throws an error is the userid doesnt exist, but
+  // like screw handling it rn
   await allowAccessToRoomId(userId, docId);
 }
 
 export async function deleteDoc(docId: string) {
-  const room = await liveblocks.getRoom(docId);
-  for (const userId in room.usersAccesses) {
-    await disallowAccessToRoomId(userId, docId);
-  }
+  // I really wish i could do something like this, and I think if I read up on liveblocks permission systems more
+  // I can find a way to do it, but for now imma use a workaround.
 
+  // const room = await liveblocks.getRoom(docId);
+  // for (const userId in room.usersAccesses) {
+
+  // Or i could just also store a reverse map of room -> [allowed userid]
+  
+  await disallowAccessToRoomId(docId);
   await liveblocks.deleteRoom(docId);
 }
 

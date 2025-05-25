@@ -1,4 +1,5 @@
 "use client";
+import { shareDoc } from "@/app/actions";
 import {
   Button,
   CloseButton,
@@ -14,14 +15,21 @@ export default function ShareDialog({
   isOpen,
   close,
   title,
-  handleShareDocument,
+  docId,
 }: {
   isOpen: boolean;
   close: () => void;
   title: string;
-  handleShareDocument: (userId: string) => void;
+  docId: string;
 }) {
   const [user, setUser] = useState("");
+
+  const handleShareDocument = (userId: string) => {
+    // TODO: share document handler
+    shareDoc(docId, userId);
+    close();
+    setUser("");
+  };
 
   return (
     <Dialog
