@@ -1,14 +1,6 @@
 import { auth, users } from "@/app/auth";
 import { getAvailableRoomIds } from "@/app/firebase";
-import { Liveblocks } from "@liveblocks/node";
-
-if (!process.env.LB_KEY) {
-  console.log("!!! SET LIVEBLOCKS SECRET ENVIRONMENT VARIABLE (LB_KEY)");
-}
-
-const liveblocks = new Liveblocks({
-  secret: process.env.LB_KEY ?? "",
-});
+import { liveblocks } from "@/app/liveblocks";
 
 interface AuthRequest {
   roomId: string | undefined;

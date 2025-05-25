@@ -10,6 +10,7 @@ import {
   Firestore,
   FieldValue,
   arrayUnion,
+  arrayRemove,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -102,5 +103,11 @@ export async function getAvailableRoomIds(username: string) {
 export async function allowAccessToRoomId(username: string, roomId: string)  {
   await updateDoc(doc(db, "users", username), {
     allowedRooms: arrayUnion(roomId)
+  })
+}
+
+export async function disallowAccessToRoomId(username: string, roomId: string) {
+  await updateDoc(doc(db, "users", username), {
+    allowedRooms: arrayRemove(roomId)
   })
 }

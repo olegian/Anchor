@@ -4,9 +4,9 @@ import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { liveblocks } from "./liveblocks";
 import * as Y from "yjs";
-import { JsonObject, LiveMap, LiveObject } from "@liveblocks/node";
+import { JsonObject, LiveMap, LiveObject, RoomData } from "@liveblocks/node";
 import { PlainLsonObject, toPlainLson } from "@liveblocks/client";
-import { allowAccessToRoomId } from "./firebase";
+import { allowAccessToRoomId, disallowAccessToRoomId, getAvailableRoomIds } from "./firebase";
 
 const LB_DELETE_COMMENT_URL =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
@@ -349,4 +349,68 @@ export async function createDoc(
   ) as PlainLsonObject;
 
   await liveblocks.initializeStorageDocument(docId, initialStorage);
+}
+
+// gives access to userId to access docId
+export async function shareDoc(
+  docId: string,
+  userId: string,
+) {
+  await allowAccessToRoomId(userId, docId);
+}
+
+export async function deleteDoc(docId: string) {
+  const room = await liveblocks.getRoom(docId);
+  for (const userId in room.usersAccesses) {
+    await disallowAccessToRoomId(userId, docId);
+  }
+
+  await liveblocks.deleteRoom(docId);
+}
+
+export async function getAccessibleRooms(userId: string): Promise<RoomData[]> {
+  // TODO: this is not secure lol but idc rn
+
+  // you can filter available rooms via the liveblocks permissions associated with
+  // a user id (with liveblocks.getRooms()), but that requires me to fully understand how lb perms work,
+  // and I'm not quite there yet, ill swap this shitty work around out later
+  const roomIds = await getAvailableRoomIds(userId);
+  if (!roomIds) {
+    return [];
+  }
+
+  const result = await Promise.all(
+    roomIds.map(async (roomId: string) => await liveblocks.getRoom(roomId))
+  );
+
+  return result;
+}
+
+export async function getRoomStorage(roomId: string) {
+  const roomStorage = await liveblocks.getStorageDocument(roomId);
+  // TODO: bad any type annotation
+  const doc: any = await liveblocks.getYjsDocument(roomId, {
+    format: true,
+  });
+
+  // TODO: Ritesh is REALLY lazy. There's definitely a better way to do this. Hopefully.
+  if (doc.maindoc) {
+    doc.maindoc = doc.maindoc.replaceAll('<heading level="2">', "<h2>");
+    doc.maindoc = doc.maindoc.replaceAll("</heading>", "</h2>");
+    doc.maindoc = doc.maindoc.replaceAll("<paragraph>", "<p>");
+    doc.maindoc = doc.maindoc.replaceAll("</paragraph>", "</p>");
+    doc.maindoc = doc.maindoc.replaceAll("[[", "");
+    doc.maindoc = doc.maindoc.replaceAll("]]", "");
+    doc.maindoc = doc.maindoc.replaceAll("<p></p>", "");
+    doc.maindoc = doc.maindoc.replaceAll(
+      '<inlineaicomponent prompt="',
+      "<strong>"
+    );
+    doc.maindoc = doc.maindoc.replaceAll("</inlineaicomponent>", "</strong>");
+  }
+
+  return {
+    data: roomStorage,
+    doc: doc,
+  };
 }
