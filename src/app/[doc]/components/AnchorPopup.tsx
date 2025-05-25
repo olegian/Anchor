@@ -128,7 +128,8 @@ export default function AnchorPopup({
     const wordIdx = liveHandleInfo.wordIdx;
     console.log(paragraphIdx, wordIdx);
 
-    const response = exchanges.at(viewedExchange)?.response;
+    const response = exchanges.at(viewedExchange)?.response || "";
+    const formatResponse = response.replaceAll(/([\p{P}])  /ug, "$1 ").trim();
     if (paragraphIdx == -1) {
       // no paragraph is selected, insert to end of document
       editor.commands.insertContentAt(editor.state.doc.content.size, {
@@ -136,7 +137,7 @@ export default function AnchorPopup({
         content: [
           {
             type: "text",
-            text: response,
+            text: formatResponse,
           },
         ],
       });
@@ -151,7 +152,7 @@ export default function AnchorPopup({
         content: [
           {
             type: "text",
-            text: response,
+            text: formatResponse,
           },
         ],
       });
