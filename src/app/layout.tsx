@@ -14,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased font-sans">
+      <body className="antialiased font-sans w-screen overflow-x-hidden">
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

@@ -11,6 +11,8 @@ export type Conversation = LiveObject<{
   paragraphIdx: number; // same as ^
   x: number; // on screen x-position
   y: number; // on screen y-position
+  width: number; // width of the handle
+  height: number; // height of the handle
 }>;
 
 export type Handles = LiveMap<
@@ -30,6 +32,8 @@ export type HandlesMap = ReadonlyMap<
     readonly owner: string;
     readonly x: number;
     readonly y: number;
+    readonly width: number;
+    readonly height: number;
   }
 > | null;
 

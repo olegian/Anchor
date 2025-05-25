@@ -1,12 +1,9 @@
 "use client";
-import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useState } from "react";
 import FloatingToolbar from "./floating/FloatingToolbar";
-import { useMyPresence } from "@liveblocks/react";
 import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
-import { useParams } from "next/navigation";
 import Title from "./Title";
 import SkeletonEditor from "./SkeletonEditor";
 import { EditorMirrorLayer, AnchorLayer } from "./InteractionLayer";
@@ -19,19 +16,29 @@ export default function Editor({
   loaded,
   anchorHandles,
   addHandle,
+  mousePos,
+  setMousePos,
 }: {
   title: string;
   setTitle: (title: string) => void;
   open: () => void;
   loaded: boolean;
   anchorHandles: HandlesMap;
-  addHandle: (newHandleId: string, x: number, y: number) => void;
+  addHandle: (
+    newHandleId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) => void;
+  mousePos: { x: number; y: number };
+  setMousePos: (pos: { x: number; y: number }) => void;
 }) {
   const [draggingAnchor, setDraggingAnchor] = useState(false);
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
-  const params = useParams<{ doc: string }>();
-  const [myPresence, updateMyPresence] = useMyPresence();
-  const [isEditorReady, setEditorReady] = useState(false);
+  // const params = useParams<{ doc: string }>();
+  // const [myPresence, updateMyPresence] = useMyPresence();
+  // const [isEditorReady, setEditorReady] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -61,9 +68,9 @@ export default function Editor({
   return (
     <>
       {editor && loaded ? <EditorMirrorLayer html={editor.getHTML()} /> : null}
-      {/* <p className="fixed top-32 left-32">
-        {draggingAnchor ? "true" : "false"}
-      </p> */}
+      <p className="fixed top-32 left-32">
+        {draggingAnchor ? "Dragging anchor..." : "Click to add an anchor."}
+      </p>
       <div className="relative">
         <SkeletonEditor loaded={loaded} />
         <article
@@ -85,6 +92,8 @@ export default function Editor({
         addHandle={addHandle}
         draggingAnchor={draggingAnchor}
         setDraggingAnchor={setDraggingAnchor}
+        mousePos={mousePos}
+        setMousePos={setMousePos}
       />
     </>
   );

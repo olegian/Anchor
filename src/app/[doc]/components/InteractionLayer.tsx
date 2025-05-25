@@ -38,7 +38,7 @@ export function EditorMirrorLayer({ html }: { html: string }) {
             // span.className = "text-black/25";
             // span.style.background = "red";
             span.className = "text-black/0";
-            span.style.whiteSpace = "normal";
+            span.style.whiteSpace = "pre-wrap";
             span.style.overflowWrap = "break-word";
             fragment.appendChild(span);
           }
@@ -61,7 +61,7 @@ export function EditorMirrorLayer({ html }: { html: string }) {
   return (
     <div
       id="overlay-editor"
-      className="absolute max-w-3xl pointer-events-none select-none w-full h-full mx-auto top-[12.35rem] px-2 prose pt-8"
+      className="absolute max-w-[758px] pointer-events-none select-none w-full h-full mx-auto top-[12.35rem] px-2 prose pt-8"
       dangerouslySetInnerHTML={{
         __html: wrapEveryWordInSpansPreserveHTML(
           html.replaceAll("<p></p>", "<p><br /></p>")
@@ -76,25 +76,35 @@ export function AnchorLayer({
   addHandle,
   draggingAnchor,
   setDraggingAnchor,
+  mousePos,
+  setMousePos,
 }: {
   anchorHandles: HandlesMap;
-  addHandle: (newHandleId: string, x: number, y: number) => void;
+  addHandle: (
+    newHandleId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) => void;
   draggingAnchor: boolean;
   setDraggingAnchor: (dragging: boolean) => void;
+  mousePos: { x: number; y: number };
+  setMousePos: (pos: { x: number; y: number }) => void;
 }) {
-  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({
-    x: 0,
-    y: 0,
-  });
+  // const [mousePos, setMousePos] = useState<{ x: number; y: number }>({
+  //   x: 0,
+  //   y: 0,
+  // });
 
-  // Track mouse position
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, []);
+  // // Track mouse position
+  // useEffect(() => {
+  //   const handleMouseMove = (e: MouseEvent) => {
+  //     setMousePos({ x: e.clientX, y: e.clientY });
+  //   };
+  //   window.addEventListener("mousemove", handleMouseMove);
+  //   return () => window.removeEventListener("mousemove", handleMouseMove);
+  // }, []);
 
   // Handle hotkey "a"
   useHotkeys("a", () => {
@@ -102,7 +112,9 @@ export function AnchorLayer({
     addHandle(
       id,
       mousePos.x - window.innerWidth / 2,
-      mousePos.y + window.scrollY
+      mousePos.y + window.scrollY,
+      ANCHOR_HANDLE_SIZE,
+      ANCHOR_HANDLE_SIZE
     );
   });
 
@@ -271,7 +283,15 @@ function AnchorHandle({
 
   // update live position, debounce to not send 20 billion requests
   const writePos = useMutation(
-    ({ storage }, targetX, targetY, paragraphIdx = -1, wordIdx = -1) => {
+    (
+      { storage },
+      targetX,
+      targetY,
+      paragraphIdx = -1,
+      wordIdx = -1,
+      width = ANCHOR_HANDLE_SIZE,
+      height = ANCHOR_HANDLE_SIZE
+    ) => {
       const handle = storage.get("docHandles").get(id);
       // console.log(
       //   ">>> PUSHING:",
@@ -284,6 +304,8 @@ function AnchorHandle({
       handle?.set("y", targetY);
       handle?.set("paragraphIdx", paragraphIdx);
       handle?.set("wordIdx", wordIdx);
+      handle?.set("width", width);
+      handle?.set("height", height);
     },
     []
   );
@@ -387,6 +409,8 @@ function AnchorHandle({
       // determine and set wordidx + paraidx
       let paragraphIdx = -1;
       let wordIdx = -1;
+      let anchorWidth = ANCHOR_HANDLE_SIZE;
+      let anchorHeight = ANCHOR_HANDLE_SIZE;
       if (
         anchorInEditor ||
         (anchorOnLeft && editorLeftEdge - targetX < editorLeftEdge / 6)
@@ -415,6 +439,9 @@ function AnchorHandle({
               if (anchorRef.current) {
                 anchorRef.current.style.width = `${ANCHOR_HANDLE_SIZE}px`;
                 anchorRef.current.style.height = `${ANCHOR_HANDLE_SIZE}px`;
+
+                anchorWidth = ANCHOR_HANDLE_SIZE;
+                anchorHeight = ANCHOR_HANDLE_SIZE;
               }
 
               break outer;
@@ -422,6 +449,9 @@ function AnchorHandle({
               if (anchorRef.current) {
                 anchorRef.current.style.width = `${ANCHOR_HANDLE_SIZE}px`;
                 anchorRef.current.style.height = `${ANCHOR_HANDLE_SIZE}px`;
+
+                anchorWidth = ANCHOR_HANDLE_SIZE;
+                anchorHeight = ANCHOR_HANDLE_SIZE;
               }
             }
 
@@ -450,6 +480,9 @@ function AnchorHandle({
                 if (anchorRef.current) {
                   anchorRef.current.style.width = `${rect.width + 2}px`;
                   anchorRef.current.style.height = `${rect.height + 2}px`;
+
+                  anchorWidth = rect.width + 2;
+                  anchorHeight = rect.height + 2;
                 }
 
                 break outer;
@@ -459,6 +492,9 @@ function AnchorHandle({
                 if (anchorRef.current) {
                   anchorRef.current.style.width = `${ANCHOR_HANDLE_SIZE}px`;
                   anchorRef.current.style.height = `${ANCHOR_HANDLE_SIZE}px`;
+
+                  anchorWidth = ANCHOR_HANDLE_SIZE;
+                  anchorHeight = ANCHOR_HANDLE_SIZE;
                 }
               }
             }
@@ -476,7 +512,14 @@ function AnchorHandle({
       };
 
       // write new position to live
-      debouncedWritePos(targetX, targetY, paragraphIdx, wordIdx);
+      debouncedWritePos(
+        targetX,
+        targetY,
+        paragraphIdx,
+        wordIdx,
+        anchorWidth,
+        anchorHeight
+      );
       animate();
 
       // setDraggingAnchor(true);
@@ -642,8 +685,10 @@ function AnchorHandle({
           style={{
             borderColor: ownerColor,
             backgroundColor: ownerColor,
-            width: `${ANCHOR_HANDLE_SIZE}px`,
-            height: `${ANCHOR_HANDLE_SIZE}px`,
+            // width: `${ANCHOR_HANDLE_SIZE}px`,
+            // height: `${ANCHOR_HANDLE_SIZE}px`,
+            width: `${liveHandleInfo.width ?? ANCHOR_HANDLE_SIZE}px`,
+            height: `${liveHandleInfo.height ?? ANCHOR_HANDLE_SIZE}px`,
           }}
           ref={anchorRef}
         >

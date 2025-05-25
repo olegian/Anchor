@@ -26,7 +26,7 @@ export default function FloatingToolbar({
   }
 
   const [anchorHandlesInteractivity, setAnchorHandlesInteractivity] =
-    useState<boolean>(false);
+    useState<boolean>(true);
 
   return (
     <div className="fixed bottom-4 left-0 right-0 z-20 flex items-center justify-center">

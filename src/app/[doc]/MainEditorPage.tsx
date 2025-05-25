@@ -12,6 +12,7 @@ import { LiveList, LiveObject } from "@liveblocks/client";
 import { useMutation, useMyPresence, useStorage } from "@liveblocks/react";
 import { useScrollPosition } from "../components/hooks/useScrollPosition";
 import BackButton from "./components/floating/BackButton";
+import { useEffect, useRef, useState } from "react";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
@@ -21,7 +22,7 @@ export default function MainEditorPage({ session }: { session: Session }) {
     <>
       <Room docId={params.doc} session={session}>
         <BackButton />
-        <EditingInterface doc={params.doc} />
+        <EditingInterface />
         <FloatingMenu />
         <FloatingNavbar scrollPosition={scrollPosition} />
       </Room>
@@ -29,8 +30,7 @@ export default function MainEditorPage({ session }: { session: Session }) {
   );
 }
 
-function EditingInterface({ doc }: { doc: string }) {
-  const router = useRouter();
+function EditingInterface({}: {}) {
   const [myPresence, updateMyPresence] = useMyPresence();
 
   const title = useStorage((root) => root.docTitle);
@@ -40,7 +40,14 @@ function EditingInterface({ doc }: { doc: string }) {
 
   const handles = useStorage((root) => root.docHandles);
   const addHandle = useMutation(
-    ({ storage }, newHandleId: string, x: number, y: number) => {
+    (
+      { storage },
+      newHandleId: string,
+      x: number,
+      y: number,
+      width: number,
+      height: number
+    ) => {
       const handles = storage.get("docHandles");
       handles.set(
         newHandleId,
@@ -56,16 +63,74 @@ function EditingInterface({ doc }: { doc: string }) {
           handleName: "",
           x: x,
           y: y,
+          width: width,
+          height: height,
         })
       );
     },
     []
   );
 
+  // Ref for the white border element
+  const borderRef = useRef<HTMLDivElement>(null);
+
+  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
+
+  // Track mouse position
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePos({ x: e.clientX, y: e.clientY });
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
+  useEffect(() => {
+    function handleClick(event: MouseEvent) {
+      if (
+        borderRef.current &&
+        !borderRef.current.contains(event.target as Node)
+      ) {
+        const potentialX = mousePos.x - window.innerWidth / 2;
+        const potentialY = mousePos.y + window.scrollY;
+
+        // Prevent creation if a handle already exists nearby
+        const existsNearby = handles
+          ? Array.from(handles.values()).some(
+              (handle) =>
+                Math.abs(handle.x - potentialX) < 24 &&
+                Math.abs(handle.y - potentialY) < 24
+            )
+          : false;
+
+        if (existsNearby) {
+          return;
+        }
+
+        const id = crypto.randomUUID();
+        addHandle(
+          id,
+          potentialX,
+          potentialY,
+          24, // ANCHOR_HANDLE_SIZE
+          24 // ANCHOR_HANDLE_SIZE
+        );
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [addHandle, mousePos, borderRef, handles]);
+
   return (
     <>
-      <div className="pt-4 px-2 md:pt-16 md:px-6 select-none h-full">
-        <div className="border-x border-t bg-white border-zinc-100 mx-auto max-w-4xl shadow-lg">
+      <div className="pt-4 px-2 md:pt-16 md:px-6 select-none">
+        <div
+          ref={borderRef}
+          className="border-x border-t bg-white border-zinc-100 mx-auto max-w-4xl overflow-x-hidden shadow-lg"
+        >
           <div className="max-w-3xl mx-auto py-16 space-y-4">
             <div className="space-y-4 px-2">
               <div className="flex items-center justify-between">
@@ -86,6 +151,8 @@ function EditingInterface({ doc }: { doc: string }) {
               loaded={title !== null && handles !== null}
               anchorHandles={handles}
               addHandle={addHandle}
+              mousePos={mousePos}
+              setMousePos={setMousePos}
             />
           </div>
         </div>
