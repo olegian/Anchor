@@ -10,7 +10,7 @@ export default function FloatingNavbar({
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 z-40 transition-opacity p-4 bg-linear-to-b w-full text-center from-white via-white/75 to-transparent">
+      <div className="fixed top-0 left-0 right-0 z-40 transition-opacity p-4 bg-linear-to-b w-full text-center from-zinc-50 via-white/75 to-transparent">
         <h2
           className={`line-clamp-1 flex items-start justify-center gap-8 overflow-hidden duration-200 text-sm transition-colors rounded-lg ${
             scrollPosition < 180 ? "opacity-0" : "opacity-100"
@@ -30,7 +30,7 @@ export default function FloatingNavbar({
         </h2>
       </div>
       <div
-        className={`fixed bottom-0 left-0 right-0 z-10 transition-opacity p-4 bg-linear-to-t w-full text-center from-white via-white/75 to-transparent pointer-events-none select-none`}
+        className={`fixed bottom-0 left-0 right-0 z-10 transition-opacity p-4 bg-linear-to-t w-full text-center from-zinc-50 via-white/75 to-transparent pointer-events-none select-none`}
       />
     </>
   );

@@ -73,7 +73,7 @@ export default function Editor({
               : "pointer-events-auto"
           } ${
             loaded ? "" : "hidden"
-          } prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg`}
+          } prose max-w-none h-full min-h-screen prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg`}
         >
           <Title title={title} setTitle={setTitle} />
           <EditorContent editor={editor} className="px-2" />

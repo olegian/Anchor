@@ -9,6 +9,10 @@ import {
   ViewfinderCircleIcon,
 } from "@heroicons/react/20/solid";
 import { Editor } from "@tiptap/react";
+import { useState } from "react";
+
+import { SparklesIcon as SparklesIconOutline } from "@heroicons/react/24/outline";
+import { SparklesIcon } from "@heroicons/react/24/solid";
 
 export default function FloatingToolbar({
   editor,
@@ -20,6 +24,9 @@ export default function FloatingToolbar({
   if (!editor) {
     return null;
   }
+
+  const [anchorHandlesInteractivity, setAnchorHandlesInteractivity] =
+    useState<boolean>(false);
 
   return (
     <div className="fixed bottom-4 left-0 right-0 z-20 flex items-center justify-center">
@@ -74,6 +81,32 @@ export default function FloatingToolbar({
           children={<CodeBracketIcon className="size-5 shrink-0" />}
           active={editor.isActive("codeBlock")}
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+        />
+        <Divider />
+        <TabbarItem
+          text="AI"
+          children={
+            anchorHandlesInteractivity ? (
+              <SparklesIcon className="size-5 shrink-0" />
+            ) : (
+              <SparklesIconOutline className="size-5 shrink-0" />
+            )
+          }
+          active={anchorHandlesInteractivity}
+          onClick={() => {
+            const anchorLayer = document.getElementById("anchor-layer");
+            if (anchorLayer) {
+              if (anchorHandlesInteractivity) {
+                setAnchorHandlesInteractivity(false);
+                (anchorLayer as HTMLElement).style.pointerEvents = "none";
+                (anchorLayer as HTMLElement).style.opacity = "0.25";
+              } else {
+                setAnchorHandlesInteractivity(true);
+                (anchorLayer as HTMLElement).style.pointerEvents = "auto";
+                (anchorLayer as HTMLElement).style.opacity = "1";
+              }
+            }
+          }}
         />
       </div>
     </div>

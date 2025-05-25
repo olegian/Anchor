@@ -7,7 +7,12 @@ import {
   useOthers,
   useStorage,
 } from "@liveblocks/react";
-import { ArrowsPointingOutIcon, PlusIcon } from "@heroicons/react/16/solid";
+import {
+  ArrowPathIcon,
+  ArrowsPointingOutIcon,
+  PlusIcon,
+  XMarkIcon,
+} from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
 import { users } from "@/app/auth";
@@ -56,7 +61,7 @@ export function EditorMirrorLayer({ html }: { html: string }) {
   return (
     <div
       id="overlay-editor"
-      className="absolute max-w-3xl pointer-events-none select-none w-full h-full mx-auto top-[12.35rem] px-2 prose"
+      className="absolute max-w-3xl pointer-events-none select-none w-full h-full mx-auto top-[12.35rem] px-2 prose pt-8"
       dangerouslySetInnerHTML={{
         __html: wrapEveryWordInSpansPreserveHTML(
           html.replaceAll("<p></p>", "<p><br /></p>")
@@ -106,7 +111,7 @@ export function AnchorLayer({
   const othersPresense = useOthers();
 
   return (
-    <>
+    <div id="anchor-layer" className="transition-opacity duration-300">
       {anchorHandles?.keys().map((handleId: string) => {
         return (
           <AnchorHandle
@@ -120,9 +125,12 @@ export function AnchorLayer({
           />
         );
       })}
-    </>
+    </div>
   );
 }
+
+const ANCHOR_HANDLE_SIZE = 24; // Size of the anchor handle in pixels
+const PUNCTUATION = ". ,;:!?"; // Punctuation characters to ignore
 
 function AnchorHandle({
   id,
@@ -151,6 +159,7 @@ function AnchorHandle({
     }
   >[];
 }) {
+  const anchorRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const offset = useRef({ x: 0, y: 0 });
@@ -333,8 +342,6 @@ function AnchorHandle({
     return () => cancelAnimationFrame(raf);
   }, [dragging]);
 
-  const [text, setText] = useState("Drag me!");
-
   useEffect(() => {
     let animationFrame: number | null = null;
 
@@ -361,31 +368,29 @@ function AnchorHandle({
         targetX >= editorLeftEdge && targetX <= editorRightEdge;
 
       // Should we snap to the left side of the editor?
-      if (anchorOnLeft && !anchorOnRight) {
-        if (editorLeftEdge - targetX < editorLeftEdge / 6) {
-          // console.log("near left side of the editor"); // we should snap to the left side!
-          setText("Paragraph");
-        } else {
-          // console.log("on the left side"); // we are outside the editor!
-          setText("Document");
-        }
-      } else if (anchorOnRight && !anchorOnLeft) {
-        if (targetX < editorRightEdge + editorRightEdge / 6) {
-          // console.log("near right side of the editor"); // we should snap to the right side!
-          setText("Paragraph");
-        } else {
-          // console.log("on the right side"); // we are outside the editor!
-          setText("Document");
-        }
-      } else if (anchorInEditor) {
-        // console.log("inside the editor"); // we are inside the editor!
-        setText("Word");
-      }
+      // if (anchorOnLeft && !anchorOnRight) {
+      //   if (editorLeftEdge - targetX < editorLeftEdge / 6) {
+      //     // console.log("near left side of the editor"); // we should snap to the left side!
+      //   } else {
+      //     // console.log("on the left side"); // we are outside the editor!
+      //   }
+      // } else if (anchorOnRight && !anchorOnLeft) {
+      //   if (targetX < editorRightEdge + editorRightEdge / 6) {
+      //     // console.log("near right side of the editor"); // we should snap to the right side!
+      //   } else {
+      //     // console.log("on the right side"); // we are outside the editor!
+      //   }
+      // } else if (anchorInEditor) {
+      //   // console.log("inside the editor"); // we are inside the editor!
+      // }
 
       // determine and set wordidx + paraidx
       let paragraphIdx = -1;
       let wordIdx = -1;
-      if (anchorInEditor) {
+      if (
+        anchorInEditor ||
+        (anchorOnLeft && editorLeftEdge - targetX < editorLeftEdge / 6)
+      ) {
         // no need to try to identify if we already know we aren't over the editor
         outer: for (let i = 0; i < paragraphs.length; i++) {
           const paragraph = paragraphs[i];
@@ -400,19 +405,30 @@ function AnchorHandle({
             paragraphIdx = i;
             if (targetX <= paraRect.left) {
               // hovering in the paragraph zone, no need to search for word
-              paragraph.className =
-                "border-l-4 border-zinc-300 -ml-2 transition-colors";
-              paragraph.after;
+              // paragraph.className =
+              //   "border-l-4 border-zinc-300 -ml-2 transition-colors";
+              // paragraph.after;
 
-              targetX = paraRect.left - 20;
+              targetX = paraRect.left - 35;
               targetY = paraRect.top + paraRect.height / 2 - 10;
 
+              if (anchorRef.current) {
+                anchorRef.current.style.width = `${ANCHOR_HANDLE_SIZE}px`;
+                anchorRef.current.style.height = `${ANCHOR_HANDLE_SIZE}px`;
+              }
+
               break outer;
+            } else {
+              if (anchorRef.current) {
+                anchorRef.current.style.width = `${ANCHOR_HANDLE_SIZE}px`;
+                anchorRef.current.style.height = `${ANCHOR_HANDLE_SIZE}px`;
+              }
             }
 
             // hovering in the editor, need to search for word
             for (let j = 0; j < spans.length; j++) {
               const word = spans[j];
+
               const rect = word.getBoundingClientRect();
               if (
                 targetX >= rect.left &&
@@ -424,16 +440,26 @@ function AnchorHandle({
                 // Snap target is the center of the span
                 wordIdx = j;
 
-                // Highlight the span
-                word.className =
-                  "bg-blue-500/10 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colors";
+                // // Highlight the span
+                // word.className =
+                //   "bg-blue-500 rounded-lg px-2 py-1 text-white/0 -ml-2 transition-colors";
 
                 targetX = rect.left + rect.width / 2;
-                targetY = rect.top + rect.height / 2;
+                targetY = rect.top + rect.height / 2 - 14;
+
+                if (anchorRef.current) {
+                  anchorRef.current.style.width = `${rect.width + 2}px`;
+                  anchorRef.current.style.height = `${rect.height + 2}px`;
+                }
 
                 break outer;
               } else {
                 word.className = "transition-colors text-white/0";
+
+                if (anchorRef.current) {
+                  anchorRef.current.style.width = `${ANCHOR_HANDLE_SIZE}px`;
+                  anchorRef.current.style.height = `${ANCHOR_HANDLE_SIZE}px`;
+                }
               }
             }
           }
@@ -520,10 +546,57 @@ function AnchorHandle({
     (user) => user.username === liveHandleInfo.owner
   );
 
+  // useEffect(() => {
+  //   const paragraphs = document.querySelectorAll("#overlay-editor p");
+  //   if (liveHandleInfo.paragraphIdx >= 0) {
+  //     const paragraph = paragraphs[liveHandleInfo.paragraphIdx];
+  //     if (!paragraph) return;
+  //     if (liveHandleInfo.wordIdx >= 0) {
+  //       // Highlight the word
+  //       const spans = paragraph.getElementsByTagName("span");
+  //       if (!spans) return;
+  //       const word = spans[liveHandleInfo.wordIdx];
+  //       if (word) {
+  //         word.className =
+  //           "bg-blue-500/100 blur-2xl px-2 py-1 text-white/0 -ml-2 transition-colors";
+  //       }
+  //     } else {
+  //       // Highlight the paragraph
+  //       // paragraph.className = "border-l-4 border-zinc-300 transition-colors";
+  //       // paragraph.after;
+  //     }
+  //   }
+  // }, [liveHandleInfo]);
+
+  const title = `${
+    owned && !isOwner
+      ? ownerData?.name
+      : liveHandleInfo.handleName || localCoords.x < 50
+      ? "Delete?"
+      : liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
+      ? "Word"
+      : liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx === -1
+      ? "Paragraph"
+      : "Document"
+  }${liveHandleInfo.isPending ? "(pending)" : ""}`;
+
+  const icon =
+    localCoords.x < 50 ? (
+      <XMarkIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
+    ) : liveHandleInfo.isPending ? (
+      <ArrowPathIcon className="absolute size-3.5 shrink-0 animate-spin" />
+    ) : dragging || owned ? (
+      <ArrowsPointingOutIcon className="absolute shrink-0 size-3 transition-all group-hover:scale-125 rotate-45" />
+    ) : (
+      <PlusIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
+    );
+
+  const ownerColor = owned && !isOwner ? ownerData?.color : "";
+
   return (
     <div
       ref={ref}
-      className="absolute origin-center z-40 transition-transform duration-300"
+      className="absolute anchor-handle origin-center z-40 transition-transform duration-300"
       style={{
         left: localCoords.x,
         top: localCoords.y,
@@ -544,41 +617,39 @@ function AnchorHandle({
               : "opacity-0 text-zinc-700 border-zinc-200 bg-white"
           } select-none group-hover:opacity-100 translate-y-0  transition-all font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md`}
           style={{
-            borderColor: owned && !isOwner ? ownerData?.color : "",
-            backgroundColor: owned && !isOwner ? ownerData?.color : "",
+            borderColor: ownerColor,
+            backgroundColor: ownerColor,
           }}
         >
-          {owned && !isOwner
-            ? ownerData?.name
-            : liveHandleInfo.handleName || localCoords.x < 50
-            ? "Delete?"
-            : text}
+          {title}
         </div>
 
         <div
           className={`${
             owned && !isOwner
               ? "border-2 text-white"
-              : "border-zinc-200 opacity-50 text-zinc-500"
-          } flex items-center justify-center bg-white/50 backdrop-blur-sm  border origin-center rounded-full transition-all duration-200 ease-in-out cursor-pointer ${
+              : `text-zinc-700 ${
+                  liveHandleInfo.paragraphIdx >= 0 &&
+                  liveHandleInfo.wordIdx >= 0
+                    ? "bg-black/10"
+                    : "bg-black/10  backdrop-blur-sm"
+                }`
+          } flex items-center justify-center rounded-md origin-center transition-all duration-200 ease-in-out cursor-pointer ${
             dragging || owned
               ? "scale-125 opacity-100"
               : "group-hover:scale-125 group-hover:opacity-100"
-          } size-5`}
+          }`}
           style={{
-            borderColor: owned && !isOwner ? ownerData?.color : "",
-            backgroundColor: owned && !isOwner ? ownerData?.color : "",
+            borderColor: ownerColor,
+            backgroundColor: ownerColor,
+            width: `${ANCHOR_HANDLE_SIZE}px`,
+            height: `${ANCHOR_HANDLE_SIZE}px`,
           }}
+          ref={anchorRef}
         >
-          {(dragging || owned) && localCoords.x >= 50 ? (
-            <ArrowsPointingOutIcon className="absolute shrink-0 size-2.5 transition-all group-hover:scale-125 rotate-45" />
-          ) : (
-            <PlusIcon
-              className={`absolute size-3 shrink-0 transition-all group-hover:scale-125 ${
-                localCoords.x < 50 ? "rotate-45" : "rotate-0"
-              }`}
-            />
-          )}
+          {liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
+            ? null
+            : icon}
         </div>
       </div>
     </div>

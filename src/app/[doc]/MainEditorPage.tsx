@@ -64,28 +64,30 @@ function EditingInterface({ doc }: { doc: string }) {
 
   return (
     <>
-      <div className="py-4 px-2 md:py-8 md:px-6 select-none">
-        <div className="max-w-3xl mx-auto py-16 space-y-4">
-          <div className="space-y-4 px-2">
-            <div className="flex items-center justify-between">
-              {title !== null ? (
-                <p className="font-semibold text-zinc-500 text-sm">
-                  Last updated 2 days ago by Greg Heffley
-                </p>
-              ) : (
-                <div className="relative p-2 py-1 rounded-lg bg-zinc-200 animate-pulse h-5 w-56" />
-              )}
-              <DocMenu showText={true} />
+      <div className="pt-4 px-2 md:pt-16 md:px-6 select-none h-full">
+        <div className="border-x border-t bg-white border-zinc-100 mx-auto max-w-4xl shadow-lg">
+          <div className="max-w-3xl mx-auto py-16 space-y-4">
+            <div className="space-y-4 px-2">
+              <div className="flex items-center justify-between">
+                {title !== null ? (
+                  <p className="font-semibold text-zinc-500 text-sm">
+                    Last updated 2 days ago by Greg Heffley
+                  </p>
+                ) : (
+                  <div className="relative p-2 py-1 rounded-lg bg-zinc-200 animate-pulse h-5 w-56" />
+                )}
+                <DocMenu showText={true} />
+              </div>
             </div>
+            <Editor
+              title={title ?? ""}
+              setTitle={setTitle}
+              open={open}
+              loaded={title !== null && handles !== null}
+              anchorHandles={handles}
+              addHandle={addHandle}
+            />
           </div>
-          <Editor
-            title={title ?? ""}
-            setTitle={setTitle}
-            open={open}
-            loaded={title !== null && handles !== null}
-            anchorHandles={handles}
-            addHandle={addHandle}
-          />
         </div>
       </div>
     </>
