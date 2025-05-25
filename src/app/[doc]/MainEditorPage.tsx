@@ -88,8 +88,15 @@ function EditingInterface({}: {}) {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
+  const [draggingAnchor, setDraggingAnchor] = useState(false);
+
   useEffect(() => {
     function handleClick(event: MouseEvent) {
+      if (draggingAnchor) {
+        // If dragging an anchor, ignore clicks outside the border
+        return;
+      }
+
       if (
         borderRef.current &&
         !borderRef.current.contains(event.target as Node)
@@ -130,7 +137,7 @@ function EditingInterface({}: {}) {
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
-  }, [addHandle, mousePos, borderRef, handles]);
+  }, [addHandle, mousePos, borderRef, handles, draggingAnchor]);
 
   return (
     <>
@@ -160,6 +167,8 @@ function EditingInterface({}: {}) {
               anchorHandles={handles}
               addHandle={addHandle}
               mousePos={mousePos}
+              draggingAnchor={draggingAnchor}
+              setDraggingAnchor={setDraggingAnchor}
             />
           </div>
         </div>

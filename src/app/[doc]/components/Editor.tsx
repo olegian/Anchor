@@ -17,6 +17,8 @@ export default function Editor({
   anchorHandles,
   addHandle,
   mousePos,
+  draggingAnchor,
+  setDraggingAnchor,
 }: {
   title: string;
   setTitle: (title: string) => void;
@@ -31,8 +33,9 @@ export default function Editor({
     height: number
   ) => void;
   mousePos: { x: number; y: number };
+  draggingAnchor: boolean;
+  setDraggingAnchor: (dragging: boolean) => void;
 }) {
-  const [draggingAnchor, setDraggingAnchor] = useState(false);
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
   // const params = useParams<{ doc: string }>();
   // const [myPresence, updateMyPresence] = useMyPresence();
