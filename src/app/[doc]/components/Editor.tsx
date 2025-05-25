@@ -55,12 +55,12 @@ export default function Editor({
   useEffect(() => {
     if (editor && pendingInsertion && loaded) {
       const { content, paragraphIdx, wordIdx } = pendingInsertion;
-      
+
       // Determine insertion position
       //let insertPos: number;
       let insertPos: number = editor.state.doc.content.size;
       console.log("paragraph index =  " + paragraphIdx);
-      
+
       if (paragraphIdx === -1 && wordIdx === -1) {
         // Insert at end of document
         insertPos = editor.state.doc.content.size;
@@ -69,9 +69,9 @@ export default function Editor({
         const doc = editor.state.doc;
         let currentPos = 0;
         let paragraphCount = 0;
-        
+
         doc.descendants((node, pos) => {
-          if (node.type.name === 'paragraph') {
+          if (node.type.name === "paragraph") {
             if (paragraphCount === paragraphIdx) {
               insertPos = pos + node.nodeSize;
               return false; // Stop traversing
@@ -81,7 +81,7 @@ export default function Editor({
           return true;
         });
         console.log("paragraph count = " + paragraphCount);
-        
+
         // If paragraph not found, insert at end
         if (insertPos === undefined) {
           insertPos = doc.content.size;
@@ -92,7 +92,8 @@ export default function Editor({
       }
 
       // Insert the content as a new paragraph
-      editor.chain()
+      editor
+        .chain()
         .focus()
         .setTextSelection(insertPos)
         .insertContent(`\n${content}\n`)
@@ -130,13 +131,16 @@ export default function Editor({
         </article>
       </div>
       <FloatingToolbar editor={editor} open={open} />
-      <AnchorLayer
-        anchorHandles={anchorHandles}
-        addHandle={addHandle}
-        draggingAnchor={draggingAnchor}
-        setDraggingAnchor={setDraggingAnchor}
-        docId={params.doc}
-      />
+      {editor && loaded ? (
+        <AnchorLayer
+          anchorHandles={anchorHandles}
+          addHandle={addHandle}
+          draggingAnchor={draggingAnchor}
+          setDraggingAnchor={setDraggingAnchor}
+          docId={params.doc}
+          editor={editor}
+        />
+      ) : null}
     </>
   );
 }

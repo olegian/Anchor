@@ -14,8 +14,13 @@ import {
 } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
-import { prompt, createExchange, insertContentIntoDocument } from "../../actions";
+import {
+  prompt,
+  createExchange,
+  insertContentIntoDocument,
+} from "../../actions";
 import { LiveObject } from "@liveblocks/client";
+import { Editor } from "@tiptap/react";
 
 export function EditorMirrorLayer({ html }: { html: string }) {
   function wrapEveryWordInSpansPreserveHTML(html: string) {
@@ -72,12 +77,14 @@ export function AnchorLayer({
   draggingAnchor,
   setDraggingAnchor,
   docId,
+  editor,
 }: {
   anchorHandles: HandlesMap;
   addHandle: (newHandleId: string, x: number, y: number) => void;
   draggingAnchor: boolean;
   setDraggingAnchor: (dragging: boolean) => void;
   docId: string;
+  editor: Editor;
 }) {
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({
     x: 0,
@@ -106,6 +113,7 @@ export function AnchorLayer({
             id={handleId}
             setDraggingAnchor={setDraggingAnchor}
             docId={docId}
+            editor={editor}
           />
         );
       })}
@@ -118,11 +126,13 @@ function ConversationUI({
   docId,
   onClose,
   position,
+  editor,
 }: {
   handleId: string;
   docId: string;
   onClose: () => void;
   position: { x: number; y: number };
+  editor: Editor;
 }) {
   const [isLoading, setIsLoading] = useState(false);
   const exchanges = useStorage(
@@ -175,18 +185,31 @@ function ConversationUI({
   }, []);
 
   // New function to insert response into document
-  const insertResponseIntoDocument = async (responseText: string) => {
-    if (!handleInfo) return;
+  const insertResponseIntoDocument = () => {
+    if (!handleInfo || exchanges.length < 2) return;
 
     const paragraphIdx = handleInfo.paragraphIdx;
+
+    // TODO: use wordIdx to get a more accurate position
     const wordIdx = handleInfo.wordIdx;
 
-    try {
-      // Call the server action to insert content
-      await insertContentIntoDocument(docId, responseText, paragraphIdx, wordIdx);
-    } catch (error) {
-      console.error("Error inserting content:", error);
-    }
+    const insertionPoint =
+      paragraphIdx == -1
+        ? editor.$doc.children.at(-1)?.pos || 0
+        : editor.$doc.children.at(paragraphIdx + 1)?.pos ||
+          editor.$doc.children.at(-1)?.pos || 0;
+
+    const response = exchanges.at(exchanges.length - 2)?.response;
+
+    editor.commands.insertContentAt(insertionPoint, {
+      type: "paragraph",
+      content: [
+        {
+          type: "text",
+          text: response,
+        },
+      ],
+    });
   };
 
   useEffect(() => {
@@ -253,11 +276,11 @@ function ConversationUI({
               {exchange.response && (
                 <div className="bg-gray-50 p-2 rounded-lg">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="text-xs text-gray-600 font-medium">
-                      AI
-                    </div>
+                    <div className="text-xs text-gray-600 font-medium">AI</div>
                     <button
-                      onClick={() => insertResponseIntoDocument(exchange.response)}
+                      onClick={() =>
+                        insertResponseIntoDocument(exchange.response)
+                      }
                       className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
                       title="Insert this response into the document"
                     >
@@ -313,10 +336,12 @@ function AnchorHandle({
   id,
   setDraggingAnchor,
   docId,
+  editor,
 }: {
   id: string;
   setDraggingAnchor: (dragging: boolean) => void;
   docId: string;
+  editor: Editor;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -667,6 +692,7 @@ function AnchorHandle({
           docId={docId}
           onClose={closeConversation}
           position={{ x: localCoords.x, y: localCoords.y }}
+          editor={editor}
         />
       )}
     </>
