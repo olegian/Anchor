@@ -36,6 +36,7 @@ export function EditorMirrorLayer({ html }: { html: string }) {
           } else {
             const span = document.createElement("span");
             span.textContent = token;
+            // Uncomment to see the spans visually
             // span.className = "text-black/25";
             // span.style.background = "red";
             span.className = "text-black/0";
@@ -62,7 +63,7 @@ export function EditorMirrorLayer({ html }: { html: string }) {
   return (
     <div
       id="overlay-editor"
-      className="absolute max-w-[758px] pointer-events-none select-none w-full h-full mx-auto top-[12.35rem] px-2 prose pt-8"
+      className="absolute max-w-[763px] pointer-events-none select-none w-full h-full mx-auto top-[12.35rem] px-2 prose pt-8"
       dangerouslySetInnerHTML={{
         __html: wrapEveryWordInSpansPreserveHTML(
           html.replaceAll("<p></p>", "<p><br /></p>")
@@ -689,14 +690,14 @@ function AnchorHandle({
         <div
           className={`${
             owned && !isOwner
-              ? "border-2 text-white"
+              ? "text-white"
               : deleteState
-              ? "border-red-600 text-white bg-red-500"
+              ? "text-white bg-red-500"
               : `text-zinc-700 ${
                   liveHandleInfo.paragraphIdx >= 0 &&
                   liveHandleInfo.wordIdx >= 0
                     ? "bg-black/10"
-                    : "bg-black/10  backdrop-blur-sm"
+                    : "bg-black/10 backdrop-blur-sm"
                 }`
           } flex items-center justify-center rounded-md origin-center transition-all duration-200 ease-in-out cursor-pointer ${
             dragging || owned
@@ -704,10 +705,11 @@ function AnchorHandle({
               : "group-hover:scale-125 group-hover:opacity-100"
           }`}
           style={{
-            borderColor: ownerColor,
-            backgroundColor: ownerColor,
-            // width: `${ANCHOR_HANDLE_SIZE}px`,
-            // height: `${ANCHOR_HANDLE_SIZE}px`,
+            backgroundColor:
+              ownerColor +
+              (liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
+                ? "25"
+                : ""),
             width: `${liveHandleInfo.width ?? ANCHOR_HANDLE_SIZE}px`,
             height: `${liveHandleInfo.height ?? ANCHOR_HANDLE_SIZE}px`,
           }}
