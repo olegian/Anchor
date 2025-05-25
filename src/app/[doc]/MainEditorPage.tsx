@@ -17,12 +17,17 @@ export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
 
   const scrollPosition = useScrollPosition();
+
+  const handleShareDocument = (userId: string) => {
+    // TODO: share document handler
+  };
+
   return (
     <>
       <Room docId={params.doc} session={session}>
         <BackButton />
         <EditingInterface doc={params.doc} />
-        <FloatingMenu />
+        <FloatingMenu handleShareDocument={handleShareDocument} />
         <FloatingNavbar scrollPosition={scrollPosition} />
       </Room>
     </>
