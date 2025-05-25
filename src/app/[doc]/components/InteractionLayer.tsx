@@ -44,7 +44,7 @@ export function EditorMirrorLayer({ html }: { html: string }) {
             // Uncomment to see the spans visually
             // span.className = "text-black/25";
             // span.style.backgroundColor = "rgba(255,0,0,0.5)"; // light red background for visibility
-            // span.className = "text-black/25";
+            span.className = "text-black/0";
             span.style.whiteSpace = "pre-wrap";
             span.style.overflowWrap = "break-word";
             fragment.appendChild(span);
