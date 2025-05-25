@@ -369,7 +369,7 @@ export async function deleteDoc(docId: string) {
 }
 
 export async function getAccessibleRooms(userId: string): Promise<RoomData[]> {
-  // TODO: this is not secure lol but idc rn
+  // TODO: this is not secure lol if anyone can hit this endpoint but idc rn
 
   // you can filter available rooms via the liveblocks permissions associated with
   // a user id (with liveblocks.getRooms()), but that requires me to fully understand how lb perms work,
