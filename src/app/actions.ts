@@ -380,6 +380,100 @@ export async function invokeAllPrompts(
 export async function createDoc(tempDocTitle: string) {
   // Document creation logic would go here
 }
+
+// export async function insertContentIntoDocument(
+//   docId: string,
+//   content: string,
+//   paragraphIdx: number,
+//   wordIdx: number
+// ): Promise<{ success: boolean; message?: string }> {
+//   try {
+//     // Get current document contents
+//     const docContents = await getContents(docId);
+//     const docJson = JSON.parse(docContents);
+
+//     // Parse the document to understand structure
+//     const parsedDoc = parseDocumentContent(docJson);
+
+//     // Determine insertion logic based on context
+//     let insertionPosition: number;
+//     let insertionType: 'paragraph' | 'word' | 'document';
+
+//     if (paragraphIdx === -1 && wordIdx === -1) {
+//       // Document context - insert at the end
+//       insertionType = 'document';
+//       insertionPosition = docJson.content ? docJson.content.length : 0;
+//     } else if (paragraphIdx >= 0 && wordIdx === -1) {
+//       // Paragraph context - insert after the specified paragraph
+//       insertionType = 'paragraph';
+//       insertionPosition = paragraphIdx + 1;
+//     } else if (paragraphIdx >= 0 && wordIdx >= 0) {
+//       // Word context - insert after the paragraph containing the word
+//       insertionType = 'word';
+//       insertionPosition = paragraphIdx + 1;
+//     } else {
+//       // Fallback to document end
+//       insertionType = 'document';
+//       insertionPosition = docJson.content ? docJson.content.length : 0;
+//     }
+
+//     // Create new paragraph with the AI response
+//     const newParagraph = {
+//       type: "paragraph",
+//       content: [
+//         {
+//           type: "text",
+//           text: content
+//         }
+//       ]
+//     };
+
+//     // Insert the content
+//     if (!docJson.content) {
+//       docJson.content = [];
+//     }
+
+//     if (insertionType === 'document') {
+//       // Insert at the end of document
+//       console.log("insertion type = document");
+//       docJson.content.push(newParagraph);
+//     } else {
+//       // Insert after specified paragraph
+//       // doesn't work rn rip
+//       docJson.content.splice(insertionPosition, 0, newParagraph);
+//     }
+
+//     // Update the document using Liveblocks
+//     await liveblocks.mutateStorage(docId, ({ root }) => {
+//       const timestamp = Date.now();
+      
+//       // Store insertion request in temporary storage for the editor to pick up
+//       // root.set("pendingInsertion", {
+//       //   content: content,
+//       //   paragraphIdx: paragraphIdx,
+//       //   wordIdx: wordIdx,
+//       //   timestamp: timestamp
+//       // });
+//       root.set(
+//         "pendingInsertion",
+//         new LiveObject({
+//           content,
+//           paragraphIdx,
+//           wordIdx,
+//           timestamp: Date.now()
+//         })
+//       );
+//     });
+
+//     return { success: true };
+//   } catch (error) {
+//     console.error("Error inserting content into document:", error);
+//     return { 
+//       success: false, 
+//       message: (error as Error).message 
+//     };
+//   }
+// }
 export async function insertContentIntoDocument(
   docId: string,
   content: string,
@@ -387,36 +481,29 @@ export async function insertContentIntoDocument(
   wordIdx: number
 ): Promise<{ success: boolean; message?: string }> {
   try {
-    // Get current document contents
     const docContents = await getContents(docId);
     const docJson = JSON.parse(docContents);
 
-    // Parse the document to understand structure
     const parsedDoc = parseDocumentContent(docJson);
 
-    // Determine insertion logic based on context
-    let insertionPosition: number;
     let insertionType: 'paragraph' | 'word' | 'document';
+    let insertionPosition: number;
 
     if (paragraphIdx === -1 && wordIdx === -1) {
-      // Document context - insert at the end
       insertionType = 'document';
-      insertionPosition = docJson.content ? docJson.content.length : 0;
+      insertionPosition = docJson.content?.length ?? 0;
     } else if (paragraphIdx >= 0 && wordIdx === -1) {
-      // Paragraph context - insert after the specified paragraph
       insertionType = 'paragraph';
       insertionPosition = paragraphIdx + 1;
     } else if (paragraphIdx >= 0 && wordIdx >= 0) {
-      // Word context - insert after the paragraph containing the word
       insertionType = 'word';
       insertionPosition = paragraphIdx + 1;
     } else {
-      // Fallback to document end
       insertionType = 'document';
-      insertionPosition = docJson.content ? docJson.content.length : 0;
+      insertionPosition = docJson.content?.length ?? 0;
     }
 
-    // Create new paragraph with the AI response
+    // New paragraph structure
     const newParagraph = {
       type: "paragraph",
       content: [
@@ -427,39 +514,42 @@ export async function insertContentIntoDocument(
       ]
     };
 
-    // Insert the content
-    if (!docJson.content) {
+    // Ensure content array exists
+    if (!Array.isArray(docJson.content)) {
       docJson.content = [];
     }
 
     if (insertionType === 'document') {
-      // Insert at the end of document
+      console.log("insertion type = document");
       docJson.content.push(newParagraph);
     } else {
-      // Insert after specified paragraph
-      // doesn't work rn rip
+      // Ensure index is within bounds (0 ≤ idx ≤ content.length)
+      insertionPosition = Math.min(
+        Math.max(0, insertionPosition),
+        docJson.content.length
+      );
+      console.log("insertion position = " + insertionPosition);
+
       docJson.content.splice(insertionPosition, 0, newParagraph);
     }
 
-    // Update the document using Liveblocks
+    // Persist the update using Liveblocks
     await liveblocks.mutateStorage(docId, ({ root }) => {
       const timestamp = Date.now();
-      
-      // Store insertion request in temporary storage for the editor to pick up
-      root.set("pendingInsertion", {
-        content: content,
-        paragraphIdx: paragraphIdx,
-        wordIdx: wordIdx,
-        timestamp: timestamp
-      });
+      root.set(
+        "pendingInsertion",
+        new LiveObject({
+          content,
+          paragraphIdx,
+          wordIdx,
+          timestamp
+        })
+      );
     });
 
     return { success: true };
   } catch (error) {
     console.error("Error inserting content into document:", error);
-    return { 
-      success: false, 
-      message: (error as Error).message 
-    };
+    return { success: false, message: (error as Error).message };
   }
 }

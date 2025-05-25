@@ -57,7 +57,9 @@ export default function Editor({
       const { content, paragraphIdx, wordIdx } = pendingInsertion;
       
       // Determine insertion position
-      let insertPos: number;
+      //let insertPos: number;
+      let insertPos: number = editor.state.doc.content.size;
+      console.log("paragraph index =  " + paragraphIdx);
       
       if (paragraphIdx === -1 && wordIdx === -1) {
         // Insert at end of document
@@ -78,6 +80,7 @@ export default function Editor({
           }
           return true;
         });
+        console.log("paragraph count = " + paragraphCount);
         
         // If paragraph not found, insert at end
         if (insertPos === undefined) {

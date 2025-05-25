@@ -52,6 +52,12 @@ declare global {
 
       docHandles: Handles; // snapshotId -> snapshot information
       docTitle: string;
+      pendingInsertion: LiveObject<{
+        content: string;
+        paragraphIdx: number;
+        wordIdx: number;
+        timestamp: number;
+      }> | null;
     };
 
     // Custom user info set when authenticating with a secret key
