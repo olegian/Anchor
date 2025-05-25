@@ -49,7 +49,8 @@ declare global {
     Storage: {
       // Example, a conflict-free list
       // animals: LiveList<string>;
-
+      // I added this but now I'm thinking we don't want it
+      //paragraphs: LiveList<LiveObject<{ type: "paragraph", content: LiveList<LiveObject<{ type: "text", text: string }>> }>>;
       docHandles: Handles; // snapshotId -> snapshot information
       docTitle: string;
       pendingInsertion: LiveObject<{
