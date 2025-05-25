@@ -1,46 +1,48 @@
 "use client";
-import { Comment } from "@liveblocks/react-ui/primitives";
-import Placeholder from "@tiptap/extension-placeholder";
-import { EditorContent, Extension, useEditor } from "@tiptap/react";
+import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { useEffect, useState } from "react";
-import InlineAIExtension from "./extensions/InlineAIExtension";
 import FloatingToolbar from "./floating/FloatingToolbar";
-
-import { XMarkIcon } from "@heroicons/react/16/solid";
-import { CommentData } from "@liveblocks/core";
-import {
-  useDeleteComment,
-  useMutation,
-  useMyPresence,
-  useStorage,
-  useThreads,
-} from "@liveblocks/react";
-import {
-  AnchoredThreads,
-  FloatingComposer,
-  useLiveblocksExtension,
-} from "@liveblocks/react-tiptap";
-import { getContents } from "@/app/actions";
-import { useParams } from "next/navigation";
+import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
+import Title from "./Title";
+import SkeletonEditor from "./SkeletonEditor";
+import { EditorMirrorLayer, AnchorLayer } from "./InteractionLayer";
+import { HandlesMap } from "../../../../liveblocks.config";
+import { useStorage } from "@liveblocks/react"; // Make sure this is imported
 
 export default function Editor({
   title,
   setTitle,
   open,
-  field,
   loaded,
+  anchorHandles,
+  addHandle,
+  mousePos,
+  draggingAnchor,
+  setDraggingAnchor,
+  docId,
 }: {
   title: string;
   setTitle: (title: string) => void;
   open: () => void;
-  field: string;
   loaded: boolean;
+  anchorHandles: HandlesMap;
+  addHandle: (
+    newHandleId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number
+  ) => void;
+  mousePos: { x: number; y: number };
+  draggingAnchor: boolean;
+  setDraggingAnchor: (dragging: boolean) => void;
+  docId: string;
 }) {
-  const liveblocks = useLiveblocksExtension({ field });
-  const params = useParams<{ doc: string; snapshot?: string }>();
-  const [myPresence, updateMyPresence] = useMyPresence();
-  const [isEditorReady, setEditorReady] = useState(false);
+  const liveblocks = useLiveblocksExtension({ field: "maindoc" });
+
+  // Listen for pending insertions
+  const pendingInsertion = useStorage((root) => root.pendingInsertion);
 
   const editor = useEditor({
     extensions: [
@@ -51,14 +53,63 @@ export default function Editor({
         },
         history: false,
       }),
-      Placeholder.configure({
-        placeholder: "Type something...",
-      }),
-    ].concat(
-      field !== "maindoc" ? [InlineAIExtension as unknown as Extension] : []
-    ),
+    ],
     immediatelyRender: false,
+    editable: !draggingAnchor,
   });
+
+  // Handle pending insertions
+  useEffect(() => {
+    if (editor && pendingInsertion && loaded) {
+      const { content, paragraphIdx, wordIdx } = pendingInsertion;
+
+      // Determine insertion position
+      //let insertPos: number;
+      let insertPos: number = editor.state.doc.content.size;
+      console.log("paragraph index =  " + paragraphIdx);
+
+      if (paragraphIdx === -1 && wordIdx === -1) {
+        // Insert at end of document
+        insertPos = editor.state.doc.content.size;
+      } else if (paragraphIdx >= 0) {
+        // Find the position after the specified paragraph
+        const doc = editor.state.doc;
+        let currentPos = 0;
+        let paragraphCount = 0;
+
+        doc.descendants((node, pos) => {
+          if (node.type.name === "paragraph") {
+            if (paragraphCount === paragraphIdx) {
+              insertPos = pos + node.nodeSize;
+              return false; // Stop traversing
+            }
+            paragraphCount++;
+          }
+          return true;
+        });
+        console.log("paragraph count = " + paragraphCount);
+
+        // If paragraph not found, insert at end
+        if (insertPos === undefined) {
+          insertPos = doc.content.size;
+        }
+      } else {
+        // Fallback to end of document
+        insertPos = editor.state.doc.content.size;
+      }
+
+      // Insert the content as a new paragraph
+      editor
+        .chain()
+        .focus()
+        .setTextSelection(insertPos)
+        .insertContent(`\n${content}\n`)
+        .run();
+
+      // Clear the pending insertion (you might want to do this through a mutation)
+      // This is a simplified approach - ideally you'd clear it through Liveblocks
+    }
+  }, [editor, pendingInsertion, loaded]);
 
   useEffect(() => {
     if (editor) {
@@ -68,131 +119,62 @@ export default function Editor({
     }
   }, [editor]);
 
-  const { threads } = useThreads();
-
-  useEffect(() => {
-    if (editor && field === "maindoc") {
-      setEditorReady(true);
-    }
-  }, [editor, field]);
-
   return (
     <>
+      <DragToDeleteBounds draggingAnchor={draggingAnchor} />
+      {editor && loaded ? <EditorMirrorLayer html={editor.getHTML()} /> : null}
       <div className="relative">
         <SkeletonEditor loaded={loaded} />
         <article
           className={`${
+            draggingAnchor
+              ? "pointer-events-none select-none"
+              : "pointer-events-auto"
+          } ${
             loaded ? "" : "hidden"
-          } prose max-w-none h-full min-h-80 prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg`}
+          } prose max-w-none h-full min-h-screen prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg`}
         >
           <Title title={title} setTitle={setTitle} />
           <EditorContent editor={editor} className="px-2" />
         </article>
       </div>
-
-      <>
-        <FloatingComposer editor={editor} />
-        <AnchoredThreads
-          editor={editor}
-          threads={threads || []}
-          className="fixed top-20 w-full right-0 z-20 h-32"
-          components={{
-            Thread: (props) => (
-              <div className="flex items-center justify-end gap-2 -mr-80">
-                {props.thread.comments.map((comment) => (
-                  <CommentBlock key={comment.id} comment={comment} />
-                ))}
-              </div>
-            ),
-          }}
-        />
-      </>
       <FloatingToolbar editor={editor} open={open} />
+      {editor && loaded ? (
+        <AnchorLayer
+          anchorHandles={anchorHandles}
+          addHandle={addHandle}
+          draggingAnchor={draggingAnchor}
+          setDraggingAnchor={setDraggingAnchor}
+          docId={docId}
+          editor={editor}
+          mousePos={mousePos}
+      />
+      ) : null}
     </>
   );
 }
 
-function SkeletonEditor({ loaded }: { loaded: boolean }) {
+function DragToDeleteBounds({ draggingAnchor }: { draggingAnchor: boolean }) {
   return (
-    <div className={`${loaded ? "hidden" : "block"} w-full px-2`}>
-      <div className="space-y-4">
-        <div className="w-3/4 h-10 bg-zinc-200 animate-pulse rounded-lg" />
-        <div className="space-y-4">
-          {Array.from({ length: 12 }, (_, i) =>
-            i % 2 === 0 ? (
-              <div
-                key={i}
-                className="w-full h-20 bg-zinc-200 animate-pulse rounded-lg"
-              />
-            ) : (
-              <div
-                key={i}
-                className="w-full h-8 bg-zinc-200 animate-pulse rounded-lg"
-              />
-            )
-          )}
-        </div>
+    <>
+      <div
+        className={`fixed top-0 left-0 h-screen w-12 border-dashed border-r-2 border-zinc-200 bg-zinc-100 hover:opacity-25 flex flex-col items-center justify-center z-40 select-none pointer-events-none transition-all duration-300 ${
+          draggingAnchor ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <p className="-rotate-90 whitespace-nowrap text-sm text-zinc-700 font-medium">
+          Drag to delete
+        </p>
       </div>
-    </div>
-  );
-}
-
-function CommentBlock({ comment }: { comment: CommentData }) {
-  const deleteComment = useDeleteComment();
-
-  return (
-    <div
-      key={comment.id}
-      className="p-4 space-y-4 w-full relative max-w-72 border border-zinc-200 bg-white rounded-xl hover:shadow-lg transition-shadow"
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex items-center justify-start gap-2">
-          <div className="uppercase flex items-center justify-center w-8 h-8 rounded-full bg-indigo-500 border border-white/50 text-white font-semibold text-sm">
-            GH
-          </div>
-          <div>
-            <h4 className="font-semibold text-sm">Greg Heffley</h4>
-            <p className="text-xs text-zinc-500">
-              {new Date(comment.createdAt).toLocaleDateString("en-US")}
-            </p>
-          </div>
-        </div>
-        <button
-          className="bg-white border cursor-pointer hover:opacity-75 transition-opacity border-zinc-200 p-1 rounded-full text-xs font-medium text-zinc-700"
-          onClick={() =>
-            deleteComment({
-              threadId: comment.threadId,
-              commentId: comment.id,
-            })
-          }
-        >
-          <XMarkIcon className="size-4 shrink-0" />
-        </button>
+      <div
+        className={`fixed top-0 right-0 h-screen w-12 border-dashed border-l-2 border-zinc-200 bg-zinc-100 hover:opacity-25 flex flex-col items-center justify-center z-40 select-none pointer-events-none transition-all duration-300 ${
+          draggingAnchor ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <p className="rotate-90 whitespace-nowrap text-sm text-zinc-700 font-medium">
+          Drag to delete
+        </p>
       </div>
-      <div className="text-zinc-700">
-        <Comment.Body body={comment.body} />
-      </div>
-    </div>
-  );
-}
-
-function Title({
-  title,
-  setTitle,
-}: {
-  title: string;
-  setTitle: (title: string) => void;
-}) {
-  const placeholder = "Enter a title...";
-
-  return (
-    <h1
-      contentEditable
-      suppressContentEditableWarning
-      onBlur={(e) => setTitle(e.target.textContent || "")}
-      className="w-full text-3xl mb-4 border-b-2 transition-colors rounded-lg border-transparent hover:bg-zinc-100 inline px-2 py-1 focus:outline-none focus:border-none focus:bg-zinc-100"
-    >
-      {title || placeholder}
-    </h1>
+    </>
   );
 }

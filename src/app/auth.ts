@@ -1,5 +1,6 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { findUser, registerUser } from "@/app/firebase";
 
 export const users = [
   {
@@ -38,23 +39,26 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       authorize: async (credentials, request) => {
         // TODO: make this actually check against a database
         // TODO: populate more user information to use in application
-        // const AUTHORIZED = ["oi", "jk", "rk"];
-        // if (AUTHORIZED.includes(credentials.username as string)) {
-        //   return { name: credentials.username } as any; // apparently theres a bug that this cast addresses: https://stackoverflow.com/questions/74089665/next-auth-credentials-provider-authorize-type-error
-        // }
-
-        const user = users.find(
-          (user) => user.username === credentials?.username
-        );
-        if (user) {
-          return {
-            id: user.username,
-            name: user.name,
-            color: user.color,
-          } as any; // TODO: fix this type
+        if (!credentials || !credentials.username || !credentials.password) {
+          return null;
         }
 
-        throw new Error("Invalid Credentials");
+        const res = await findUser(
+          credentials.username as string,
+          credentials.password as string
+        );
+
+        // unable to authenticate
+        if (res.status === 401) {
+          return null;
+        }
+
+        // found user, successful auth
+        return {
+          id: credentials.username,
+          name: res.fullname,
+          color: res.color,
+        } as any; // TODO: fix this type
       },
     }),
   ],
@@ -71,7 +75,6 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      console.log("session cb", { session, token });
       return {
         ...session,
         user: {

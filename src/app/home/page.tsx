@@ -1,30 +1,42 @@
 "use client";
 import { useSession } from "next-auth/react";
 // import { AuthGuard } from "../components/AuthGuard";
-import useSWR from "swr";
-import { Room } from "@liveblocks/client";
+import { PlusIcon } from "@heroicons/react/20/solid";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
-import { PlusIcon, UserCircleIcon } from "@heroicons/react/20/solid";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { JsonObject, PlainLsonObject, RoomData } from "@liveblocks/node";
 import dynamic from "next/dynamic";
+import { getAccessibleRooms, getRoomStorage } from "../actions";
 import UserMenu from "./components/UserMenu";
 const NewDocDialog = dynamic(() => import("./components/NewDocDialog"));
 
-const fetcher = (...args: [RequestInfo | URL, RequestInit?]) =>
-  fetch(...args).then((res) => res.json());
-
 export default function Home() {
   const session = useSession();
+  const [isLoading, setIsLoading] = useState(true);
+  const [rooms, setRooms] = useState<RoomData[]>([]);
 
-  //   return
-  const { data, error, isLoading } = useSWR(
-    "/api/liveblocks/get-rooms",
-    fetcher
-  );
+  useEffect(() => {
+    if (
+      !session ||
+      !session.data ||
+      !session.data.user ||
+      !session.data.user.id ||
+      rooms.length > 0
+    ) {
+      return;
+    }
 
-  const [tempDocTitle, setTempDocTitle] = useState("");
+    getAccessibleRooms(session.data.user.id)
+      .then((res) => {
+        setRooms(res);
+        setIsLoading(false);
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  }, [session]);
+
   const [newDocDialog, setNewDocDialog] = useState(false);
 
   function open() {
@@ -64,8 +76,8 @@ export default function Home() {
               <div className="col-span-1 md:col-span-2 lg:col-span-4">
                 <p className="text-center text-zinc-500">Loading...</p>
               </div>
-            ) : data ? (
-              data?.data.map((room: any) => (
+            ) : rooms.length > 0 ? (
+              rooms.map((room: any) => (
                 <DocGridItem key={room.id} room={room} />
               ))
             ) : (
@@ -76,21 +88,28 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <NewDocDialog
-        tempDocTitle={tempDocTitle}
-        setTempDocTitle={setTempDocTitle}
-        isOpen={newDocDialog}
-        close={close}
-      />
+      <NewDocDialog isOpen={newDocDialog} close={close} />
     </>
   );
 }
 
-function DocGridItem({ room }: { room: any }) {
-  const { data, error, isLoading } = useSWR(
-    `/api/liveblocks/room/${room.id}/get-storage`,
-    fetcher
-  );
+function DocGridItem({ room }: { room: RoomData }) {
+  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<{
+    data: PlainLsonObject;
+    doc: JsonObject;
+  }>();
+
+  useEffect(() => {
+    getRoomStorage(room.id)
+      .then((res) => {
+        setData(res);
+        setIsLoading(false);
+      })
+      .catch((e) => {
+        console.log(e);
+      });
+  }, []);
 
   return (
     <>
@@ -107,7 +126,7 @@ function DocGridItem({ room }: { room: any }) {
           <div className="border-t border-zinc-200 p-4 space-y-1">
             {data ? (
               <h2 className="text-sm font-semibold line-clamp-1">
-                {data?.data?.data?.docTitle ?? "Untitled Document"}
+                {(data?.data?.data?.docTitle as string) ?? "Untitled Document"}
               </h2>
             ) : (
               <div className="h-4 bg-zinc-200 rounded-lg w-1/2 animate-pulse" />

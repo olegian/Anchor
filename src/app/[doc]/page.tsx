@@ -10,8 +10,10 @@ export default async function Page() {
   }
 
   return (
-    <AuthGuard redirectTo="/">
-      <MainEditorPage session={session} />;
-    </AuthGuard>
+    <div className="bg-zinc-50">
+      <AuthGuard redirectTo="/">
+        <MainEditorPage session={session} />
+      </AuthGuard>
+    </div>
   );
 }

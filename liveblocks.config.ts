@@ -1,23 +1,42 @@
 // Define Liveblocks types for your application
 
-import {
-    LiveList,
-    LiveMap,
-    LiveObject
-} from "@liveblocks/client";
+import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 
 export type Conversation = LiveObject<{
-    isPending: boolean;  // whether there is a request that is currently outstanding
-    exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>; // in order
-    handleName: string;  // optional name for the handle
-    x: number; // on screen x-position
-    y: number; // on screen y-position
+  isPending: boolean; // whether there is a request that is currently outstanding
+  exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>; // in order
+  owner: string; //  userid of person who is currently moving a specific anchor, or "" for no owner
+  handleName: string; // optional name for the handle
+  wordIdx: number; // -1 if not handle is not hooked onto any word
+  paragraphIdx: number; // same as ^
+  x: number; // on screen x-position
+  y: number; // on screen y-position
+  width: number; // width of the handle
+  height: number; // height of the handle
 }>;
 
 export type Handles = LiveMap<
   string, // handleId
   Conversation
 >;
+
+
+export type HandlesMap = ReadonlyMap<
+  string,
+  {
+    readonly isPending: boolean;
+    readonly exchanges: readonly {
+      readonly prompt: string;
+      readonly response: string;
+    }[];
+    readonly handleName: string;
+    readonly owner: string;
+    readonly x: number;
+    readonly y: number;
+    readonly width: number;
+    readonly height: number;
+  }
+> | null;
 
 // https://liveblocks.io/docs/api-reference/liveblocks-react#Typing-your-data
 declare global {
@@ -26,7 +45,7 @@ declare global {
     Presence: {
       // Example, real-time cursor coordinates
       // cursor: { x: number; y: number };
-      currentHandle: string | null;  // in case we want to track who has what handle open
+      openHandles: string[]; // ids of all actively opened handles
       name: string;
     };
 
@@ -34,9 +53,16 @@ declare global {
     Storage: {
       // Example, a conflict-free list
       // animals: LiveList<string>;
-
+      // I added this but now I'm thinking we don't want it
+      //paragraphs: LiveList<LiveObject<{ type: "paragraph", content: LiveList<LiveObject<{ type: "text", text: string }>> }>>;
       docHandles: Handles; // snapshotId -> snapshot information
       docTitle: string;
+      pendingInsertion: LiveObject<{
+        content: string;
+        paragraphIdx: number;
+        wordIdx: number;
+        timestamp: number;
+      }> | null;
     };
 
     // Custom user info set when authenticating with a secret key

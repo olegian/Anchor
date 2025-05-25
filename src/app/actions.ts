@@ -3,18 +3,13 @@
 import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { liveblocks } from "./liveblocks";
-import * as Y from "yjs";
-import { JsonObject } from "@liveblocks/node";
+import { LiveObject, LiveList, toPlainLson, LiveMap, PlainLsonObject } from "@liveblocks/client";
+import { allowAccessToRoomId, disallowAccessToRoomId, getAvailableRoomIds } from "./firebase";
+import { RoomData } from "@liveblocks/node";
 
-const LB_DELETE_COMMENT_URL =
-  "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
-const LB_COPY_ROOM =
-  "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
-
-// Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
-// Store conversation history per snapshot ID
+// Store conversation history per handle ID
 const conversationHistory = new Map<
   string,
   Array<{ role: string; parts: { text: string }[] }>
@@ -26,47 +21,159 @@ interface PromptResponse {
   message?: string;
 }
 
-async function postComment(roomId: string, threadId: string, body: string) {
-  const endpoint = `https://api.liveblocks.io/v2/rooms/${roomId}/threads/${threadId}/comments`;
-
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.LB_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      body: body,
-      metadata: {}, // optional: you could store role here
-    }),
-  });
-
-  return response.json();
+interface DocumentContext {
+  content: string;
+  contextType: "word" | "paragraph" | "document";
 }
 
-async function getConversation(roomId: string, threadId: string) {
-  const endpoint = `https://api.liveblocks.io/v2/rooms/${roomId}/threads/${threadId}/comments`;
+// Parse ProseMirror JSON to extract text content and create context mapping
+function parseDocumentContent(docJson: any): {
+  fullText: string;
+  paragraphs: Array<{ content: string; startPos: number; endPos: number; index: number }>;
+  words: Array<{ content: string; startPos: number; endPos: number; paragraphIndex: number }>;
+} {
+  const paragraphs: Array<{ content: string; startPos: number; endPos: number; index: number }> = [];
+  const words: Array<{ content: string; startPos: number; endPos: number; paragraphIndex: number }> = [];
+  let fullText = "";
+  let currentPos = 0;
+  let paragraphIndex = 0;
 
-  const response = await fetch(endpoint, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${process.env.LB_KEY}`,
-    },
-  });
+  function traverseNode(node: any) {
+    if (node.type === "paragraph") {
+      const paragraphStart = currentPos;
+      let paragraphText = "";
+      let paragraphWords: Array<{ content: string; startPos: number; endPos: number }> = [];
 
-  const data = await response.json();
-  return data.comments; // array of comments
+      if (node.content) {
+        node.content.forEach((child: any) => {
+          if (child.type === "text" && child.text) {
+            const text = child.text;
+            paragraphText += text;
+            
+            // Split text into words while preserving positions
+            const wordMatches = [...text.matchAll(/\S+/g)];
+            wordMatches.forEach(match => {
+              if (match.index !== undefined) {
+                const wordStart = currentPos + match.index;
+                const wordEnd = wordStart + match[0].length;
+                paragraphWords.push({
+                  content: match[0],
+                  startPos: wordStart,
+                  endPos: wordEnd
+                });
+              }
+            });
+            
+            currentPos += text.length;
+          }
+        });
+      }
+
+      if (paragraphText.trim()) {
+        const paragraphEnd = currentPos;
+        paragraphs.push({
+          content: paragraphText.trim(),
+          startPos: paragraphStart,
+          endPos: paragraphEnd,
+          index: paragraphIndex
+        });
+
+        // Add paragraph words to global words array
+        paragraphWords.forEach(word => {
+          words.push({
+            ...word,
+            paragraphIndex: paragraphIndex
+          });
+        });
+
+        paragraphIndex++;
+      }
+
+      fullText += paragraphText + "\n";
+      currentPos += 1; // Account for paragraph break
+    } else if (node.content) {
+      node.content.forEach(traverseNode);
+    }
+  }
+
+  if (docJson.content) {
+    docJson.content.forEach(traverseNode);
+  }
+
+  return { fullText: fullText.trim(), paragraphs, words };
 }
 
-// Function to send a prompt to Gemini and get a response
+// Updated function to use paragraph and word indices instead of position calculations
+function getDocumentContextByIndex(
+  paragraphIdx: number,
+  wordIdx: number,
+  parsedDoc: ReturnType<typeof parseDocumentContent>
+): DocumentContext {
+  console.log(`Getting context for paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`);
+  
+  // If both indices are -1, use document context
+  if (paragraphIdx === -1 && wordIdx === -1) {
+    console.log("Using document context (both indices are -1)");
+    return {
+      content: parsedDoc.fullText,
+      contextType: "document"
+    };
+  }
+
+  // If paragraph index is valid but word index is -1, use paragraph context
+  if (paragraphIdx >= 0 && paragraphIdx < parsedDoc.paragraphs.length && wordIdx === -1) {
+    const targetParagraph = parsedDoc.paragraphs[paragraphIdx];
+    console.log(`Using paragraph context: "${targetParagraph.content.substring(0, 50)}..."`);
+    
+    return {
+      content: targetParagraph.content,
+      contextType: "paragraph"
+    };
+  }
+
+  // If both indices are valid, use word context
+  if (paragraphIdx >= 0 && paragraphIdx < parsedDoc.paragraphs.length && wordIdx >= 0) {
+    const wordsInParagraph = parsedDoc.words.filter(w => w.paragraphIndex === paragraphIdx);
+    
+    if (wordIdx < wordsInParagraph.length) {
+      const targetWord = wordsInParagraph[wordIdx];
+      console.log(`Using word context: "${targetWord.content}"`);
+      
+      return {
+        content: targetWord.content,
+        contextType: "word"
+      };
+    } else {
+      // Word index out of bounds, fall back to paragraph
+      console.log(`Word index ${wordIdx} out of bounds, falling back to paragraph context`);
+      const targetParagraph = parsedDoc.paragraphs[paragraphIdx];
+      
+      return {
+        content: targetParagraph.content,
+        contextType: "paragraph"
+      };
+    }
+  }
+
+  // Fallback to document context if indices are invalid
+  console.log("Falling back to document context due to invalid indices");
+  return {
+    content: parsedDoc.fullText,
+    contextType: "document"
+  };
+}
+
+// Updated main prompt function to use index-based context determination
 export async function prompt(
   docId: string,
   handleId: string,
+  xPosition?: number,
+  yPosition?: number,
   env?: string
 ): Promise<PromptResponse> {
   try {
     // lock should have been acquired client side, to stop other clients from sending request
-    // TODO: oleg - do the user id association to isPending described in HandleInput.tsx, then update this a little 
+    // TODO: oleg - do the user id association to isPending described in HandleInput.tsx, then update this a little
 
     // Get document contents to use as context
     // !!! TODO: This call no longer returns just a string, but a JSON string representation of the entire doc contents
@@ -74,114 +181,115 @@ export async function prompt(
     const docContents = await getContents(docId);
     const docStorage = await liveblocks.getStorageDocument(docId, "json");
     const handleInfo = docStorage.docHandles[handleId];
-    const { prompt } = handleInfo.exchanges[handleInfo.exchanges.length - 1];
-    const y = handleInfo.y; // TODO: write some way to map this y-position to a index into the docContents
+    
+    if (!handleInfo) {
+      throw new Error(`Handle ${handleId} not found`);
+    }
 
-    // !!! TODO: This all needs to be rewritten, we no longer have snapshots, just the above information
-    // // Get or initialize conversation history for this snapshot
-    // if (!conversationHistory.has(snapshotId)) {
-    //   conversationHistory.set(snapshotId, []);
-    // }
+    const { prompt: userPrompt } = handleInfo.exchanges[handleInfo.exchanges.length - 1];
+    
+    // Use the paragraph and word indices from handle info
+    const paragraphIdx = handleInfo.paragraphIdx;
+    const wordIdx = handleInfo.wordIdx;
+    
+    console.log(`Handle info - paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`);
+    
+    // Parse document content
+    const docJson = JSON.parse(docContents);
+    const parsedDoc = parseDocumentContent(docJson);
+    
+    console.log(`Parsed document with ${parsedDoc.paragraphs.length} paragraphs`);
+    parsedDoc.paragraphs.forEach((p, i) => {
+      console.log(`Paragraph ${i}: "${p.content.substring(0, 50)}..."`);
+    });
+    
+    // Get appropriate context using indices
+    const documentContext = getDocumentContextByIndex(paragraphIdx, wordIdx, parsedDoc);
+    
+    console.log(`Final context: ${documentContext.contextType} - "${documentContext.content.substring(0, 100)}..."`);
+    
+    // Get or initialize conversation history for this handle
+    if (!conversationHistory.has(handleId)) {
+      conversationHistory.set(handleId, []);
+    }
+    const history = conversationHistory.get(handleId)!;
 
-    // const history = conversationHistory.get(snapshotId)!;
+    // Create context-aware prompt
+    let contextPrompt = "";
+    switch (documentContext.contextType) {
+      case "word":
+        contextPrompt = `Focus on this word: "${documentContext.content}"`;
+        break;
+      case "paragraph":
+        contextPrompt = `Focus specifically on this paragraph:\n"${documentContext.content}"`;
+        break;
+      case "document":
+        contextPrompt = `Document content:\n${documentContext.content}`;
+        break;
+    }
 
-    // // Create context string
-    // let contextPrompt = `Document Content:\n${docContents}\n\n`;
+    if (env) {
+      contextPrompt += `\n\nEnvironment Variables:\n${env}`;
+    }
 
-    // // Add environment variables if provided
-    // if (env) {
-    //   contextPrompt += `Environment Variables:\n${env}\n\n`;
-    // }
+    const fullPrompt = `${contextPrompt}\n\nUser Query: ${userPrompt}`;
 
-    // // Create the complete prompt
-    // const fullPrompt = `${contextPrompt}User Query: ${userPrompt}`;
+    // Add user message to history
+    history.push({
+      role: "user",
+      parts: [{ text: fullPrompt }],
+    });
 
-    // // Add user message to history
-    // history.push({
-    //   role: "user",
-    //   parts: [{ text: fullPrompt }],
-    // });
+    // Set up Gemini model with system instruction
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: {
+        role: "system",
+        parts: [{
+          text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, or full document) and tailor your response accordingly. 
 
-    // // Set up Gemini model
-    // const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+When focusing on a paragraph, discuss only that specific paragraph and its content. When focusing on a word, discuss that word in the context of its paragraph. When given the full document, you can discuss the entire document.
 
-    // // Create a chat session with history
-    // // const chat = model.startChat({
-    // //   history,
-    // //   generationConfig: {
-    // //     maxOutputTokens: 2048,
-    // //   },
-    // // });
-    // const chat = model.startChat({
-    //   history,
-    //   generationConfig: {
-    //     maxOutputTokens: 2048,
-    //   },
-    //   // Add system instruction to establish persistent context
-    //   systemInstruction: {
-    //     role: "system",
-    //     parts: [
-    //       {
-    //         text:
-    //           `Here is the current document content:\n${docContents}\n\n` +
-    //           (env ? `Environment variables:\n${env}\n\n` : ""),
-    //       },
-    //     ],
-    //   },
-    // });
+Be concise but thorough in your analysis.`
+        }]
+      }
+    });
 
-    // // Generate response
-    // const result = await chat.sendMessage(userPrompt);
-    // const response = result.response;
-    // const text = response.text();
+    // Create chat session with history
+    const chat = model.startChat({
+      history,
+      generationConfig: {
+        maxOutputTokens: 2048,
+      },
+    });
 
-    // // Add response to history
-    // history.push({
-    //   role: "model",
-    //   parts: [{ text: fullPrompt }],
-    // });
+    // Generate response
+    const result = await chat.sendMessage(userPrompt);
+    const response = result.response;
+    const text = response.text();
+    console.log("response text = " + text);
 
-    // // Update the conversation history
-    // conversationHistory.set(snapshotId, history);
+    // Add response to history
+    history.push({
+      role: "model",
+      parts: [{ text }],
+    });
 
-    // // do we need this?
-    // // await postComment(doc_name, snapshotId, `User: ${userPrompt}`);
-    // // await postComment(doc_name, snapshotId, `Gemini: ${text}`);
+    // Update conversation history
+    conversationHistory.set(handleId, history);
 
-    // await liveblocks.mutateStorage(doc_name, ({ root }) => {
-    //   const envExchanges = root
-    //     .get("snapshots")
-    //     .get(snapshotId)
-    //     ?.get("conversations")
-    //     .get(envId)
-    //     ?.get("exchanges");
-    //   const exchange = envExchanges?.find((exchange) => {
-    //     return exchange.get("prompt") === userPrompt;
-    //   }); // this is kind of an inefficient way of finding the associate prompt, it really should be a map but cest la vie for now
-    //   if (exchange === undefined) {
-    //     throw new Error("Unable to find prompt that resulted in response");
-    //   }
-
-    //   exchange.set("response", text);
-    // });
-
-
-    const response = "some sort of LLM response";
-
+    // Update storage with response
     await liveblocks.mutateStorage(docId, ({ root }) => {
       const handleInfo = root.get("docHandles").get(handleId);
       const exchanges = handleInfo?.get("exchanges");
-
-      // this line implies that the exchange object does not change after you hit submit, 
-      // and therefore you should only append to the exchanges list AFTER the client receives the
-      // response from this prompt request
-      exchanges?.get(exchanges.length - 1)?.set("response", response)
-
-      // handleInfo?.set("isPending", false);  // oleg: leave this commented out for now, client side should handle it
+      
+      if (exchanges && exchanges.length > 0) {
+        exchanges.get(exchanges.length - 1)?.set("response", text);
+      }
     });
 
     return {
-      text: response,
+      text,
       status: "success",
     };
   } catch (error) {
@@ -194,27 +302,8 @@ export async function prompt(
   }
 }
 
-export async function resetConversation(snapshotId: string): Promise<void> {
-  conversationHistory.delete(snapshotId);
-}
-
-export async function deleteAnnotation(
-  roomId: string,
-  threadId: string,
-  commentId: string
-) {
-  const endpoint = LB_DELETE_COMMENT_URL.replace("{room_id}", roomId)
-    .replace("{thread_id}", threadId)
-    .replace("{comment_id}", commentId);
-
-  const response = await fetch(endpoint, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${process.env.LB_KEY}`,
-    },
-  });
-
-  return response;
+export async function resetConversation(handleId: string): Promise<void> {
+  conversationHistory.delete(handleId);
 }
 
 export async function getContents(roomId: string) {
@@ -226,106 +315,166 @@ export async function getContents(roomId: string) {
     },
     (api) => {
       const contents = api.toJSON();
-      console.log("contents = ");
       return JSON.stringify(contents);
     }
   );
 }
 
-// Content updates are now handled directly through the Tiptap editor
-// on the client side for better real-time collaboration
+export async function createExchange(
+  docId: string,
+  handleId: string,
+  promptText: string
+): Promise<void> {
+  //docId = "bc8eb889-6d61-4bd9-9389-7d84558c8685"
+  await liveblocks.mutateStorage(docId, ({ root }) => {
+    const handleInfo = root.get("docHandles").get(handleId);
+    const exchanges = handleInfo?.get("exchanges");
+
+    if (exchanges) {
+      exchanges.push(
+        new LiveObject({
+          prompt: promptText,
+          response: "",
+          timestamp: Date.now(),
+        })
+      );
+    }
+  });
+}
+
+export async function cleanupOldConversations(): Promise<void> {
+  const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+  const cutoff = Date.now() - maxAge;
+  
+  for (const [handleId, history] of conversationHistory.entries()) {
+    if (history.length === 0) {
+      conversationHistory.delete(handleId);
+    }
+  }
+}
+
+export async function deleteAnnotation(
+  roomId: string,
+  threadId: string,
+  commentId: string
+) {
+  const endpoint = `https://api.liveblocks.io/v2/rooms/${roomId}/threads/${threadId}/comments/${commentId}`;
+
+  const response = await fetch(endpoint, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${process.env.LB_KEY}`,
+    },
+  });
+
+  return response;
+}
+
 export async function invokeAllPrompts(
-  doc_name: string,
-  snapshotId: string,
-  envId: string,
+  docId: string,
+  handleId: string,
   env?: string
 ): Promise<string[]> {
   try {
-    const docContents = await getContents(doc_name);
-
-    // Match all [[prompt]] blocks with optional following <ai-response>
-    const promptRegex =
-      /\[\[(.*?)\]\](?:(?!\[\[).)*?(<ai-response>[\s\S]*?<\/ai-response>)?/g;
-
-    const matches = [...docContents.matchAll(promptRegex)];
-
-    const results: string[] = [];
-
-    for (const match of matches) {
-      const fullMatch = match[0];
-      const promptText = match[1].trim();
-      const existingResponse = match[2];
-
-      if (existingResponse) {
-        console.log(`Skipping already answered prompt: [[${promptText}]]`);
-        continue;
-      }
-
-      const response = await prompt(
-        doc_name,
-        snapshotId,
-        // promptText,
-        // envId,
-        // env
-      );
-      const annotatedResponse = `[[${promptText}]]\n<ai-response>\n${response.text}\n</ai-response>\n`;
-
-      results.push(annotatedResponse);
-    }
-
-    return results;
+    const response = await prompt(docId, handleId, undefined, undefined, env);
+    return response.status === "success" ? [response.text] : [];
   } catch (error) {
     console.error("Error in invokeAllPrompts:", error);
     return [];
   }
 }
 
-export async function deleteSnapshotDoc(roomId: string, snapshotId: string) {
-  if (!snapshotId || snapshotId === "maindoc") {
-    // just in case cause that would be catastrophic
-    return;
-  }
+export async function createDoc(
+  docId: string,
+  tempDocTitle: string,
+  ownerId: string
+) {
+  // give access to owner
+  await allowAccessToRoomId(ownerId, docId);
 
-  // TODO: this was an attempt to delete the editor contents via the YJS doc stuff. It didnt work, mostly
-  // because accessing the actual top level doc is weird, the JsonObject returned by getYjsDocument is just
-  // a representation of the actual YDoc. Also the documentation only ever discusses update operations,
-  // which means the "delete through nulling" might not even be possible if updates are processed additively.
-  //   const oldState = await liveblocks.getYjsDocument(roomId); // could cast into Y.Map and then call .delete, but then how do you construct the binary update with a yDoc object
+  const userPermission: any = {};
+  userPermission[ownerId] = ["room:write"];
+  const room = await liveblocks.createRoom(docId, {
+    defaultAccesses: [],
+    usersAccesses: userPermission,
+  });
 
-  //   if (oldState[snapshotId]) {
-  //     // again, just in case. Damn am I scared of deletion.
-  //     const newYDoc = new Y.Doc(oldState); // create new doc and repopulate?
-  //     const yMap = newYDoc.getMap();
-  //     Object.keys(oldState)
-  //       .filter((id) => id !== snapshotId)
-  //       .forEach((id) => {
-  //         yMap.set(id, oldState[id])
-  //       });
+  const initialStorage = toPlainLson(
+    new LiveObject({
+      docHandles: new LiveMap(),
+      docTitle: tempDocTitle,
+    })
+  ) as PlainLsonObject;
 
-  //     const update = Y.encodeStateAsUpdate(newYDoc);
-  //     await liveblocks.sendYjsBinaryUpdate(roomId, update);
-  //   }
-
-  // at least this is better than nothing ig, delete contents, but not the doc itself.
-  // the UUID entry in the YJS doc will still exist referring to the now empty contents.
-  // at least we just leak an empty entry with an ID, as opposed to the whole doc.
-  //   await withProsemirrorDocument(
-  //     {
-  //       roomId: roomId,
-  //       field: snapshotId,
-  //       client: liveblocks,
-  //     },
-  //     async (api) => {
-  //       // return await api.clearContent(); // TODO: for some reason, this call is erroring out with some internal .set() function being undefined. im baffled.
-
-  //       // return api.update((doc, tr) => {  // You'd think something like this would be the alternative, but same error as above
-  //       //   return tr.deleteRange(0, doc.content.size);
-  //       // });
-  //     }
-  //   );
+  await liveblocks.initializeStorageDocument(docId, initialStorage);
 }
 
-export async function createDoc(tempDocTitle: string) {
-  // if we want to do something with registering user permissions on doc creation
-  // it would have to be done here
+// gives access to userId to access docId
+export async function shareDoc(
+  docId: string,
+  userId: string,
+) {
+  // technically, this throws an error is the userid doesnt exist, but
+  // like screw handling it rn
+  await allowAccessToRoomId(userId, docId);
+}
+
+export async function deleteDoc(docId: string) {
+  // I really wish i could do something like this, and I think if I read up on liveblocks permission systems more
+  // I can find a way to do it, but for now imma use a workaround.
+
+  // const room = await liveblocks.getRoom(docId);
+  // for (const userId in room.usersAccesses) {
+
+  // Or i could just also store a reverse map of room -> [allowed userid]
+  
+  await disallowAccessToRoomId(docId);
+  await liveblocks.deleteRoom(docId);
+}
+
+export async function getAccessibleRooms(userId: string): Promise<RoomData[]> {
+  // TODO: this is not secure lol if anyone can hit this endpoint but idc rn
+
+  // you can filter available rooms via the liveblocks permissions associated with
+  // a user id (with liveblocks.getRooms()), but that requires me to fully understand how lb perms work,
+  // and I'm not quite there yet, ill swap this shitty work around out later
+  const roomIds = await getAvailableRoomIds(userId);
+  if (!roomIds) {
+    return [];
+  }
+
+  const result = await Promise.all(
+    roomIds.map(async (roomId: string) => await liveblocks.getRoom(roomId))
+  );
+
+  return result;
+}
+
+export async function getRoomStorage(roomId: string) {
+  const roomStorage = await liveblocks.getStorageDocument(roomId);
+  // TODO: bad any type annotation
+  const doc: any = await liveblocks.getYjsDocument(roomId, {
+    format: true,
+  });
+
+  // TODO: Ritesh is REALLY lazy. There's definitely a better way to do this. Hopefully.
+  if (doc.maindoc) {
+    doc.maindoc = doc.maindoc.replaceAll('<heading level="2">', "<h2>");
+    doc.maindoc = doc.maindoc.replaceAll("</heading>", "</h2>");
+    doc.maindoc = doc.maindoc.replaceAll("<paragraph>", "<p>");
+    doc.maindoc = doc.maindoc.replaceAll("</paragraph>", "</p>");
+    doc.maindoc = doc.maindoc.replaceAll("[[", "");
+    doc.maindoc = doc.maindoc.replaceAll("]]", "");
+    doc.maindoc = doc.maindoc.replaceAll("<p></p>", "");
+    doc.maindoc = doc.maindoc.replaceAll(
+      '<inlineaicomponent prompt="',
+      "<strong>"
+    );
+    doc.maindoc = doc.maindoc.replaceAll("</inlineaicomponent>", "</strong>");
+  }
+
+  return {
+    data: roomStorage,
+    doc: doc,
+  };
 }
