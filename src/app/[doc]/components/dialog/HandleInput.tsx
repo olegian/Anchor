@@ -98,12 +98,13 @@ export default function HandleInput({
       return;
     }
 
-    // TODO: theres a choice here of either sending the prompt to the server from the client
-    // or having the server fetch the state of the prompt held in live storage, which if the
-    // onChange is working well, maybe thats better?
-    // TODO: My current idea is to do the handle -> doc position conversion server side.
-    // look for that there, but maybe its better to do it here instead?
-    prompt(docId, handleId);
+    // Get current handle position from storage before sending to server
+    const currentHandleInfo = handleInfo; // This should have current x, y positions
+    const currentX = currentHandleInfo?.x;
+    const currentY = currentHandleInfo?.y;
+
+    // Pass the current position to the server action
+    prompt(docId, handleId, currentX, currentY);
 
     if (!openNewPrompt()) {
         // TODO: this should never happen, but just in case leave this for now
@@ -117,13 +118,8 @@ export default function HandleInput({
   };
 
   // HANDLE HANDLERS (haha)
-  const onChangePosition = () => {
-    const x = 0; // probably fetch these from the movement event or from the mouse position
-    const y = 0; // or state or wherever you decide to store the position
-
-    // note, most of this logic can also be moved into the dependancy array of setHandlePosition,
-    // the above useMutation takes a second dependancy list parameter, and that can be used to run the mutation
-    // on change of the above x, y values. Read https://liveblocks.io/docs/api-reference/liveblocks-react
+  const onChangePosition = (x: number, y: number) => {
+    // Updated to accept actual position parameters
     setHandlePosition(x, y);
   };
 

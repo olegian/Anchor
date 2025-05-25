@@ -16,10 +16,15 @@ import {
 } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
+import {
+  prompt,
+  createExchange,
+} from "../../actions";
+import { LiveObject, User } from "@liveblocks/client";
+import { Editor } from "@tiptap/react";
 import { users } from "@/app/auth";
-import { User } from "@liveblocks/client";
-import AnchorPopup from "./AnchorPopup";
 import { Transition } from "@headlessui/react";
+import AnchorPopup from "./AnchorPopup";
 
 export function EditorMirrorLayer({ html }: { html: string }) {
   function wrapEveryWordInSpansPreserveHTML(html: string) {
@@ -29,7 +34,7 @@ export function EditorMirrorLayer({ html }: { html: string }) {
     function processNode(node: Node) {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || "";
-        const tokens = text.split(/(\s+)/); // split into words and spaces
+        const tokens = text.split(/(\s+)/);
         const fragment = document.createDocumentFragment();
 
         tokens.forEach((token) => {
@@ -52,13 +57,11 @@ export function EditorMirrorLayer({ html }: { html: string }) {
           node.parentNode.replaceChild(fragment, node);
         }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
-        // recursively process children
         Array.from(node.childNodes).forEach(processNode);
       }
     }
 
     processNode(doc.body);
-
     return doc.body.innerHTML;
   }
 
@@ -80,8 +83,9 @@ export function AnchorLayer({
   addHandle,
   draggingAnchor,
   setDraggingAnchor,
-  mousePos,
   docId,
+  editor,
+  mousePos,
 }: {
   anchorHandles: HandlesMap;
   addHandle: (
@@ -95,6 +99,7 @@ export function AnchorLayer({
   setDraggingAnchor: (dragging: boolean) => void;
   mousePos: { x: number; y: number };
   docId: string;
+  editor: Editor;
 }) {
   // Handle hotkey "a"
   useHotkeys("a", () => {
@@ -133,12 +138,224 @@ export function AnchorLayer({
             updatePresense={updatePresense}
             othersPresense={othersPresense.slice()}
             docId={docId}
+            editor={editor}
           />
         );
       })}
     </div>
   );
 }
+
+// function ConversationUI({
+//   handleId,
+//   docId,
+//   onClose,
+//   position,
+//   editor,
+// }: {
+//   handleId: string;
+//   docId: string;
+//   onClose: () => void;
+//   position: { x: number; y: number };
+//   editor: Editor;
+// }) {
+//   const [isLoading, setIsLoading] = useState(false);
+//   const exchanges = useStorage(
+//     (root) => root.docHandles.get(handleId)?.exchanges
+//   );
+//   const handleInfo = useStorage((root) => root.docHandles.get(handleId));
+//   const currentExchange = exchanges?.at(exchanges.length - 1);
+
+//   if (!exchanges) {
+//     return null;
+//   }
+
+//   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+//   const scrollToBottom = () => {
+//     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+//   };
+
+//   // --- Live Storage Mutations ---
+//   const changeCurrentPrompt = useMutation(({ storage }, newPrompt) => {
+//     const exchanges = storage.get("docHandles").get(handleId)?.get("exchanges");
+//     exchanges?.get(exchanges.length - 1)?.set("prompt", newPrompt);
+//   }, []);
+
+//   const setPending = useMutation(({ storage }, isPending) => {
+//     const handleInfo = storage.get("docHandles").get(handleId);
+
+//     if (isPending) {
+//       const handleInfo = storage.get("docHandles").get(handleId);
+//       if (handleInfo?.get("isPending")) {
+//         return false;
+//       } else {
+//         handleInfo?.set("isPending", true);
+//       }
+//       return true;
+//     } else {
+//       handleInfo?.set("isPending", false);
+//       return true;
+//     }
+//   }, []);
+
+//   const openNewPrompt = useMutation(({ storage }) => {
+//     const exchanges = storage.get("docHandles").get(handleId)?.get("exchanges");
+//     if (!exchanges?.get(exchanges?.length - 1)?.get("response")) {
+//       return false;
+//     } else {
+//       exchanges.push(new LiveObject({ prompt: "", response: "" }));
+//       return true;
+//     }
+//   }, []);
+
+//   // New function to insert response into document
+//   const insertResponseIntoDocument = () => {
+//     if (!handleInfo || exchanges.length < 2) return;
+
+//     const paragraphIdx = handleInfo.paragraphIdx;
+
+//     // TODO: use wordIdx to get a more accurate position
+//     const wordIdx = handleInfo.wordIdx;
+
+//     const insertionPoint =
+//       paragraphIdx == -1
+//         ? editor.$doc.children.at(-1)?.pos || 0
+//         : editor.$doc.children.at(paragraphIdx + 1)?.pos ||
+//           editor.$doc.children.at(-1)?.pos || 0;
+
+//     const response = exchanges.at(exchanges.length - 2)?.response;
+
+//     editor.commands.insertContentAt(insertionPoint, {
+//       type: "paragraph",
+//       content: [
+//         {
+//           type: "text",
+//           text: response,
+//         },
+//       ],
+//     });
+//   };
+
+//   useEffect(() => {
+//     scrollToBottom();
+//   }, [exchanges]);
+
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+//     const promptText = currentExchange?.prompt || "";
+//     if (promptText.length == 0 || isLoading) return;
+//     setIsLoading(true);
+
+//     if (!setPending(true)) {
+//       setIsLoading(false);
+//       return;
+//     }
+
+//     try {
+//       await prompt(docId, handleId);
+
+//       if (!openNewPrompt()) {
+//         console.log("Prompt state is weird!!! Check that out ASAP!");
+//       }
+//     } catch (error) {
+//       console.error("Error sending prompt:", error);
+//     } finally {
+//       setPending(false);
+//       setIsLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div
+//       className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-lg max-w-md w-80"
+//       style={{
+//         left: Math.min(position.x, window.innerWidth - 320),
+//         top: Math.min(position.y, window.innerHeight - 400),
+//         maxHeight: "400px",
+//       }}
+//     >
+//       {/* Header */}
+//       <div className="flex items-center justify-between p-3 border-b">
+//         <h3 className="font-semibold text-sm">AI Assistant</h3>
+//         <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
+//           <XMarkIcon className="w-4 h-4" />
+//         </button>
+//       </div>
+
+//       {/* Messages */}
+//       <div className="h-64 overflow-y-auto p-3 space-y-3">
+//         {exchanges.length === 0 ? (
+//           <div className="text-gray-500 text-sm text-center py-8">
+//             Start a conversation with the AI assistant
+//           </div>
+//         ) : (
+//           exchanges.map((exchange: any, index: number) => (
+//             <div key={index} className="space-y-2">
+//               <div className="bg-blue-50 p-2 rounded-lg">
+//                 <div className="text-xs text-blue-600 font-medium mb-1">
+//                   You
+//                 </div>
+//                 <div className="text-sm">{exchange.prompt}</div>
+//               </div>
+//               {exchange.response && (
+//                 <div className="bg-gray-50 p-2 rounded-lg">
+//                   <div className="flex items-center justify-between mb-1">
+//                     <div className="text-xs text-gray-600 font-medium">AI</div>
+//                     <button
+//                       onClick={() =>
+//                         insertResponseIntoDocument(exchange.response)
+//                       }
+//                       className="px-2 py-1 text-xs bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+//                       title="Insert this response into the document"
+//                     >
+//                       Insert
+//                     </button>
+//                   </div>
+//                   <div className="text-sm whitespace-pre-wrap">
+//                     {exchange.response}
+//                   </div>
+//                 </div>
+//               )}
+//               {!exchange.response &&
+//                 isLoading &&
+//                 index === exchanges.length - 1 && (
+//                   <div className="bg-gray-50 p-2 rounded-lg">
+//                     <div className="text-xs text-gray-600 font-medium mb-1">
+//                       AI
+//                     </div>
+//                     <div className="text-sm text-gray-500">Thinking...</div>
+//                   </div>
+//                 )}
+//             </div>
+//           ))
+//         )}
+//         <div ref={messagesEndRef} />
+//       </div>
+
+//       {/* Input */}
+//       <div className="p-3 border-t">
+//         <form onSubmit={handleSubmit} className="flex space-x-2">
+//           <input
+//             type="text"
+//             value={currentExchange?.prompt || ""}
+//             onChange={(e) => changeCurrentPrompt(e.target.value)}
+//             placeholder="Ask the AI about this content..."
+//             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+//             disabled={isLoading}
+//           />
+//           <button
+//             type="submit"
+//             disabled={(currentExchange?.prompt || "").length == 0 || isLoading}
+//             className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+//           >
+//             <PaperAirplaneIcon className="w-4 h-4" />
+//           </button>
+//         </form>
+//       </div>
+//     </div>
+//   );
+// }
 
 const ANCHOR_HANDLE_SIZE = 24; // Size of the anchor handle in pixels
 const PUNCTUATION = ". ,;:!?"; // Punctuation characters to ignore
@@ -151,6 +368,7 @@ function AnchorHandle({
   updatePresense,
   othersPresense,
   docId,
+  editor,
 }: {
   id: string;
   setDraggingAnchor: (dragging: boolean) => void;
@@ -171,16 +389,14 @@ function AnchorHandle({
     }
   >[];
   docId: string;
+  editor: Editor;
 }) {
   const anchorRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
+  const [showConversation, setShowConversation] = useState(false);
   const offset = useRef({ x: 0, y: 0 });
 
-  // TODO: make a conversation UI
-  // below are helpers for managing presense for these things
-  // you can also use liveHandleInfo.get("owner") if you want to show
-  // who is currently *dragging* a given handle
   const openConversation = () => {
     // add this anchor handle to opened handles by user
     updatePresense({ openHandles: [...presence.openHandles, id] });
@@ -194,36 +410,28 @@ function AnchorHandle({
 
   const closeConversation = () => {
     updatePresense({
-      // on first glance this feels inefficient but also you would need to find the
-      // id in the list anyways to call .pop, so reconstructing via a filter is equally ok
-      openHandles: presence.openHandles.filter((handleId) => handleId !== id),
+      openHandles: (presence.openHandles || []).filter(
+        (handleId) => handleId !== id
+      ),
     });
+    setShowConversation(false);
   };
 
-  // refetch info from id, so that this component reloads only when ***this*** anchor handle is affected
   const liveHandleInfo = useStorage((root) => root.docHandles.get(id));
-  if (!liveHandleInfo) {
-    return null;
-  }
+  if (!liveHandleInfo) return null;
 
   const setAnchorOwner = useMutation(({ storage }, userId: string) => {
     const handle = storage.get("docHandles").get(id);
     if (userId === "" && handle?.get("owner") === session.data?.user?.id) {
-      // we previously held the anchor as the owner, and now we want to release it
       handle?.set("owner", "");
       return true;
     } else if (userId !== "" && handle?.get("owner") === "") {
-      // we are trying to become the owner, and no one previously held it
       handle?.set("owner", userId);
       return true;
     }
-
-    // ignore all other cases, return unsuccesful attempt
     return false;
   }, []);
 
-  // --- Handle Position Tracking ---
-  // local copy of coordinates, for fast access for animations
   const [localCoords, setLocalCoords] = useState<{ x: number; y: number }>({
     x: liveHandleInfo.x + window.innerWidth / 2,
     y: liveHandleInfo.y,
@@ -332,29 +540,21 @@ function AnchorHandle({
     if (!dragging) return;
 
     function animateRotation() {
-      // Calculate velocity
       const dx = localCoords.x - lastPos.current.x;
-      const dy = localCoords.y - lastPos.current.y;
-      // Use horizontal velocity for rotation (or combine dx/dy for more effect)
-      const velocity = dx; // or Math.sqrt(dx*dx + dy*dy)
-      // Clamp and scale for effect
+      const velocity = dx;
       const maxDeg = 30;
       const newRotation = Math.max(-maxDeg, Math.min(maxDeg, velocity * 2));
       setRotation(newRotation);
-
       lastPos.current = { x: localCoords.x, y: localCoords.y };
-
       animationRef.current = requestAnimationFrame(animateRotation);
     }
 
     animationRef.current = requestAnimationFrame(animateRotation);
-
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [dragging, localCoords.x, localCoords.y]);
 
-  // Ease rotation back to zero when not dragging
   useEffect(() => {
     if (dragging) return;
     let raf: number;
@@ -387,7 +587,6 @@ function AnchorHandle({
 
       const editorLeftEdge = paragraphs[0].getBoundingClientRect().x;
       const editorRightEdge = 752 + editorLeftEdge;
-      // console.log(editorLeftEdge, targetX, editorRightEdge);
 
       const anchorOnLeft = targetX < editorLeftEdge;
       const anchorOnRight = targetX > editorRightEdge;
@@ -555,7 +754,7 @@ function AnchorHandle({
       window.removeEventListener("mouseup", onMouseUp);
       if (animationFrame) cancelAnimationFrame(animationFrame);
     };
-  }, [dragging, id, debouncedWritePos]);
+  }, [dragging, id, debouncedWritePos, localCoords.x]);
 
   const onMouseDown = (e: React.MouseEvent) => {
     if (!dragging) {
@@ -583,8 +782,6 @@ function AnchorHandle({
 
     const rect = ref.current?.getBoundingClientRect();
     if (rect) {
-      // Instead of using `rect.left` and `rect.top` directly,
-      // add half the width and height to get the visual center
       offset.current = {
         x: e.clientX - (rect.left + rect.width / 2),
         y: e.clientY - (rect.top + rect.height / 2),

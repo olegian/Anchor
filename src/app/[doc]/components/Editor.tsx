@@ -8,6 +8,7 @@ import Title from "./Title";
 import SkeletonEditor from "./SkeletonEditor";
 import { EditorMirrorLayer, AnchorLayer } from "./InteractionLayer";
 import { HandlesMap } from "../../../../liveblocks.config";
+import { useStorage } from "@liveblocks/react"; // Make sure this is imported
 
 export default function Editor({
   title,
@@ -39,9 +40,9 @@ export default function Editor({
   docId: string;
 }) {
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
-  // const params = useParams<{ doc: string }>();
-  // const [myPresence, updateMyPresence] = useMyPresence();
-  // const [isEditorReady, setEditorReady] = useState(false);
+
+  // Listen for pending insertions
+  const pendingInsertion = useStorage((root) => root.pendingInsertion);
 
   const editor = useEditor({
     extensions: [
@@ -52,13 +53,63 @@ export default function Editor({
         },
         history: false,
       }),
-      // Placeholder.configure({
-      //   placeholder: "Type something...",
-      // }),
     ],
     immediatelyRender: false,
     editable: !draggingAnchor,
   });
+
+  // Handle pending insertions
+  useEffect(() => {
+    if (editor && pendingInsertion && loaded) {
+      const { content, paragraphIdx, wordIdx } = pendingInsertion;
+
+      // Determine insertion position
+      //let insertPos: number;
+      let insertPos: number = editor.state.doc.content.size;
+      console.log("paragraph index =  " + paragraphIdx);
+
+      if (paragraphIdx === -1 && wordIdx === -1) {
+        // Insert at end of document
+        insertPos = editor.state.doc.content.size;
+      } else if (paragraphIdx >= 0) {
+        // Find the position after the specified paragraph
+        const doc = editor.state.doc;
+        let currentPos = 0;
+        let paragraphCount = 0;
+
+        doc.descendants((node, pos) => {
+          if (node.type.name === "paragraph") {
+            if (paragraphCount === paragraphIdx) {
+              insertPos = pos + node.nodeSize;
+              return false; // Stop traversing
+            }
+            paragraphCount++;
+          }
+          return true;
+        });
+        console.log("paragraph count = " + paragraphCount);
+
+        // If paragraph not found, insert at end
+        if (insertPos === undefined) {
+          insertPos = doc.content.size;
+        }
+      } else {
+        // Fallback to end of document
+        insertPos = editor.state.doc.content.size;
+      }
+
+      // Insert the content as a new paragraph
+      editor
+        .chain()
+        .focus()
+        .setTextSelection(insertPos)
+        .insertContent(`\n${content}\n`)
+        .run();
+
+      // Clear the pending insertion (you might want to do this through a mutation)
+      // This is a simplified approach - ideally you'd clear it through Liveblocks
+    }
+  }, [editor, pendingInsertion, loaded]);
 
   useEffect(() => {
     if (editor) {
@@ -72,9 +123,6 @@ export default function Editor({
     <>
       <DragToDeleteBounds draggingAnchor={draggingAnchor} />
       {editor && loaded ? <EditorMirrorLayer html={editor.getHTML()} /> : null}
-      {/* <p className="fixed top-32 left-32">
-        {draggingAnchor ? "Dragging anchor..." : "Click to add an anchor."}
-      </p> */}
       <div className="relative">
         <SkeletonEditor loaded={loaded} />
         <article
@@ -91,14 +139,17 @@ export default function Editor({
         </article>
       </div>
       <FloatingToolbar editor={editor} open={open} />
-      <AnchorLayer
-        anchorHandles={anchorHandles}
-        addHandle={addHandle}
-        draggingAnchor={draggingAnchor}
-        setDraggingAnchor={setDraggingAnchor}
-        mousePos={mousePos}
-        docId={docId}
+      {editor && loaded ? (
+        <AnchorLayer
+          anchorHandles={anchorHandles}
+          addHandle={addHandle}
+          draggingAnchor={draggingAnchor}
+          setDraggingAnchor={setDraggingAnchor}
+          docId={docId}
+          editor={editor}
+          mousePos={mousePos}
       />
+      ) : null}
     </>
   );
 }

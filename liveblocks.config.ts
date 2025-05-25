@@ -20,6 +20,7 @@ export type Handles = LiveMap<
   Conversation
 >;
 
+
 export type HandlesMap = ReadonlyMap<
   string,
   {
@@ -52,9 +53,16 @@ declare global {
     Storage: {
       // Example, a conflict-free list
       // animals: LiveList<string>;
-
+      // I added this but now I'm thinking we don't want it
+      //paragraphs: LiveList<LiveObject<{ type: "paragraph", content: LiveList<LiveObject<{ type: "text", text: string }>> }>>;
       docHandles: Handles; // snapshotId -> snapshot information
       docTitle: string;
+      pendingInsertion: LiveObject<{
+        content: string;
+        paragraphIdx: number;
+        wordIdx: number;
+        timestamp: number;
+      }> | null;
     };
 
     // Custom user info set when authenticating with a secret key
