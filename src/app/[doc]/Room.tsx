@@ -1,14 +1,15 @@
 "use client";
 
 import { ArrowPathIcon } from "@heroicons/react/20/solid";
-import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
+import { LiveMap } from "@liveblocks/client";
 import {
   ClientSideSuspense,
   LiveblocksProvider,
   RoomProvider,
 } from "@liveblocks/react/suspense";
 import { Session } from "next-auth";
-import { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { ReactNode, useEffect, useState } from "react";
 
 const LB_AUTH_ENDPOINT = "/api/auth";
 
@@ -21,8 +22,15 @@ export function Room({
   docId: string;
   session: Session;
 }) {
+  const [authFailed, setAuthFailed] = useState(false);
+  useEffect(() => {
+    if (authFailed) {
+      redirect("/home")
+    }
+  }, [authFailed])
+
   const authHandler = async (roomId: string | undefined) => {
-    if (!session.user || !session.user.name) {
+    if (!session.user || !session.user.id) {
       console.log("No user id in session: ", session);
       return;
     }
@@ -34,9 +42,13 @@ export function Room({
       },
       body: JSON.stringify({
         roomId,
-        userId: session.user.name,
+        userId: session.user.id,
       }),
     });
+
+    if (response.status !== 200) {
+      setAuthFailed(true)
+    }
 
     return await response.json();
   };

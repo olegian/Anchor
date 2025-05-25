@@ -4,8 +4,9 @@ import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { liveblocks } from "./liveblocks";
 import * as Y from "yjs";
-import { JsonObject, LiveMap, LiveObject } from "@liveblocks/node";
+import { JsonObject, LiveMap, LiveObject, RoomData } from "@liveblocks/node";
 import { PlainLsonObject, toPlainLson } from "@liveblocks/client";
+import { allowAccessToRoomId, disallowAccessToRoomId, disallowUserAccessToRoomId, getAvailableRoomIds } from "./firebase";
 
 const LB_DELETE_COMMENT_URL =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
@@ -325,9 +326,19 @@ export async function deleteSnapshotDoc(roomId: string, snapshotId: string) {
   //   );
 }
 
-export async function createDoc(docId: string, tempDocTitle: string) {
+export async function createDoc(
+  docId: string,
+  tempDocTitle: string,
+  ownerId: string
+) {
+  // give access to owner
+  await allowAccessToRoomId(ownerId, docId);
+
+  const userPermission: any = {};
+  userPermission[ownerId] = ["room:write"];
   const room = await liveblocks.createRoom(docId, {
-    defaultAccesses: ["room:write"], // public room, change to private with perms later
+    defaultAccesses: [],
+    usersAccesses: userPermission,
   });
 
   const initialStorage = toPlainLson(
@@ -338,4 +349,74 @@ export async function createDoc(docId: string, tempDocTitle: string) {
   ) as PlainLsonObject;
 
   await liveblocks.initializeStorageDocument(docId, initialStorage);
+}
+
+// gives access to userId to access docId
+export async function shareDoc(
+  docId: string,
+  userId: string,
+) {
+  // technically, this throws an error is the userid doesnt exist, but
+  // like screw handling it rn
+  await allowAccessToRoomId(userId, docId);
+}
+
+export async function deleteDoc(docId: string) {
+  // I really wish i could do something like this, and I think if I read up on liveblocks permission systems more
+  // I can find a way to do it, but for now imma use a workaround.
+
+  // const room = await liveblocks.getRoom(docId);
+  // for (const userId in room.usersAccesses) {
+
+  // Or i could just also store a reverse map of room -> [allowed userid]
+  
+  await disallowAccessToRoomId(docId);
+  await liveblocks.deleteRoom(docId);
+}
+
+export async function getAccessibleRooms(userId: string): Promise<RoomData[]> {
+  // TODO: this is not secure lol if anyone can hit this endpoint but idc rn
+
+  // you can filter available rooms via the liveblocks permissions associated with
+  // a user id (with liveblocks.getRooms()), but that requires me to fully understand how lb perms work,
+  // and I'm not quite there yet, ill swap this shitty work around out later
+  const roomIds = await getAvailableRoomIds(userId);
+  if (!roomIds) {
+    return [];
+  }
+
+  const result = await Promise.all(
+    roomIds.map(async (roomId: string) => await liveblocks.getRoom(roomId))
+  );
+
+  return result;
+}
+
+export async function getRoomStorage(roomId: string) {
+  const roomStorage = await liveblocks.getStorageDocument(roomId);
+  // TODO: bad any type annotation
+  const doc: any = await liveblocks.getYjsDocument(roomId, {
+    format: true,
+  });
+
+  // TODO: Ritesh is REALLY lazy. There's definitely a better way to do this. Hopefully.
+  if (doc.maindoc) {
+    doc.maindoc = doc.maindoc.replaceAll('<heading level="2">', "<h2>");
+    doc.maindoc = doc.maindoc.replaceAll("</heading>", "</h2>");
+    doc.maindoc = doc.maindoc.replaceAll("<paragraph>", "<p>");
+    doc.maindoc = doc.maindoc.replaceAll("</paragraph>", "</p>");
+    doc.maindoc = doc.maindoc.replaceAll("[[", "");
+    doc.maindoc = doc.maindoc.replaceAll("]]", "");
+    doc.maindoc = doc.maindoc.replaceAll("<p></p>", "");
+    doc.maindoc = doc.maindoc.replaceAll(
+      '<inlineaicomponent prompt="',
+      "<strong>"
+    );
+    doc.maindoc = doc.maindoc.replaceAll("</inlineaicomponent>", "</strong>");
+  }
+
+  return {
+    data: roomStorage,
+    doc: doc,
+  };
 }

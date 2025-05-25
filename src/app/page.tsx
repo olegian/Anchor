@@ -1,15 +1,23 @@
 import { createReadStream } from "fs";
 import { signIn, signOut } from "./auth";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { AuthError } from "next-auth";
 
 export default async function Home() {
   const loginHandler = async (formData: FormData) => {
     "use server";
 
-    await signIn("credentials", {
-      redirectTo: "/home",
-      username: formData.get("username"),
-      password: formData.get("password"),
-    });
+    try {
+      await signIn("credentials", {
+        redirectTo: "/home",
+        username: formData.get("username"),
+        password: formData.get("password"),
+      });
+    } catch (e) {
+      if (isRedirectError(e)) {
+        throw e;
+      }
+    }
   };
 
   const signUpHandler = async (formData: FormData) => {

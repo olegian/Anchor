@@ -1,13 +1,6 @@
 import { auth, users } from "@/app/auth";
-import { Liveblocks } from "@liveblocks/node";
-
-if (!process.env.LB_KEY) {
-  console.log("!!! SET LIVEBLOCKS SECRET ENVIRONMENT VARIABLE (LB_KEY)");
-}
-
-const liveblocks = new Liveblocks({
-  secret: process.env.LB_KEY ?? "",
-});
+import { getAvailableRoomIds } from "@/app/firebase";
+import { liveblocks } from "@/app/liveblocks";
 
 interface AuthRequest {
   roomId: string | undefined;
@@ -15,10 +8,6 @@ interface AuthRequest {
 }
 
 export async function POST(request: Request) {
-  // technically, this is where we'd check a name/pass combination
-  // and deny the login request if it doesn't match some DB entry
-  // before we call prepare session, but right now, I just want to move us
-  // to using a secret.
   const authRequest: AuthRequest = await request.json();
   if (!authRequest.roomId) {
     return new Response("Specify roomId in auth request.", { status: 401 });
@@ -30,9 +19,14 @@ export async function POST(request: Request) {
       color: users.find((u) => u.name === authRequest.userId)?.color ?? "black", // TODO: let users specify thier own cursors
     },
   });
-  session.allow(`${authRequest.roomId}`, session.FULL_ACCESS); // wild card access to all rooms
+
+  const availableRooms: string[] = await getAvailableRoomIds(authRequest.userId);
+  if (availableRooms.includes(authRequest.roomId)) {
+    session.allow(`${authRequest.roomId}`, session.FULL_ACCESS); // wild card access to all rooms
+  } else {
+    return new Response("Unauthorized roomId", { status: 401 });
+  }
 
   const { status, body } = await session.authorize();
-
   return new Response(body, { status });
 }

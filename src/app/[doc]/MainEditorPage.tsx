@@ -18,12 +18,13 @@ export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
 
   const scrollPosition = useScrollPosition();
+
   return (
     <>
       <Room docId={params.doc} session={session}>
         <BackButton />
         <EditingInterface docId={params.doc} />
-        <FloatingMenu />
+        <FloatingMenu docId={params.doc} />
         <FloatingNavbar scrollPosition={scrollPosition} />
       </Room>
     </>
