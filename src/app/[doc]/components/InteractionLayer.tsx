@@ -427,7 +427,6 @@ function AnchorHandle({
       }
 
       // Animate toward the target position
-
       if (animationFrame) cancelAnimationFrame(animationFrame);
       const animate = () => {
         console.log("animate ", targetX, targetY);

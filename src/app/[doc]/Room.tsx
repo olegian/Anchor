@@ -46,7 +46,7 @@ export function Room({
     <LiveblocksProvider authEndpoint={authHandler}>
       <RoomProvider
         initialPresence={{
-          currentHandle: null,
+          openHandles: [],
           name: session.user?.name ?? "",
         }} // ?? should be unnecessary?
         id={docId}

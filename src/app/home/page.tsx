@@ -22,7 +22,6 @@ export default function Home() {
     fetcher
   );
 
-  const [tempDocTitle, setTempDocTitle] = useState("");
   const [newDocDialog, setNewDocDialog] = useState(false);
 
   function open() {
@@ -75,8 +74,6 @@ export default function Home() {
         </div>
       </div>
       <NewDocDialog
-        tempDocTitle={tempDocTitle}
-        setTempDocTitle={setTempDocTitle}
         isOpen={newDocDialog}
         close={close}
       />

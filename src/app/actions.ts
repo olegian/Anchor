@@ -4,7 +4,8 @@ import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { liveblocks } from "./liveblocks";
 import * as Y from "yjs";
-import { JsonObject } from "@liveblocks/node";
+import { JsonObject, LiveMap, LiveObject } from "@liveblocks/node";
+import { PlainLsonObject, toPlainLson } from "@liveblocks/client";
 
 const LB_DELETE_COMMENT_URL =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
@@ -66,7 +67,7 @@ export async function prompt(
 ): Promise<PromptResponse> {
   try {
     // lock should have been acquired client side, to stop other clients from sending request
-    // TODO: oleg - do the user id association to isPending described in HandleInput.tsx, then update this a little 
+    // TODO: oleg - do the user id association to isPending described in HandleInput.tsx, then update this a little
 
     // Get document contents to use as context
     // !!! TODO: This call no longer returns just a string, but a JSON string representation of the entire doc contents
@@ -165,17 +166,16 @@ export async function prompt(
     //   exchange.set("response", text);
     // });
 
-
     const response = "some sort of LLM response";
 
     await liveblocks.mutateStorage(docId, ({ root }) => {
       const handleInfo = root.get("docHandles").get(handleId);
       const exchanges = handleInfo?.get("exchanges");
 
-      // this line implies that the exchange object does not change after you hit submit, 
+      // this line implies that the exchange object does not change after you hit submit,
       // and therefore you should only append to the exchanges list AFTER the client receives the
       // response from this prompt request
-      exchanges?.get(exchanges.length - 1)?.set("response", response)
+      exchanges?.get(exchanges.length - 1)?.set("response", response);
 
       // handleInfo?.set("isPending", false);  // oleg: leave this commented out for now, client side should handle it
     });
@@ -263,7 +263,7 @@ export async function invokeAllPrompts(
 
       const response = await prompt(
         doc_name,
-        snapshotId,
+        snapshotId
         // promptText,
         // envId,
         // env
@@ -325,7 +325,17 @@ export async function deleteSnapshotDoc(roomId: string, snapshotId: string) {
   //   );
 }
 
-export async function createDoc(tempDocTitle: string) {
-  // if we want to do something with registering user permissions on doc creation
-  // it would have to be done here
+export async function createDoc(docId: string, tempDocTitle: string) {
+  const room = await liveblocks.createRoom(docId, {
+    defaultAccesses: ["room:write"], // public room, change to private with perms later
+  });
+
+  const initialStorage = toPlainLson(
+    new LiveObject({
+      docHandles: new LiveMap(),
+      docTitle: tempDocTitle,
+    })
+  ) as PlainLsonObject;
+
+  await liveblocks.initializeStorageDocument(docId, initialStorage);
 }

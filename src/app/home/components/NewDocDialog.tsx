@@ -1,4 +1,3 @@
-import { liveblocks } from "@/app/liveblocks";
 import { createDoc } from "@/app/actions";
 import {
   Button,
@@ -10,24 +9,22 @@ import {
 } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/16/solid";
 import { redirect } from "next/navigation";
+import { useState } from "react";
 
 export default function NewDocDialog({
-  tempDocTitle,  // TODO: move away from using any title on doc creation
-  setTempDocTitle,
   isOpen,
   close,
 }: {
-  tempDocTitle: string;
-  setTempDocTitle: (title: string) => void;
   isOpen: boolean;
   close: () => void;
 }) {
-  const createDocHandler = () => {
-    // if we want to register some sort of permissions/doc restrictions
-    // then call this action and set permissions server side
-    // await createDoc(tempDocTitle)
-
+  const [tempDocTitle, setTempDocTitle] = useState("");
+  const createDocHandler = async () => {
     const newDocId = crypto.randomUUID()
+
+    // TODO: display loading while this is being awaited?
+    await createDoc(newDocId, tempDocTitle)
+
     redirect(`/${newDocId}`);  // auto creates doc on reroute
   };
 
