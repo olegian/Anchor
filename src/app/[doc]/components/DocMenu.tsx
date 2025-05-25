@@ -1,12 +1,11 @@
-import { deleteDoc, deleteSnapshotDoc } from "@/app/actions";
+import { deleteDoc } from "@/app/actions";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 import {
   ChevronDownIcon,
-  TrashIcon,
-  ArrowUpOnSquareIcon,
+  TrashIcon
 } from "@heroicons/react/16/solid";
-import { useMutation, useMyPresence, useOthers } from "@liveblocks/react";
-import { redirect, useParams, useRouter } from "next/navigation";
+import { useMyPresence } from "@liveblocks/react";
+import { useParams, useRouter } from "next/navigation";
 
 export default function DocMenu({ showText = false }: { showText?: boolean }) {
   const params = useParams<{ doc: string }>();
