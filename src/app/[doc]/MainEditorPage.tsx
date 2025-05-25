@@ -94,6 +94,14 @@ function EditingInterface({}: {}) {
         borderRef.current &&
         !borderRef.current.contains(event.target as Node)
       ) {
+        if (
+          mousePos.x < 50 + 24 ||
+          mousePos.x > window.innerWidth - 50 - 24 ||
+          mousePos.y < 50 + 24
+        ) {
+          return;
+        }
+
         const potentialX = mousePos.x - window.innerWidth / 2;
         const potentialY = mousePos.y + window.scrollY;
 
@@ -152,7 +160,6 @@ function EditingInterface({}: {}) {
               anchorHandles={handles}
               addHandle={addHandle}
               mousePos={mousePos}
-              setMousePos={setMousePos}
             />
           </div>
         </div>

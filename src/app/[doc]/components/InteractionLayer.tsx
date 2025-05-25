@@ -10,6 +10,7 @@ import {
 import {
   ArrowPathIcon,
   ArrowsPointingOutIcon,
+  ChevronRightIcon,
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/16/solid";
@@ -77,7 +78,6 @@ export function AnchorLayer({
   draggingAnchor,
   setDraggingAnchor,
   mousePos,
-  setMousePos,
 }: {
   anchorHandles: HandlesMap;
   addHandle: (
@@ -90,24 +90,17 @@ export function AnchorLayer({
   draggingAnchor: boolean;
   setDraggingAnchor: (dragging: boolean) => void;
   mousePos: { x: number; y: number };
-  setMousePos: (pos: { x: number; y: number }) => void;
 }) {
-  // const [mousePos, setMousePos] = useState<{ x: number; y: number }>({
-  //   x: 0,
-  //   y: 0,
-  // });
-
-  // // Track mouse position
-  // useEffect(() => {
-  //   const handleMouseMove = (e: MouseEvent) => {
-  //     setMousePos({ x: e.clientX, y: e.clientY });
-  //   };
-  //   window.addEventListener("mousemove", handleMouseMove);
-  //   return () => window.removeEventListener("mousemove", handleMouseMove);
-  // }, []);
-
   // Handle hotkey "a"
   useHotkeys("a", () => {
+    if (
+      mousePos.x < 50 + 24 ||
+      mousePos.x > window.innerWidth - 50 - 24 ||
+      mousePos.y < 50 + 24
+    ) {
+      return;
+    }
+
     const id = crypto.randomUUID(); // Unique ID for the new anchor
     addHandle(
       id,
@@ -322,6 +315,10 @@ function AnchorHandle({
   });
   const animationRef = useRef<number | null>(null);
 
+  const deleteState =
+    localCoords.x < 50 ||
+    window.innerWidth - 50 - ANCHOR_HANDLE_SIZE < localCoords.x;
+
   // --- Rotation animation effect ---
   useEffect(() => {
     if (!dragging) return;
@@ -508,7 +505,6 @@ function AnchorHandle({
         // console.log("animate ", targetX, targetY);
         setLocalCoords({ x: targetX, y: targetY });
         animationFrame = requestAnimationFrame(animate);
-        // setDraggingAnchor(false);
       };
 
       // write new position to live
@@ -521,12 +517,10 @@ function AnchorHandle({
         anchorHeight
       );
       animate();
-
-      // setDraggingAnchor(true);
     };
 
     const onMouseUp = () => {
-      if (localCoords.x < 50) {
+      if (deleteState) {
         // Animate before deleting the anchor
         if (ref.current) {
           ref.current.style.transition = "opacity 0.5s";
@@ -539,6 +533,7 @@ function AnchorHandle({
       } else {
         setDragging(false);
         setDraggingAnchor(false);
+
         setAnchorOwner(""); // release ownership, allow others to grab it
         if (animationFrame) cancelAnimationFrame(animationFrame);
       }
@@ -581,6 +576,7 @@ function AnchorHandle({
       };
     }
     setDragging(true);
+    setDraggingAnchor(true);
   };
 
   const owned = liveHandleInfo.owner != "";
@@ -614,7 +610,7 @@ function AnchorHandle({
   const title = `${
     owned && !isOwner
       ? ownerData?.name
-      : liveHandleInfo.handleName || localCoords.x < 50
+      : liveHandleInfo.handleName || deleteState
       ? "Delete?"
       : liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
       ? "Word"
@@ -623,16 +619,15 @@ function AnchorHandle({
       : "Document"
   }${liveHandleInfo.isPending ? "(pending)" : ""}`;
 
-  const icon =
-    localCoords.x < 50 ? (
-      <XMarkIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
-    ) : liveHandleInfo.isPending ? (
-      <ArrowPathIcon className="absolute size-3.5 shrink-0 animate-spin" />
-    ) : dragging || owned ? (
-      <ArrowsPointingOutIcon className="absolute shrink-0 size-3 transition-all group-hover:scale-125 rotate-45" />
-    ) : (
-      <PlusIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
-    );
+  const icon = deleteState ? (
+    <XMarkIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
+  ) : liveHandleInfo.isPending ? (
+    <ArrowPathIcon className="absolute size-3.5 shrink-0 animate-spin" />
+  ) : dragging || owned ? (
+    <ArrowsPointingOutIcon className="absolute shrink-0 size-3 transition-all group-hover:scale-125 rotate-45" />
+  ) : (
+    <PlusIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
+  );
 
   const ownerColor = owned && !isOwner ? ownerData?.color : "";
 
@@ -648,29 +643,55 @@ function AnchorHandle({
           ? "none"
           : "transform 0.4s cubic-bezier(.4,2,.6,1)",
       }}
-      onMouseDown={onMouseDown}
     >
-      <div className="flex flex-col items-center justify-center group relative space-y-2">
+      <div className="flex flex-col items-center justify-center group relative  space-y-2">
         <div
           className={`${
-            owned && !isOwner && localCoords.x >= 50
-              ? "text-white"
-              : localCoords.x < 50
-              ? "opacity-0 text-white border-red-600 bg-red-500"
-              : "opacity-0 text-zinc-700 border-zinc-200 bg-white"
-          } select-none group-hover:opacity-100 translate-y-0  transition-all font-semibold transform text-xs px-1.5 py-0.5 border shadow-sm origin-center rounded-md`}
-          style={{
-            borderColor: ownerColor,
-            backgroundColor: ownerColor,
-          }}
+            owned && !isOwner && !deleteState
+              ? ""
+              : deleteState
+              ? "opacity-0"
+              : "opacity-0"
+          } flex items-center justify-center group-hover:opacity-100 translate-y-0  space-x-1 transition-all font-semibold transform text-xs`}
         >
-          {title}
+          <div
+            className={`${
+              owned && !isOwner && !deleteState
+                ? "text-white"
+                : deleteState
+                ? "text-white border-red-600 bg-red-500"
+                : "text-zinc-700 border-zinc-200 bg-white"
+            } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block`}
+            style={{
+              borderColor: ownerColor,
+              backgroundColor: ownerColor,
+            }}
+          >
+            {title}
+          </div>
+          {!dragging && !owned && !deleteState ? (
+            <button
+              onClick={() => {
+                console.log("Adding anchor handle");
+              }}
+              className={`${
+                owned && !isOwner && !deleteState
+                  ? "text-white"
+                  : deleteState
+                  ? "text-white border-red-600 bg-red-500"
+                  : "text-zinc-700 border-zinc-200 bg-white"
+              } px-0.5 py-0.5 border shadow-sm origin-center rounded-md block cursor-pointer hover:bg-zinc-100 transition-colors`}
+            >
+              <ChevronRightIcon className="size-4 shrink-0" />
+            </button>
+          ) : null}
         </div>
-
         <div
           className={`${
             owned && !isOwner
               ? "border-2 text-white"
+              : deleteState
+              ? "border-red-600 text-white bg-red-500"
               : `text-zinc-700 ${
                   liveHandleInfo.paragraphIdx >= 0 &&
                   liveHandleInfo.wordIdx >= 0
@@ -691,6 +712,7 @@ function AnchorHandle({
             height: `${liveHandleInfo.height ?? ANCHOR_HANDLE_SIZE}px`,
           }}
           ref={anchorRef}
+          onMouseDown={onMouseDown}
         >
           {liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
             ? null

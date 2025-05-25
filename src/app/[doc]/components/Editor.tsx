@@ -17,7 +17,6 @@ export default function Editor({
   anchorHandles,
   addHandle,
   mousePos,
-  setMousePos,
 }: {
   title: string;
   setTitle: (title: string) => void;
@@ -32,7 +31,6 @@ export default function Editor({
     height: number
   ) => void;
   mousePos: { x: number; y: number };
-  setMousePos: (pos: { x: number; y: number }) => void;
 }) {
   const [draggingAnchor, setDraggingAnchor] = useState(false);
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
@@ -67,10 +65,11 @@ export default function Editor({
 
   return (
     <>
+      <DragToDeleteBounds draggingAnchor={draggingAnchor} />
       {editor && loaded ? <EditorMirrorLayer html={editor.getHTML()} /> : null}
-      <p className="fixed top-32 left-32">
+      {/* <p className="fixed top-32 left-32">
         {draggingAnchor ? "Dragging anchor..." : "Click to add an anchor."}
-      </p>
+      </p> */}
       <div className="relative">
         <SkeletonEditor loaded={loaded} />
         <article
@@ -93,8 +92,32 @@ export default function Editor({
         draggingAnchor={draggingAnchor}
         setDraggingAnchor={setDraggingAnchor}
         mousePos={mousePos}
-        setMousePos={setMousePos}
       />
+    </>
+  );
+}
+
+function DragToDeleteBounds({ draggingAnchor }: { draggingAnchor: boolean }) {
+  return (
+    <>
+      <div
+        className={`fixed top-0 left-0 h-screen w-12 border-dashed border-r-2 border-zinc-200 bg-zinc-100 hover:opacity-25 flex flex-col items-center justify-center z-40 select-none pointer-events-none transition-all duration-300 ${
+          draggingAnchor ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <p className="-rotate-90 whitespace-nowrap text-sm text-gray-700 font-medium">
+          Drag to delete
+        </p>
+      </div>
+      <div
+        className={`fixed top-0 right-0 h-screen w-12 border-dashed border-l-2 border-zinc-200 bg-zinc-100 hover:opacity-25 flex flex-col items-center justify-center z-40 select-none pointer-events-none transition-all duration-300 ${
+          draggingAnchor ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        <p className="rotate-90 whitespace-nowrap text-sm text-gray-700 font-medium">
+          Drag to delete
+        </p>
+      </div>
     </>
   );
 }
