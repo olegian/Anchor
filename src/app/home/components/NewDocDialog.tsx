@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/16/solid";
+import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
 import { useState } from "react";
 
@@ -19,13 +20,15 @@ export default function NewDocDialog({
   close: () => void;
 }) {
   const [tempDocTitle, setTempDocTitle] = useState("");
+  const session = useSession();
   const createDocHandler = async () => {
-    const newDocId = crypto.randomUUID()
+    const newDocId = crypto.randomUUID();
 
     // TODO: display loading while this is being awaited?
-    await createDoc(newDocId, tempDocTitle)
-
-    redirect(`/${newDocId}`);  // auto creates doc on reroute
+    if (session && session.data && session.data.user && session.data.user.id) {
+      await createDoc(newDocId, tempDocTitle, session.data.user.id);
+      redirect(`/${newDocId}`); // auto creates doc on reroute
+    }
   };
 
   return (

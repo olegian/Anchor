@@ -1,13 +1,14 @@
 "use client";
 
 import { ArrowPathIcon } from "@heroicons/react/20/solid";
-import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
+import { LiveMap } from "@liveblocks/client";
 import {
   ClientSideSuspense,
   LiveblocksProvider,
   RoomProvider,
 } from "@liveblocks/react/suspense";
 import { Session } from "next-auth";
+import { redirect } from "next/navigation";
 import { ReactNode } from "react";
 
 const LB_AUTH_ENDPOINT = "/api/auth";
@@ -22,7 +23,7 @@ export function Room({
   session: Session;
 }) {
   const authHandler = async (roomId: string | undefined) => {
-    if (!session.user || !session.user.name) {
+    if (!session.user || !session.user.id) {
       console.log("No user id in session: ", session);
       return;
     }
@@ -34,7 +35,7 @@ export function Room({
       },
       body: JSON.stringify({
         roomId,
-        userId: session.user.name,
+        userId: session.user.id,
       }),
     });
 

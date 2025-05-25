@@ -7,6 +7,9 @@ import {
   setDoc,
   getFirestore,
   updateDoc,
+  Firestore,
+  FieldValue,
+  arrayUnion,
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -72,6 +75,8 @@ export async function registerUser(
   fullname: string,
   color: string
 ) {
+  // TODO: add duplicate username detection
+
   const shPassword = await saltAndHash(password);
 
   await setDoc(doc(db, "users", username), {
@@ -79,6 +84,7 @@ export async function registerUser(
     password: shPassword,
     fullname: fullname,
     color: color,
+    allowedRooms: [],
   });
 }
 
@@ -86,4 +92,15 @@ export async function updateColor(username: string, newColor: string) {
   await updateDoc(doc(db, "users", username), {
     color: newColor,
   });
+}
+
+export async function getAvailableRoomIds(username: string) {
+  const userEntry = await getDoc(doc(db, "users", username))
+  return userEntry.get("allowedRooms");
+}
+
+export async function allowAccessToRoomId(username: string, roomId: string)  {
+  await updateDoc(doc(db, "users", username), {
+    allowedRooms: arrayUnion(roomId)
+  })
 }

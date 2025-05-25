@@ -6,6 +6,7 @@ import { liveblocks } from "./liveblocks";
 import * as Y from "yjs";
 import { JsonObject, LiveMap, LiveObject } from "@liveblocks/node";
 import { PlainLsonObject, toPlainLson } from "@liveblocks/client";
+import { allowAccessToRoomId } from "./firebase";
 
 const LB_DELETE_COMMENT_URL =
   "https://api.liveblocks.io/v2/rooms/{room_id}/threads/{thread_id}/comments/{comment_id}";
@@ -325,9 +326,19 @@ export async function deleteSnapshotDoc(roomId: string, snapshotId: string) {
   //   );
 }
 
-export async function createDoc(docId: string, tempDocTitle: string) {
+export async function createDoc(
+  docId: string,
+  tempDocTitle: string,
+  ownerId: string
+) {
+  // give access to owner
+  await allowAccessToRoomId(ownerId, docId);
+
+  const userPermission: any = {};
+  userPermission[ownerId] = ["room:write"];
   const room = await liveblocks.createRoom(docId, {
-    defaultAccesses: ["room:write"], // public room, change to private with perms later
+    defaultAccesses: [],
+    usersAccesses: userPermission,
   });
 
   const initialStorage = toPlainLson(
