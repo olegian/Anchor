@@ -139,86 +139,88 @@ function parseDocumentContent(docJson: any): {
   return { fullText: fullText.trim(), paragraphs, words };
 }
 
-// Updated function to use paragraph and word indices instead of position calculations
-function getDocumentContextByIndex(
+// Updated function to use contextMode override or fall back to index-based detection
+function getDocumentContext(
+  contextMode: "doc" | "paragraph" | "word",
   paragraphIdx: number,
   wordIdx: number,
   parsedDoc: ReturnType<typeof parseDocumentContent>
 ): DocumentContext {
-  console.log(
-    `Getting context for paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`
-  );
-
-  // If both indices are -1, use document context
-  if (paragraphIdx === -1 && wordIdx === -1) {
-    console.log("Using document context (both indices are -1)");
-    return {
-      content: parsedDoc.fullText,
-      contextType: "document",
-    };
-  }
-
-  // If paragraph index is valid but word index is -1, use paragraph context
-  if (
-    paragraphIdx >= 0 &&
-    paragraphIdx < parsedDoc.paragraphs.length &&
-    wordIdx === -1
-  ) {
-    const targetParagraph = parsedDoc.paragraphs[paragraphIdx];
-    console.log(
-      `Using paragraph context: "${targetParagraph.content.substring(
-        0,
-        50
-      )}..."`
-    );
-
-    return {
-      content: targetParagraph.content,
-      contextType: "paragraph",
-    };
-  }
-
-  // If both indices are valid, use word context
-  if (
-    paragraphIdx >= 0 &&
-    paragraphIdx < parsedDoc.paragraphs.length &&
-    wordIdx >= 0
-  ) {
-    const wordsInParagraph = parsedDoc.words.filter(
-      (w) => w.paragraphIndex === paragraphIdx
-    );
-
-    if (wordIdx < wordsInParagraph.length) {
-      const targetWord = wordsInParagraph[wordIdx];
-      console.log(`Using word context: "${targetWord.content}"`);
-
+  console.log(`Getting context with mode: ${contextMode}, paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`);
+  
+  // Use the explicit contextMode to determine context type
+  switch (contextMode) {
+    case "doc":
+      console.log("Using document context (explicit mode)");
       return {
-        content: targetWord.content,
-        contextType: "word",
+        content: parsedDoc.fullText,
+        contextType: "document"
       };
-    } else {
-      // Word index out of bounds, fall back to paragraph
-      console.log(
-        `Word index ${wordIdx} out of bounds, falling back to paragraph context`
-      );
-      const targetParagraph = parsedDoc.paragraphs[paragraphIdx];
-
+      
+    case "paragraph":
+      // Use paragraph context if valid paragraph index exists
+      if (paragraphIdx >= 0 && paragraphIdx < parsedDoc.paragraphs.length) {
+        const targetParagraph = parsedDoc.paragraphs[paragraphIdx];
+        console.log(`Using paragraph context: "${targetParagraph.content.substring(0, 50)}..."`);
+        
+        return {
+          content: targetParagraph.content,
+          contextType: "paragraph"
+        };
+      } else {
+        // Fall back to document if no valid paragraph
+        console.log("No valid paragraph found, falling back to document context");
+        return {
+          content: parsedDoc.fullText,
+          contextType: "document"
+        };
+      }
+      
+    case "word":
+      // Use word context if valid indices exist
+      if (paragraphIdx >= 0 && paragraphIdx < parsedDoc.paragraphs.length && wordIdx >= 0) {
+        const wordsInParagraph = parsedDoc.words.filter(w => w.paragraphIndex === paragraphIdx);
+        
+        if (wordIdx < wordsInParagraph.length) {
+          const targetWord = wordsInParagraph[wordIdx];
+          console.log(`Using word context: "${targetWord.content}"`);
+          
+          return {
+            content: targetWord.content,
+            contextType: "word"
+          };
+        } else {
+          // Word index out of bounds, fall back to paragraph if available
+          console.log(`Word index ${wordIdx} out of bounds, falling back to paragraph context`);
+          if (paragraphIdx >= 0 && paragraphIdx < parsedDoc.paragraphs.length) {
+            const targetParagraph = parsedDoc.paragraphs[paragraphIdx];
+            
+            return {
+              content: targetParagraph.content,
+              contextType: "paragraph"
+            };
+          }
+        }
+      }
+      
+      // Fall back to document context if word context is not available
+      console.log("Word context not available, falling back to document context");
       return {
-        content: targetParagraph.content,
-        contextType: "paragraph",
+        content: parsedDoc.fullText,
+        contextType: "document"
       };
-    }
+      
+    default:
+      // Fallback to document context
+      console.log("Unknown context mode, falling back to document context");
+      return {
+        content: parsedDoc.fullText,
+        contextType: "document"
+      };
   }
-
-  // Fallback to document context if indices are invalid
-  console.log("Falling back to document context due to invalid indices");
-  return {
-    content: parsedDoc.fullText,
-    contextType: "document",
-  };
 }
 
-// Updated main prompt function to use index-based context determination
+// Updated main prompt function to use contextMode parameter
 export async function prompt(
   docId: string,
   handleId: string,
@@ -248,11 +250,9 @@ export async function prompt(
     // Use the paragraph and word indices from handle info
     const paragraphIdx = handleInfo.paragraphIdx;
     const wordIdx = handleInfo.wordIdx;
-
-    console.log(
-      `Handle info - paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`
-    );
-
+    
+    console.log(`Handle info - paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}, contextMode: ${contextMode}`);
+    
     // Parse document content
     const docJson = JSON.parse(docContents);
     const parsedDoc = parseDocumentContent(docJson);
@@ -263,20 +263,12 @@ export async function prompt(
     parsedDoc.paragraphs.forEach((p, i) => {
       console.log(`Paragraph ${i}: "${p.content.substring(0, 50)}..."`);
     });
-
-    // Get appropriate context using indices
-    const documentContext = getDocumentContextByIndex(
-      paragraphIdx,
-      wordIdx,
-      parsedDoc
-    );
-
-    console.log(
-      `Final context: ${
-        documentContext.contextType
-      } - "${documentContext.content.substring(0, 100)}..."`
-    );
-
+    
+    // Get appropriate context using the explicit contextMode
+    const documentContext = getDocumentContext(contextMode, paragraphIdx, wordIdx, parsedDoc);
+    
+    console.log(`Final context: ${documentContext.contextType} - "${documentContext.content.substring(0, 100)}..."`);
+    
     // Get or initialize conversation history for this handle
     if (!conversationHistory.has(handleId)) {
       conversationHistory.set(handleId, []);
@@ -465,7 +457,7 @@ export async function invokeAllPrompts(
   env?: string
 ): Promise<string[]> {
   try {
-    const response = await prompt(docId, handleId, undefined, undefined, env);
+    const response = await prompt(docId, handleId, "doc", undefined, undefined, env);
     return response.status === "success" ? [response.text] : [];
   } catch (error) {
     console.error("Error in invokeAllPrompts:", error);
@@ -535,6 +527,8 @@ export async function getAccessibleRooms(userId: string): Promise<RoomData[]> {
 
   return result;
 }
+
+// include this ALL
 
 export async function getRoomStorage(roomId: string) {
   const roomStorage = await liveblocks.getStorageDocument(roomId);

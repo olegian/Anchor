@@ -41,6 +41,7 @@ export default function AnchorPopup({
       ? "paragraph"
       : "doc"
   );
+  const [userHasSetContextMode, setUserHasSetContextMode] = useState(false);
 
   if (!exchanges) {
     // TODO: add indicator while synced exchanges load
@@ -66,6 +67,20 @@ export default function AnchorPopup({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen, close]);
+
+  useEffect(() => {
+    if (!isOpen || !liveHandleInfo || userHasSetContextMode) return;
+  
+    const { wordIdx, paragraphIdx } = liveHandleInfo;
+  
+    if (wordIdx >= 0 && paragraphIdx >= 0) {
+      setContextMode("word");
+    } else if (paragraphIdx >= 0) {
+      setContextMode("paragraph");
+    } else {
+      setContextMode("doc");
+    }
+  }, [isOpen, liveHandleInfo, userHasSetContextMode]);
 
   // --- Live Storage Mutations ---
   const changeCurrentPrompt = useMutation(({ storage }, newPrompt) => {
@@ -111,6 +126,7 @@ export default function AnchorPopup({
     }
 
     try {
+      // Pass the current contextMode to the prompt function
       await prompt(docId, handleId, contextMode);
 
       if (!openNewPrompt()) {
@@ -289,26 +305,18 @@ export default function AnchorPopup({
               className="text-xs ml-1 p-0 w-auto border-none form-select appearance-none! bg-none pr-4"
               value={contextMode}
               onChange={(event) => {
-                setContextMode(
-                  event.target.value as "word" | "doc" | "paragraph"
-                );
+                setContextMode(event.target.value as "word" | "doc" | "paragraph");
+                setUserHasSetContextMode(true);
               }}
             >
-              {liveHandleInfo.wordIdx >= 0 &&
+              {liveHandleInfo && liveHandleInfo.wordIdx >= 0 &&
               liveHandleInfo.paragraphIdx >= 0 ? (
-                <option value={"word"} selected>
-                  Word
-                </option> // TODO: the correct context should be autoselected, but this doesnt work for some reason
+                <option value="word">Word</option>
               ) : null}
-              {liveHandleInfo.paragraphIdx >= 0 ? (
-                <option
-                  value={"paragraph"}
-                  selected={liveHandleInfo.wordIdx == -1}
-                >
-                  Paragraph
-                </option>
+              {liveHandleInfo && liveHandleInfo.paragraphIdx >= 0 ? (
+                <option value="paragraph">Paragraph</option>
               ) : null}
-              <option value={"doc"}>Document</option>
+              <option value="doc">Document</option>
             </select>
             <ChevronUpDownIcon className="absolute size-4 text-zinc-500 top-0.5 right-0.5 pointer-events-none" />
           </div>
