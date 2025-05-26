@@ -17,11 +17,7 @@ import {
 } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
-import {
-  prompt,
-  createExchange,
-  getUser,
-} from "../../actions";
+import { prompt, createExchange, getUser } from "../../actions";
 import { LiveObject, User } from "@liveblocks/client";
 import { Editor } from "@tiptap/react";
 import { Transition } from "@headlessui/react";
@@ -259,7 +255,6 @@ function AnchorHandle({
     };
   }, [liveHandleInfo.x, liveHandleInfo.y, dragging]);
 
-
   // update live position, debounce to not send 20 billion requests
   const writePos = useMutation(
     (
@@ -272,13 +267,6 @@ function AnchorHandle({
       height = ANCHOR_HANDLE_SIZE
     ) => {
       const handle = storage.get("docHandles").get(id);
-      // console.log(
-      //   ">>> PUSHING:",
-      //   targetX - window.innerWidth / 2,
-      //   targetY,
-      //   paragraphIdx,
-      //   wordIdx
-      // );
       handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
       handle?.set("y", targetY);
       handle?.set("paragraphIdx", paragraphIdx);
@@ -563,16 +551,21 @@ function AnchorHandle({
 
   const owned = liveHandleInfo.owner != "";
   const isOwner = liveHandleInfo.owner === session.data?.user?.id;
-  const [ownerData, setOwnerData] = useState<{name: string, color: string} | null>(null);
+  const [ownerData, setOwnerData] = useState<{
+    name: string;
+    color: string;
+  } | null>(null);
   useEffect(() => {
     if (liveHandleInfo.owner) {
-      getUser(liveHandleInfo.owner).then((res) => {
-        setOwnerData(res)
-      }).catch((e) => {
-        setOwnerData(null)
-      })
+      getUser(liveHandleInfo.owner)
+        .then((res) => {
+          setOwnerData(res);
+        })
+        .catch((e) => {
+          setOwnerData(null);
+        });
     }
-  }, [liveHandleInfo])
+  }, [liveHandleInfo]);
 
   const title = `${
     owned && !isOwner
@@ -586,10 +579,7 @@ function AnchorHandle({
       : "Document"
   }`;
 
-  const ownerColor = owned && !isOwner ? ownerData?.color : "";
-
   const [openPopup, setOpenPopup] = useState<boolean>(false);
-
   const showPopup = openPopup && !dragging && !deleteState;
 
   const icon = deleteState ? (
@@ -637,8 +627,10 @@ function AnchorHandle({
                   : "text-zinc-700 border-zinc-200 bg-white"
               } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block`}
               style={{
-                borderColor: ownerColor,
-                backgroundColor: ownerColor,
+                borderColor:
+                  owned && !isOwner && !deleteState ? ownerData?.color : "",
+                backgroundColor:
+                  owned && !isOwner && !deleteState ? ownerData?.color : "",
               }}
             >
               {title}
@@ -653,6 +645,8 @@ function AnchorHandle({
                 ? "text-white"
                 : deleteState
                 ? "text-white bg-red-500"
+                : liveHandleInfo.isPending
+                ? "from-sky-400 to-pink-400 via-violet-400 animate-pulse bg-gradient-to-r blur-[3px]"
                 : `text-zinc-700 ${
                     liveHandleInfo.paragraphIdx >= 0 &&
                     liveHandleInfo.wordIdx >= 0
@@ -666,10 +660,13 @@ function AnchorHandle({
             }`}
             style={{
               backgroundColor:
-                ownerColor +
-                (liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
-                  ? "25"
-                  : ""),
+                owned && !isOwner && !deleteState
+                  ? ownerData?.color +
+                    (liveHandleInfo.paragraphIdx >= 0 &&
+                    liveHandleInfo.wordIdx >= 0
+                      ? "25"
+                      : "")
+                  : "",
               width: `${liveHandleInfo.width ?? ANCHOR_HANDLE_SIZE}px`,
               height: `${liveHandleInfo.height ?? ANCHOR_HANDLE_SIZE}px`,
             }}

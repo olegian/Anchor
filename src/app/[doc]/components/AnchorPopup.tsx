@@ -35,7 +35,11 @@ export default function AnchorPopup({
     (root) => root.docHandles.get(handleId)?.exchanges
   );
   const [contextMode, setContextMode] = useState<"word" | "doc" | "paragraph">(
-    "doc"
+    liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
+      ? "word"
+      : liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx === -1
+      ? "paragraph"
+      : "doc"
   );
   const [userHasSetContextMode, setUserHasSetContextMode] = useState(false);
 
@@ -191,7 +195,11 @@ export default function AnchorPopup({
     >
       <div className="p-2">
         <div className="flex items-center justify-start space-x-2">
-          <div className="overflow-hidden rounded-full shrink-0 size-7">
+          <div
+            className={`border ${
+              isLoading ? "border-transparent" : "border-zinc-300"
+            } overflow-hidden rounded-full shrink-0 size-7`}
+          >
             <div
               className={`${
                 isLoading
@@ -245,7 +253,7 @@ export default function AnchorPopup({
 
             <button
               title={
-                exchanges.at(viewedExchange + 1)?.response
+                viewedExchange <= exchanges.length - 2
                   ? "Next exchange"
                   : "Create new exchange"
               }
@@ -256,7 +264,7 @@ export default function AnchorPopup({
               }}
               className="disabled:opacity-25 size-5 flex items-center justify-center shrink-0 disabled:pointer-events-none text-zinc-600 hover:text-zinc-800 cursor-pointer"
             >
-              {exchanges.at(viewedExchange)?.response ? (
+              {viewedExchange <= exchanges.length - 2 ? (
                 <ChevronRightIcon className="inline size-5 shrink-0" />
               ) : (
                 <PlusIcon className="inline size-4 shrink-0" />
@@ -287,6 +295,7 @@ export default function AnchorPopup({
         </p>
       </div>
       <div className="p-2 border-t border-zinc-200 flex items-end justify-between">
+        {/* {JSON.stringify(liveHandleInfo)} */}
         <div className="space-y-0">
           <h5 className="font-medium font-sans text-sm">Context</h5>
           {/* TODO: chosen context */}
