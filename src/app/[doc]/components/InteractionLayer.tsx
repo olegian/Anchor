@@ -255,7 +255,6 @@ function AnchorHandle({
     };
   }, [liveHandleInfo.x, liveHandleInfo.y, dragging]);
 
-
   // update live position, debounce to not send 20 billion requests
   const writePos = useMutation(
     (
@@ -628,8 +627,10 @@ function AnchorHandle({
                   : "text-zinc-700 border-zinc-200 bg-white"
               } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block`}
               style={{
-                borderColor: ownerData?.color,
-                backgroundColor: ownerData?.color,
+                borderColor:
+                  owned && !isOwner && !deleteState ? ownerData?.color : "",
+                backgroundColor:
+                  owned && !isOwner && !deleteState ? ownerData?.color : "",
               }}
             >
               {title}
@@ -659,10 +660,13 @@ function AnchorHandle({
             }`}
             style={{
               backgroundColor:
-                ownerData?.color +
-                (liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
-                  ? "25"
-                  : ""),
+                owned && !isOwner && !deleteState
+                  ? ownerData?.color +
+                    (liveHandleInfo.paragraphIdx >= 0 &&
+                    liveHandleInfo.wordIdx >= 0
+                      ? "25"
+                      : "")
+                  : "",
               width: `${liveHandleInfo.width ?? ANCHOR_HANDLE_SIZE}px`,
               height: `${liveHandleInfo.height ?? ANCHOR_HANDLE_SIZE}px`,
             }}
