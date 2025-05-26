@@ -276,7 +276,7 @@ function AnchorHandle({
     },
     []
   );
-  const debouncedWritePos = useDebounce(writePos, 12.5); // TODO: tune out this parameter to make the sync movement feel nice
+  const debouncedWritePos = useDebounce(writePos, 50); // TODO: tune out this parameter to make the sync movement feel nice
 
   const deleteAnchor = useMutation(({ storage }) => {
     storage.get("docHandles").delete(id);

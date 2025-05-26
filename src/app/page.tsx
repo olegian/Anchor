@@ -31,7 +31,7 @@ export default async function Home() {
       <div className="mx-auto max-w-3xl px-4 py-8 w-full">
         <div className="w-full space-y-8">
           <div className="space-y-4">
-            <h1 className="text-4xl font-bold">gitgpt</h1>
+            <h1 className="text-4xl font-bold">Anchor</h1>
             <p className="text-lg">Please sign in to continue</p>
           </div>
           <form action={loginHandler} className="w-full space-y-4">
