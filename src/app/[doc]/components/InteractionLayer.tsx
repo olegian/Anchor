@@ -272,13 +272,6 @@ function AnchorHandle({
       height = ANCHOR_HANDLE_SIZE
     ) => {
       const handle = storage.get("docHandles").get(id);
-      // console.log(
-      //   ">>> PUSHING:",
-      //   targetX - window.innerWidth / 2,
-      //   targetY,
-      //   paragraphIdx,
-      //   wordIdx
-      // );
       handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
       handle?.set("y", targetY);
       handle?.set("paragraphIdx", paragraphIdx);
@@ -586,10 +579,7 @@ function AnchorHandle({
       : "Document"
   }`;
 
-  const ownerColor = owned && !isOwner ? ownerData?.color : "";
-
   const [openPopup, setOpenPopup] = useState<boolean>(false);
-
   const showPopup = openPopup && !dragging && !deleteState;
 
   const icon = deleteState ? (
@@ -637,8 +627,8 @@ function AnchorHandle({
                   : "text-zinc-700 border-zinc-200 bg-white"
               } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block`}
               style={{
-                borderColor: ownerColor,
-                backgroundColor: ownerColor,
+                borderColor: ownerData?.color,
+                backgroundColor: ownerData?.color,
               }}
             >
               {title}
@@ -666,7 +656,7 @@ function AnchorHandle({
             }`}
             style={{
               backgroundColor:
-                ownerColor +
+                ownerData?.color +
                 (liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
                   ? "25"
                   : ""),
