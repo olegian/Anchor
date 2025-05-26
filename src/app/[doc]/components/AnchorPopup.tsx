@@ -35,7 +35,11 @@ export default function AnchorPopup({
     (root) => root.docHandles.get(handleId)?.exchanges
   );
   const [contextMode, setContextMode] = useState<"word" | "doc" | "paragraph">(
-    "doc"
+    liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
+      ? "word"
+      : liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx === -1
+      ? "paragraph"
+      : "doc"
   );
 
   if (!exchanges) {
@@ -275,6 +279,7 @@ export default function AnchorPopup({
         </p>
       </div>
       <div className="p-2 border-t border-zinc-200 flex items-end justify-between">
+        {/* {JSON.stringify(liveHandleInfo)} */}
         <div className="space-y-0">
           <h5 className="font-medium font-sans text-sm">Context</h5>
           {/* TODO: chosen context */}
@@ -284,7 +289,9 @@ export default function AnchorPopup({
               className="text-xs ml-1 p-0 w-auto border-none form-select appearance-none! bg-none pr-4"
               value={contextMode}
               onChange={(event) => {
-                setContextMode(event.target.value); // this should be ok, i dont wanna fight typescript rn
+                setContextMode(
+                  event.target.value as "word" | "doc" | "paragraph"
+                );
               }}
             >
               {liveHandleInfo.wordIdx >= 0 &&
