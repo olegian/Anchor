@@ -17,11 +17,7 @@ import {
 } from "@heroicons/react/16/solid";
 import { useSession } from "next-auth/react";
 import { useDebounce } from "./useDebounce";
-import {
-  prompt,
-  createExchange,
-  getUser,
-} from "../../actions";
+import { prompt, createExchange, getUser } from "../../actions";
 import { LiveObject, User } from "@liveblocks/client";
 import { Editor } from "@tiptap/react";
 import { Transition } from "@headlessui/react";
@@ -583,16 +579,21 @@ function AnchorHandle({
 
   const owned = liveHandleInfo.owner != "";
   const isOwner = liveHandleInfo.owner === session.data?.user?.id;
-  const [ownerData, setOwnerData] = useState<{name: string, color: string} | null>(null);
+  const [ownerData, setOwnerData] = useState<{
+    name: string;
+    color: string;
+  } | null>(null);
   useEffect(() => {
     if (liveHandleInfo.owner) {
-      getUser(liveHandleInfo.owner).then((res) => {
-        setOwnerData(res)
-      }).catch((e) => {
-        setOwnerData(null)
-      })
+      getUser(liveHandleInfo.owner)
+        .then((res) => {
+          setOwnerData(res);
+        })
+        .catch((e) => {
+          setOwnerData(null);
+        });
     }
-  }, [liveHandleInfo])
+  }, [liveHandleInfo]);
 
   const title = `${
     owned && !isOwner
@@ -673,6 +674,8 @@ function AnchorHandle({
                 ? "text-white"
                 : deleteState
                 ? "text-white bg-red-500"
+                : liveHandleInfo.isPending
+                ? "from-sky-400 to-pink-400 via-violet-400 animate-pulse bg-gradient-to-r blur-[3px]"
                 : `text-zinc-700 ${
                     liveHandleInfo.paragraphIdx >= 0 &&
                     liveHandleInfo.wordIdx >= 0

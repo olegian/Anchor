@@ -42,9 +42,6 @@ export default function Editor({
 }) {
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
 
-  // Listen for pending insertions
-  const pendingInsertion = useStorage((root) => root.pendingInsertion);
-
   const editor = useEditor({
     extensions: [
       liveblocks,

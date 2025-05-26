@@ -172,7 +172,11 @@ export default function AnchorPopup({
     >
       <div className="p-2">
         <div className="flex items-center justify-start space-x-2">
-          <div className="overflow-hidden rounded-full shrink-0 size-7">
+          <div
+            className={`border ${
+              isLoading ? "border-transparent" : "border-zinc-300"
+            } overflow-hidden rounded-full shrink-0 size-7`}
+          >
             <div
               className={`${
                 isLoading

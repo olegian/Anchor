@@ -1,5 +1,6 @@
 "use client";
-import { shareDoc } from "@/app/actions";
+import { getUsers, shareDoc } from "@/app/actions";
+
 import {
   Button,
   CloseButton,
@@ -7,9 +8,13 @@ import {
   DialogBackdrop,
   DialogPanel,
   DialogTitle,
+  Combobox,
+  ComboboxInput,
+  ComboboxOption,
+  ComboboxOptions,
 } from "@headlessui/react";
 import { XMarkIcon } from "@heroicons/react/16/solid";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function ShareDialog({
   isOpen,
@@ -22,14 +27,36 @@ export default function ShareDialog({
   title: string;
   docId: string;
 }) {
-  const [user, setUser] = useState("");
+  type User = { fullname: string; name: string; color?: string };
+  const [user, setUser] = useState<User | null>(null);
+  const [usersList, setUsersList] = useState<User[]>([]);
+  const [query, setQuery] = useState("");
 
-  const handleShareDocument = (userId: string) => {
+  const handleShareDocument = () => {
     // TODO: share document handler
-    shareDoc(docId, userId);
+    if (!user) return;
+    console.log("Sharing document with user:", user);
+    shareDoc(docId, user.name);
+    setUser(null);
     close();
-    setUser("");
   };
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      const users = await getUsers();
+      if (users) {
+        setUsersList(users as User[]);
+      }
+    };
+    fetchUsers();
+  }, [isOpen, docId]);
+
+  const filteredPeople =
+    query.length === 0
+      ? usersList
+      : usersList.filter((user) => {
+          return user.fullname.toLowerCase().includes(query.toLowerCase());
+        });
 
   return (
     <Dialog
@@ -37,7 +64,11 @@ export default function ShareDialog({
       open={isOpen}
       as="div"
       className="relative z-40 focus:outline-none"
-      onClose={close}
+      onClose={() => {
+        setUser(null);
+        setQuery("");
+        close();
+      }}
     >
       <DialogBackdrop className="fixed inset-0 bg-black/30" />
       <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
@@ -55,18 +86,50 @@ export default function ShareDialog({
               </p>
             </div>
 
-            <input
-              type="text"
+            <Combobox
               value={user}
-              onChange={(e) => setUser(e.target.value)}
-              placeholder="User ID"
-              className="w-full border border-zinc-200 rounded-lg px-4 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-
+              onChange={(selectedUser) => {
+                setUser(selectedUser); // selectedUser is the user's object
+              }}
+              onClose={() => setQuery("")}
+              disabled={usersList.length === 0}
+            >
+              <ComboboxInput
+                disabled={usersList.length === 0}
+                aria-label="Select user to share document with"
+                className="z-50 w-full border disabled:opacity-50 disabled:pointer-events-none border-zinc-200 rounded-lg px-4 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Start typing to search for users..."
+                onChange={(e) => setQuery(e.target.value)}
+                displayValue={(u: User | null) => u?.fullname || ""}
+              />
+              <ComboboxOptions
+                anchor="bottom"
+                className="z-50 mt-2 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-60 overflow-y-auto w-full relative"
+                style={{ width: "384px" }} // Adjust width as needed
+              >
+                {filteredPeople.map((u) => (
+                  <ComboboxOption
+                    key={u.name}
+                    value={u}
+                    className="cursor-pointer relative border-t first:border-0 border-zinc-200 select-none px-4 py-2 text-sm font-medium text-black hover:bg-zinc-100"
+                  >
+                    {u.fullname}
+                  </ComboboxOption>
+                ))}
+                {filteredPeople.length === 0 && (
+                  <ComboboxOption
+                    value=""
+                    className="cursor-default select-none px-4 py-2 text-sm font-medium text-zinc-500"
+                  >
+                    No users found
+                  </ComboboxOption>
+                )}
+              </ComboboxOptions>
+            </Combobox>
             <Button
-              onClick={() => handleShareDocument(user)}
+              onClick={() => handleShareDocument()}
               type="button"
-              disabled={user.length < 1}
+              disabled={!user || !usersList.includes(user)}
               className="disabled:opacity-50 border border-zinc-200 inline-flex items-center gap-2 rounded-lg bg-white cursor-pointer px-2 py-1 text-sm font-medium text-black focus:not-data-focus:outline-none data-focus:outline data-hover:bg-zinc-100 data-open:bg-zinc-100"
             >
               Share document

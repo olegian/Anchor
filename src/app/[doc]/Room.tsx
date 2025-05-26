@@ -10,6 +10,7 @@ import {
 import { Session } from "next-auth";
 import { redirect } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
+import LoadingState from "../components/LoadingState";
 
 const LB_AUTH_ENDPOINT = "/api/auth";
 
@@ -67,14 +68,7 @@ export function Room({
           docTitle: "New Document",
         }}
       >
-        <ClientSideSuspense
-          fallback={
-            <div className="w-screen h-screen flex items-center justify-center gap-2">
-              <ArrowPathIcon className="size-5 animate-spin text-zinc-500" />
-              <p className="text-zinc-500">Loading...</p>
-            </div>
-          }
-        >
+        <ClientSideSuspense fallback={<LoadingState />}>
           {children}
         </ClientSideSuspense>
       </RoomProvider>

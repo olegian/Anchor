@@ -9,6 +9,7 @@ import { JsonObject, PlainLsonObject, RoomData } from "@liveblocks/node";
 import dynamic from "next/dynamic";
 import { getAccessibleRooms, getRoomStorage } from "../actions";
 import UserMenu from "./components/UserMenu";
+import LoadingState from "../components/LoadingState";
 const NewDocDialog = dynamic(() => import("./components/NewDocDialog"));
 
 export default function Home() {
@@ -47,7 +48,9 @@ export default function Home() {
     setNewDocDialog(false);
   }
 
-  return (
+  return isLoading ? (
+    <LoadingState />
+  ) : (
     <>
       <div className="py-32">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -115,13 +118,6 @@ function DocGridItem({ room }: { room: RoomData }) {
     <>
       <Link href={`/${room.id}`}>
         <div className="overflow-hidden hover:scale-95 transition-all cursor-pointer relative rounded-xl border border-zinc-200">
-          {/* {data ? (
-            snapshots > 0 ? (
-              <div className="absolute right-2 top-2 text-right text-xs font-semibold text-white bg-blue-600 rounded-lg px-2 py-1">
-                {snapshots} snapshot{snapshots > 1 ? "s" : ""}
-              </div>
-            ) : null
-          ) : null} */}
           <MiniTextRenderer isLoading={isLoading} data={data} />
           <div className="border-t border-zinc-200 p-4 space-y-1">
             {data ? (
@@ -129,7 +125,7 @@ function DocGridItem({ room }: { room: RoomData }) {
                 {(data?.data?.data?.docTitle as string) ?? "Untitled Document"}
               </h2>
             ) : (
-              <div className="h-4 bg-zinc-200 rounded-lg w-1/2 animate-pulse" />
+              <div className="h-4 bg-zinc-200 rounded w-1/2 animate-pulse" />
             )}
             <p className="text-xs text-zinc-500">
               {room.lastConnectionAt

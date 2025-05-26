@@ -43,6 +43,22 @@ async function saltAndHash(rawPassword: string) {
   return hashHex;
 }
 
+export async function getAllUsers(): Promise<
+  { fullname: string; color: string; name: string }[] | null
+> {
+  const snapshot = await getDocs(collection(db, "users"));
+  const users: { fullname: string; color: string; name: string }[] = [];
+  snapshot.docs.forEach((user) => {
+    const data = user.data();
+    users.push({
+      fullname: data.fullname,
+      color: data.color,
+      name: data.name,
+    });
+  });
+  return users.filter((user) => user.name); // Exclude admin user
+}
+
 export async function findUser(name: string, password: string) {
   // const snapshot = await getDocs(collection(db, `users`));
   // snapshot.docs.forEach((v) => {
@@ -128,7 +144,9 @@ export async function disallowUserAccessToRoomId(
   });
 }
 
-export async function getUserInfo(username: string): Promise<{name: string, color: string}>{
+export async function getUserInfo(
+  username: string
+): Promise<{ name: string; color: string }> {
   const userInfo = await getDoc(doc(db, "users", username));
   return {
     name: userInfo.get("fullname"),
