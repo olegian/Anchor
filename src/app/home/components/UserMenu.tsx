@@ -9,16 +9,19 @@ import { redirect } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function UserMenu({ user }: { user: User | null }) {
-  const [profile, setProfile] = useState<{name: string, color: string} | null>(null)
+  const [profile, setProfile] = useState<{
+    name: string;
+    color: string;
+  } | null>(null);
   useEffect(() => {
     if (user && user.id) {
       console.log("getting userID", user.id);
       getUser(user.id).then((res) => {
         console.log("found");
         setProfile(res);
-      })
+      });
     }
-  }, [user])
+  }, [user]);
   const [first = "", last = ""] = profile?.name.split(" ") || [];
 
   return (
@@ -29,7 +32,7 @@ export default function UserMenu({ user }: { user: User | null }) {
             style={{
               backgroundColor: profile?.color,
             }}
-            className="uppercase flex items-center justify-center size-10 rounded-full text-white font-semibold text-base"
+            className="uppercase cursor-pointer hover:opacity-75 transition-opacity flex items-center justify-center size-10 rounded-full text-white font-semibold text-base"
           >
             {first.charAt(0)}
             {last.charAt(0)}
@@ -46,8 +49,8 @@ export default function UserMenu({ user }: { user: User | null }) {
         <MenuItem>
           <button
             onClick={() => {
-              signOut();
-              redirect("/");
+              // signOut();
+              // redirect("/");
             }}
             className="group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium"
           >
@@ -61,7 +64,7 @@ export default function UserMenu({ user }: { user: User | null }) {
               signOut();
               redirect("/");
             }}
-            className="group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium"
+            className="group flex w-full items-center cursor-pointer gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium"
           >
             {/* <TrashIcon className="size-4 fill-red-500" /> */}
             Sign out

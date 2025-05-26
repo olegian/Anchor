@@ -3,8 +3,20 @@
 import { withProsemirrorDocument } from "@liveblocks/node-prosemirror";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { liveblocks } from "./liveblocks";
-import { LiveObject, LiveList, toPlainLson, LiveMap, PlainLsonObject } from "@liveblocks/client";
-import { allowAccessToRoomId, disallowAccessToRoomId, getAvailableRoomIds, getUserInfo } from "./firebase";
+import {
+  LiveObject,
+  LiveList,
+  toPlainLson,
+  LiveMap,
+  PlainLsonObject,
+} from "@liveblocks/client";
+import {
+  allowAccessToRoomId,
+  disallowAccessToRoomId,
+  getAllUsers,
+  getAvailableRoomIds,
+  getUserInfo,
+} from "./firebase";
 import { RoomData } from "@liveblocks/node";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
@@ -29,11 +41,31 @@ interface DocumentContext {
 // Parse ProseMirror JSON to extract text content and create context mapping
 function parseDocumentContent(docJson: any): {
   fullText: string;
-  paragraphs: Array<{ content: string; startPos: number; endPos: number; index: number }>;
-  words: Array<{ content: string; startPos: number; endPos: number; paragraphIndex: number }>;
+  paragraphs: Array<{
+    content: string;
+    startPos: number;
+    endPos: number;
+    index: number;
+  }>;
+  words: Array<{
+    content: string;
+    startPos: number;
+    endPos: number;
+    paragraphIndex: number;
+  }>;
 } {
-  const paragraphs: Array<{ content: string; startPos: number; endPos: number; index: number }> = [];
-  const words: Array<{ content: string; startPos: number; endPos: number; paragraphIndex: number }> = [];
+  const paragraphs: Array<{
+    content: string;
+    startPos: number;
+    endPos: number;
+    index: number;
+  }> = [];
+  const words: Array<{
+    content: string;
+    startPos: number;
+    endPos: number;
+    paragraphIndex: number;
+  }> = [];
   let fullText = "";
   let currentPos = 0;
   let paragraphIndex = 0;
@@ -42,28 +74,32 @@ function parseDocumentContent(docJson: any): {
     if (node.type === "paragraph") {
       const paragraphStart = currentPos;
       let paragraphText = "";
-      let paragraphWords: Array<{ content: string; startPos: number; endPos: number }> = [];
+      let paragraphWords: Array<{
+        content: string;
+        startPos: number;
+        endPos: number;
+      }> = [];
 
       if (node.content) {
         node.content.forEach((child: any) => {
           if (child.type === "text" && child.text) {
             const text = child.text;
             paragraphText += text;
-            
+
             // Split text into words while preserving positions
             const wordMatches = [...text.matchAll(/\S+/g)];
-            wordMatches.forEach(match => {
+            wordMatches.forEach((match) => {
               if (match.index !== undefined) {
                 const wordStart = currentPos + match.index;
                 const wordEnd = wordStart + match[0].length;
                 paragraphWords.push({
                   content: match[0],
                   startPos: wordStart,
-                  endPos: wordEnd
+                  endPos: wordEnd,
                 });
               }
             });
-            
+
             currentPos += text.length;
           }
         });
@@ -75,14 +111,14 @@ function parseDocumentContent(docJson: any): {
           content: paragraphText.trim(),
           startPos: paragraphStart,
           endPos: paragraphEnd,
-          index: paragraphIndex
+          index: paragraphIndex,
         });
 
         // Add paragraph words to global words array
-        paragraphWords.forEach(word => {
+        paragraphWords.forEach((word) => {
           words.push({
             ...word,
-            paragraphIndex: paragraphIndex
+            paragraphIndex: paragraphIndex,
           });
         });
 
@@ -109,48 +145,67 @@ function getDocumentContextByIndex(
   wordIdx: number,
   parsedDoc: ReturnType<typeof parseDocumentContent>
 ): DocumentContext {
-  console.log(`Getting context for paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`);
-  
+  console.log(
+    `Getting context for paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`
+  );
+
   // If both indices are -1, use document context
   if (paragraphIdx === -1 && wordIdx === -1) {
     console.log("Using document context (both indices are -1)");
     return {
       content: parsedDoc.fullText,
-      contextType: "document"
+      contextType: "document",
     };
   }
 
   // If paragraph index is valid but word index is -1, use paragraph context
-  if (paragraphIdx >= 0 && paragraphIdx < parsedDoc.paragraphs.length && wordIdx === -1) {
+  if (
+    paragraphIdx >= 0 &&
+    paragraphIdx < parsedDoc.paragraphs.length &&
+    wordIdx === -1
+  ) {
     const targetParagraph = parsedDoc.paragraphs[paragraphIdx];
-    console.log(`Using paragraph context: "${targetParagraph.content.substring(0, 50)}..."`);
-    
+    console.log(
+      `Using paragraph context: "${targetParagraph.content.substring(
+        0,
+        50
+      )}..."`
+    );
+
     return {
       content: targetParagraph.content,
-      contextType: "paragraph"
+      contextType: "paragraph",
     };
   }
 
   // If both indices are valid, use word context
-  if (paragraphIdx >= 0 && paragraphIdx < parsedDoc.paragraphs.length && wordIdx >= 0) {
-    const wordsInParagraph = parsedDoc.words.filter(w => w.paragraphIndex === paragraphIdx);
-    
+  if (
+    paragraphIdx >= 0 &&
+    paragraphIdx < parsedDoc.paragraphs.length &&
+    wordIdx >= 0
+  ) {
+    const wordsInParagraph = parsedDoc.words.filter(
+      (w) => w.paragraphIndex === paragraphIdx
+    );
+
     if (wordIdx < wordsInParagraph.length) {
       const targetWord = wordsInParagraph[wordIdx];
       console.log(`Using word context: "${targetWord.content}"`);
-      
+
       return {
         content: targetWord.content,
-        contextType: "word"
+        contextType: "word",
       };
     } else {
       // Word index out of bounds, fall back to paragraph
-      console.log(`Word index ${wordIdx} out of bounds, falling back to paragraph context`);
+      console.log(
+        `Word index ${wordIdx} out of bounds, falling back to paragraph context`
+      );
       const targetParagraph = parsedDoc.paragraphs[paragraphIdx];
-      
+
       return {
         content: targetParagraph.content,
-        contextType: "paragraph"
+        contextType: "paragraph",
       };
     }
   }
@@ -159,7 +214,7 @@ function getDocumentContextByIndex(
   console.log("Falling back to document context due to invalid indices");
   return {
     content: parsedDoc.fullText,
-    contextType: "document"
+    contextType: "document",
   };
 }
 
@@ -182,33 +237,46 @@ export async function prompt(
     const docContents = await getContents(docId);
     const docStorage = await liveblocks.getStorageDocument(docId, "json");
     const handleInfo = docStorage.docHandles[handleId];
-    
+
     if (!handleInfo) {
       throw new Error(`Handle ${handleId} not found`);
     }
 
-    const { prompt: userPrompt } = handleInfo.exchanges[handleInfo.exchanges.length - 1];
-    
+    const { prompt: userPrompt } =
+      handleInfo.exchanges[handleInfo.exchanges.length - 1];
+
     // Use the paragraph and word indices from handle info
     const paragraphIdx = handleInfo.paragraphIdx;
     const wordIdx = handleInfo.wordIdx;
-    
-    console.log(`Handle info - paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`);
-    
+
+    console.log(
+      `Handle info - paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`
+    );
+
     // Parse document content
     const docJson = JSON.parse(docContents);
     const parsedDoc = parseDocumentContent(docJson);
-    
-    console.log(`Parsed document with ${parsedDoc.paragraphs.length} paragraphs`);
+
+    console.log(
+      `Parsed document with ${parsedDoc.paragraphs.length} paragraphs`
+    );
     parsedDoc.paragraphs.forEach((p, i) => {
       console.log(`Paragraph ${i}: "${p.content.substring(0, 50)}..."`);
     });
-    
+
     // Get appropriate context using indices
-    const documentContext = getDocumentContextByIndex(paragraphIdx, wordIdx, parsedDoc);
-    
-    console.log(`Final context: ${documentContext.contextType} - "${documentContext.content.substring(0, 100)}..."`);
-    
+    const documentContext = getDocumentContextByIndex(
+      paragraphIdx,
+      wordIdx,
+      parsedDoc
+    );
+
+    console.log(
+      `Final context: ${
+        documentContext.contextType
+      } - "${documentContext.content.substring(0, 100)}..."`
+    );
+
     // Get or initialize conversation history for this handle
     if (!conversationHistory.has(handleId)) {
       conversationHistory.set(handleId, []);
@@ -246,8 +314,9 @@ export async function prompt(
       model: "gemini-1.5-flash",
       systemInstruction: {
         role: "system",
-        parts: [{
-          text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, or full document) and tailor your response accordingly. 
+        parts: [
+          {
+            text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, or full document) and tailor your response accordingly. 
 
 When focusing on a paragraph, discuss only that specific paragraph and its content. When focusing on a word, discuss that word in the context of its paragraph. When given the full document, you can discuss the entire document.
 
@@ -269,9 +338,10 @@ the user is also able to request for specific sentence lengths or for more infor
 
 If the context is the document, analyze the document fully, being sure to consider the perspective of the user and what goals they want, while thinking
 through your thought process.
-`
-        }]
-      }
+`,
+          },
+        ],
+      },
     });
 
     // Create chat session with history
@@ -301,7 +371,7 @@ through your thought process.
     await liveblocks.mutateStorage(docId, ({ root }) => {
       const handleInfo = root.get("docHandles").get(handleId);
       const exchanges = handleInfo?.get("exchanges");
-      
+
       if (exchanges && exchanges.length > 0) {
         exchanges.get(exchanges.length - 1)?.set("response", text);
       }
@@ -364,7 +434,7 @@ export async function createExchange(
 export async function cleanupOldConversations(): Promise<void> {
   const maxAge = 24 * 60 * 60 * 1000; // 24 hours
   const cutoff = Date.now() - maxAge;
-  
+
   for (const [handleId, history] of conversationHistory.entries()) {
     if (history.length === 0) {
       conversationHistory.delete(handleId);
@@ -429,10 +499,7 @@ export async function createDoc(
 }
 
 // gives access to userId to access docId
-export async function shareDoc(
-  docId: string,
-  userId: string,
-) {
+export async function shareDoc(docId: string, userId: string) {
   // technically, this throws an error is the userid doesnt exist, but
   // like screw handling it rn
   await allowAccessToRoomId(userId, docId);
@@ -446,7 +513,7 @@ export async function deleteDoc(docId: string) {
   // for (const userId in room.usersAccesses) {
 
   // Or i could just also store a reverse map of room -> [allowed userid]
-  
+
   await disallowAccessToRoomId(docId);
   await liveblocks.deleteRoom(docId);
 }
@@ -499,10 +566,14 @@ export async function getRoomStorage(roomId: string) {
 }
 
 export async function getUser(username: string) {
-  return await getUserInfo(username)
+  return await getUserInfo(username);
 }
 
 export async function getUserColor(username: string) {
   const res = await getUserInfo(username);
   return res.color;
+}
+
+export async function getUsers() {
+  return await getAllUsers();
 }
