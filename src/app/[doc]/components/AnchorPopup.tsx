@@ -289,10 +289,17 @@ export default function AnchorPopup({
             >
               {liveHandleInfo.wordIdx >= 0 &&
               liveHandleInfo.paragraphIdx >= 0 ? (
-                <option value={"word"} selected>Word</option>  // TODO: the correct context should be autoselected, but this doesnt work for some reason
+                <option value={"word"} selected>
+                  Word
+                </option> // TODO: the correct context should be autoselected, but this doesnt work for some reason
               ) : null}
               {liveHandleInfo.paragraphIdx >= 0 ? (
-                <option value={"paragraph"} selected={liveHandleInfo.wordIdx == -1}>Paragraph</option>
+                <option
+                  value={"paragraph"}
+                  selected={liveHandleInfo.wordIdx == -1}
+                >
+                  Paragraph
+                </option>
               ) : null}
               <option value={"doc"}>Document</option>
             </select>
