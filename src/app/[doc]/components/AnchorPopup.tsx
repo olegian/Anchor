@@ -229,7 +229,7 @@ export default function AnchorPopup({
 
             <button
               title={
-                exchanges.at(viewedExchange + 1)?.response
+                viewedExchange <= exchanges.length - 2
                   ? "Next exchange"
                   : "Create new exchange"
               }
@@ -240,7 +240,7 @@ export default function AnchorPopup({
               }}
               className="disabled:opacity-25 size-5 flex items-center justify-center shrink-0 disabled:pointer-events-none text-zinc-600 hover:text-zinc-800 cursor-pointer"
             >
-              {exchanges.at(viewedExchange)?.response ? (
+              {viewedExchange <= exchanges.length - 2 ? (
                 <ChevronRightIcon className="inline size-5 shrink-0" />
               ) : (
                 <PlusIcon className="inline size-4 shrink-0" />
