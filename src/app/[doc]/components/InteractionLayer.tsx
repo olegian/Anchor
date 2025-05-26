@@ -227,19 +227,6 @@ function AnchorHandle({
     y: liveHandleInfo.y,
   });
 
-  // syncronize to live position when changed
-  // useEffect(() => {
-  //   if (!dragging) {
-  //     // we are receiving position changes from someone else's anchor movements
-  //     // so reflect them on our end by updating the local position
-  //     console.log("<<< PULLING:", liveHandleInfo.x, liveHandleInfo.y);
-  //     setLocalCoords({
-  //       x: liveHandleInfo.x + window.innerWidth / 2,
-  //       y: liveHandleInfo.y,
-  //     });
-  //   }
-  // }, [liveHandleInfo.x, liveHandleInfo.y]);
-
   // Interpolate position changes to make it smooth remotely
   useEffect(() => {
     if (dragging) return; // Only interpolate when NOT dragging locally
@@ -272,13 +259,6 @@ function AnchorHandle({
     };
   }, [liveHandleInfo.x, liveHandleInfo.y, dragging]);
 
-  // useEffect(() => {
-  //   console.log(
-  //     "local coords converted",
-  //     localCoords.x - window.innerWidth / 2,
-  //     localCoords.y
-  //   );
-  // }, [localCoords.x, localCoords.y]);
 
   // update live position, debounce to not send 20 billion requests
   const writePos = useMutation(

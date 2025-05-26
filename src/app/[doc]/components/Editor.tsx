@@ -43,7 +43,6 @@ export default function Editor({
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
 
   // Listen for pending insertions
-  const pendingInsertion = useStorage((root) => root.pendingInsertion);
 
   const editor = useEditor({
     extensions: [
@@ -62,58 +61,6 @@ export default function Editor({
     editable: !draggingAnchor,
   });
 
-  // Handle pending insertions
-  // useEffect(() => {
-  //   if (editor && pendingInsertion && loaded) {
-  //     const { content, paragraphIdx, wordIdx } = pendingInsertion;
-
-  //     // Determine insertion position
-  //     //let insertPos: number;
-  //     let insertPos: number = editor.state.doc.content.size;
-  //     console.log("paragraph index =  " + paragraphIdx);
-
-  //     if (paragraphIdx === -1 && wordIdx === -1) {
-  //       // Insert at end of document
-  //       insertPos = editor.state.doc.content.size;
-  //     } else if (paragraphIdx >= 0) {
-  //       // Find the position after the specified paragraph
-  //       const doc = editor.state.doc;
-  //       let currentPos = 0;
-  //       let paragraphCount = 0;
-
-  //       doc.descendants((node, pos) => {
-  //         if (node.type.name === "paragraph") {
-  //           if (paragraphCount === paragraphIdx) {
-  //             insertPos = pos + node.nodeSize;
-  //             return false; // Stop traversing
-  //           }
-  //           paragraphCount++;
-  //         }
-  //         return true;
-  //       });
-  //       console.log("paragraph count = " + paragraphCount);
-
-  //       // If paragraph not found, insert at end
-  //       if (insertPos === undefined) {
-  //         insertPos = doc.content.size;
-  //       }
-  //     } else {
-  //       // Fallback to end of document
-  //       insertPos = editor.state.doc.content.size;
-  //     }
-
-  //     // Insert the content as a new paragraph
-  //     editor
-  //       .chain()
-  //       .focus()
-  //       .setTextSelection(insertPos)
-  //       .insertContent(`\n${content}\n`)
-  //       .run();
-
-  //     // Clear the pending insertion (you might want to do this through a mutation)
-  //     // This is a simplified approach - ideally you'd clear it through Liveblocks
-  //   }
-  // }, [editor, pendingInsertion, loaded]);
 
   useEffect(() => {
     if (editor) {

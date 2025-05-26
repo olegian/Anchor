@@ -167,6 +167,7 @@ function getDocumentContextByIndex(
 export async function prompt(
   docId: string,
   handleId: string,
+  contextMode: "doc" | "paragraph" | "word",
   xPosition?: number,
   yPosition?: number,
   env?: string
