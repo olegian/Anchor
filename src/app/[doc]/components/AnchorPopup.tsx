@@ -193,6 +193,9 @@ export default function AnchorPopup({
       className="anchor-popup top-14 left-0 -translate-x-1/2 absolute w-xs z-50 bg-white border border-zinc-200 rounded-xl shadow-xl"
       ref={popupRef}
     >
+      <div className="text-center border-b border-zinc-200 p-2 text-xs font-medium">
+        {title}
+      </div>
       <div className="p-2">
         <div className="flex items-center justify-start space-x-2">
           <div
