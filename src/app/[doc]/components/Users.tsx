@@ -1,4 +1,5 @@
 import { getUser } from "@/app/actions";
+import { calculateBlackOrWhiteContrast } from "@/app/lib/utils";
 import { NEXT_CACHE_TAG_MAX_LENGTH } from "next/dist/lib/constants";
 import { useEffect, useState } from "react";
 
@@ -30,15 +31,20 @@ export function Users({
 }
 
 export function User({ id, hover }: { id: string; hover?: boolean }) {
-  const [profile, setProfile] = useState<{name: string, color: string} | null>(null)
+  const [profile, setProfile] = useState<{
+    name: string;
+    color: string;
+  } | null>(null);
   useEffect(() => {
     if (id) {
       getUser(id).then((res) => {
         setProfile(res);
-      })
+      });
     }
-  }, [id])
-  const [first = "", last = ""] = profile?.name.split(" ") || [];
+  }, [id]);
+  const [first = "", last = ""] = profile?.name.includes(" ")
+    ? profile.name.split(" ")
+    : [profile?.name || "", ""];
 
   return (
     <div className="group relative w-6">
@@ -46,10 +52,11 @@ export function User({ id, hover }: { id: string; hover?: boolean }) {
         className="uppercase flex items-center justify-center size-6 rounded-full bg-zinc-800  text-white font-semibold text-xs"
         style={{
           backgroundColor: profile?.color,
+          color: calculateBlackOrWhiteContrast(profile?.color ?? "#000000"),
         }}
       >
         {first.charAt(0)}
-        {last.charAt(0)}
+        {last.charAt(0) ? last.charAt(0) : ""}
       </div>
       {hover ? (
         <div

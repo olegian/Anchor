@@ -21,7 +21,9 @@ export async function POST(request: Request) {
     },
   });
 
-  const availableRooms: string[] = await getAvailableRoomIds(authRequest.userId);
+  const availableRooms: string[] = await getAvailableRoomIds(
+    authRequest.userId
+  );
   if (availableRooms.includes(authRequest.roomId)) {
     session.allow(`${authRequest.roomId}`, session.FULL_ACCESS); // wild card access to all rooms
   } else {

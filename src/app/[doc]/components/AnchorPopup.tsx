@@ -70,9 +70,9 @@ export default function AnchorPopup({
 
   useEffect(() => {
     if (!isOpen || !liveHandleInfo || userHasSetContextMode) return;
-  
+
     const { wordIdx, paragraphIdx } = liveHandleInfo;
-  
+
     if (wordIdx >= 0 && paragraphIdx >= 0) {
       setContextMode("word");
     } else if (paragraphIdx >= 0) {
@@ -203,9 +203,9 @@ export default function AnchorPopup({
             <div
               className={`${
                 isLoading
-                  ? "animate-spin from-sky-400 to-pink-400 via-violet-400 bg-radial-[at_25%_75%]"
+                  ? "from-sky-400 to-pink-400 via-violet-400 bg-radial-[at_25%_75%]"
                   : "bg-zinc-300"
-              }  size-7 rounded-full shrink-0 blur-xs transition-all`}
+              } animate-spin size-7 rounded-full shrink-0 blur-xs transition-all`}
             />
           </div>
           <input
@@ -264,7 +264,7 @@ export default function AnchorPopup({
               }}
               className="disabled:opacity-25 size-5 flex items-center justify-center shrink-0 disabled:pointer-events-none text-zinc-600 hover:text-zinc-800 cursor-pointer"
             >
-              {viewedExchange <= exchanges.length - 2 ? (
+              {viewedExchange < exchanges.length - 2 ? (
                 <ChevronRightIcon className="inline size-5 shrink-0" />
               ) : (
                 <PlusIcon className="inline size-4 shrink-0" />
@@ -305,11 +305,14 @@ export default function AnchorPopup({
               className="text-xs ml-1 p-0 w-auto border-none form-select appearance-none! bg-none pr-4"
               value={contextMode}
               onChange={(event) => {
-                setContextMode(event.target.value as "word" | "doc" | "paragraph");
+                setContextMode(
+                  event.target.value as "word" | "doc" | "paragraph"
+                );
                 setUserHasSetContextMode(true);
               }}
             >
-              {liveHandleInfo && liveHandleInfo.wordIdx >= 0 &&
+              {liveHandleInfo &&
+              liveHandleInfo.wordIdx >= 0 &&
               liveHandleInfo.paragraphIdx >= 0 ? (
                 <option value="word">Word</option>
               ) : null}
