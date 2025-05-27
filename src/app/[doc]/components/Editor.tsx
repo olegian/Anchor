@@ -59,7 +59,6 @@ export default function Editor({
     editable: !draggingAnchor,
   });
 
-
   useEffect(() => {
     if (editor) {
       if (editor.isEmpty || editor.getText().length < 500) {
