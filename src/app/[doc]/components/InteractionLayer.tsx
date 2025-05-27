@@ -497,9 +497,13 @@ function AnchorHandle({
           }, 500);
         }
       } else {
-        setDragging(false);
-        setDraggingAnchor(false);
+        // gives time for anchor to settle after local movment 
+        // before we start syncing from live position
+        setTimeout(() => {
+          setDragging(false);
+        }, 100);
 
+        setDraggingAnchor(false);
         setAnchorOwner(""); // release ownership, allow others to grab it
         if (animationFrame) cancelAnimationFrame(animationFrame);
       }
