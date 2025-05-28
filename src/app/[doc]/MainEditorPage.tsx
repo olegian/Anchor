@@ -54,7 +54,6 @@ function EditingInterface({ docId }: { docId: string }) {
         new LiveObject({
           isPending: false,
           exchanges: new LiveList([
-            // initialize first prompt structure
             new LiveObject({ prompt: "", response: "" }),
           ]),
           owner: "",
@@ -71,6 +70,9 @@ function EditingInterface({ docId }: { docId: string }) {
     },
     []
   );
+
+  // Add state to store editor instance
+  const [editorInstance, setEditorInstance] = useState<any>(null);
 
   // Ref for the white border element
   const borderRef = useRef<HTMLDivElement>(null);
@@ -94,7 +96,6 @@ function EditingInterface({ docId }: { docId: string }) {
   useEffect(() => {
     function handleClick(event: MouseEvent) {
       if (draggingAnchor) {
-        // If dragging an anchor, ignore clicks outside the border
         return;
       }
 
@@ -102,7 +103,6 @@ function EditingInterface({ docId }: { docId: string }) {
         document.getElementById("delete-doc-dialog") ||
         document.getElementById("share-doc-dialog")
       ) {
-        // If the delete dialog is open, ignore clicks outside the border
         return;
       }
 
@@ -121,7 +121,6 @@ function EditingInterface({ docId }: { docId: string }) {
         const potentialX = mousePos.x - window.innerWidth / 2;
         const potentialY = mousePos.y + window.scrollY;
 
-        // Prevent creation if a handle already exists nearby
         const existsNearby = handles
           ? Array.from(handles.values()).some(
               (handle) =>
@@ -165,7 +164,11 @@ function EditingInterface({ docId }: { docId: string }) {
                 ) : (
                   <div className="relative p-2 py-1 rounded-lg bg-zinc-200 animate-pulse h-5 w-56" />
                 )}
-                <DocMenu showText={true} />
+                <DocMenu 
+                  showText={true} 
+                  editor={editorInstance}
+                  title={title || "Untitled Document"}
+                />
               </div>
             </div>
             <Editor
@@ -179,6 +182,7 @@ function EditingInterface({ docId }: { docId: string }) {
               draggingAnchor={draggingAnchor}
               setDraggingAnchor={setDraggingAnchor}
               docId={docId}
+              onEditorReady={setEditorInstance} // Add this prop
             />
           </div>
         </div>

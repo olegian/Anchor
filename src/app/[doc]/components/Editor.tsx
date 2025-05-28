@@ -24,6 +24,7 @@ export default function Editor({
   draggingAnchor,
   setDraggingAnchor,
   docId,
+  onEditorReady, // Add this new prop
 }: {
   title: string;
   setTitle: (title: string) => void;
@@ -41,6 +42,7 @@ export default function Editor({
   draggingAnchor: boolean;
   setDraggingAnchor: (dragging: boolean) => void;
   docId: string;
+  onEditorReady?: (editor: any) => void; // Add this new prop type
 }) {
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
 
@@ -49,20 +51,16 @@ export default function Editor({
       const anchorId = attachment.get("anchorId");
       const span = document.getElementById(spanId) as HTMLSpanElement;
       if (!span) {
-        // the span has been deleted, so delete the anchor
         const anchor = storage.get("docHandles").get(anchorId);
         const attachedSpanId = anchor?.get("attachedSpan");
         if (attachedSpanId) {
           storage.get("attachPoints").delete(attachedSpanId);
         }
-
         storage.get("docHandles").delete(anchorId);
         return;
       }
 
-      // update the anchor position, if necessary
       const rect: DOMRect = span.getBoundingClientRect();
-
       const x = rect.left + (rect.width / 2);
       const y = rect.top - 4 + window.scrollY;
 
@@ -89,11 +87,17 @@ export default function Editor({
     ],
     immediatelyRender: false,
     editable: !draggingAnchor,
-
     onUpdate(props) {
       debouncedUpdateAttachedAnchors();
     },
   });
+
+  // Pass editor instance to parent when ready
+  useEffect(() => {
+    if (editor && onEditorReady) {
+      onEditorReady(editor);
+    }
+  }, [editor, onEditorReady]);
 
   useEffect(() => {
     if (editor) {
@@ -103,6 +107,7 @@ export default function Editor({
     }
   }, [editor]);
 
+  // Rest of your component remains the same...
   return (
     <>
       <DragToDeleteBounds draggingAnchor={draggingAnchor} />
@@ -137,7 +142,6 @@ export default function Editor({
     </>
   );
 }
-
 function DragToDeleteBounds({ draggingAnchor }: { draggingAnchor: boolean }) {
   return (
     <>
