@@ -33,7 +33,10 @@ export default function DeleteDocDialog({
             className="w-full space-y-4 max-w-sm rounded-xl bg-white p-8 backdrop-blur-2xl duration-300 ease-out data-closed:transform-[scale(95%)] data-closed:opacity-0"
           >
             <div className="space-y-2">
-              <DialogTitle as="h3" className="text-lg font-semibold text-black">
+              <DialogTitle
+                as="h3"
+                className="text-xl font-semibold text-black font-heading tracking-tight"
+              >
                 Delete document?
               </DialogTitle>
               <p className="text-sm/6 text-zinc-600">

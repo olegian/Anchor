@@ -58,12 +58,12 @@ export default function Home() {
           <div className="flex items-start justify-between">
             <div className="space-y-2">
               <div className="space-y-2">
-                <AnchorLogo className="w-24 h-8 fill-zinc-800" />
-                <h1 className="text-4xl font-semibold tracking-tighter">
+                <AnchorLogo className="w-16 h-6 fill-zinc-800" />
+                <h1 className="text-4xl font-heading tracking-tight font-semibold">
                   Documents
                 </h1>
               </div>
-              <p className="text-lg font-medium text-zinc-700">
+              <p className="text-lg font-semibold text-zinc-700 tracking-tight">
                 {isLoading
                   ? "Figuring out who you are..."
                   : `    Welcome back, ${session?.data?.user?.name}!`}

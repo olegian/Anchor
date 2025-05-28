@@ -57,16 +57,16 @@ function LoginForm({
   return (
     <>
       <div className="space-y-2">
-        <AnchorLogo className="w-24 h-8 fill-zinc-800" />
-        <h1 className="text-3xl tracking-tighter font-semibold">
-          Welcome back!
+        <AnchorLogo className="w-16 h-6 fill-zinc-800" />
+        <h1 className="text-4xl font-heading tracking-tight font-semibold">
+          Sign in
         </h1>
       </div>
       <hr className="border-zinc-200" />
       <form action={loginHandler} className="w-full space-y-4">
         <div className="space-y-2">
           <label
-            className="block text-zinc-700 text-sm font-semibold tracking-tight"
+            className="block text-zinc-700 text-base font-semibold tracking-tight font-heading"
             htmlFor="username"
           >
             Username
@@ -81,7 +81,7 @@ function LoginForm({
         </div>
         <div className="space-y-2">
           <label
-            className="block text-zinc-700 text-sm font-semibold tracking-tight"
+            className="block text-zinc-700 text-base font-semibold tracking-tight font-heading"
             htmlFor="password"
           >
             Password
@@ -114,8 +114,8 @@ function SignUpForm({
   return (
     <>
       <div className="space-y-2">
-        <AnchorLogo className="w-24 h-8 fill-zinc-800" />
-        <h1 className="text-3xl tracking-tighter font-semibold">
+        <AnchorLogo className="w-16 h-6 fill-zinc-800" />
+        <h1 className="text-4xl font-heading tracking-tight font-semibold">
           Create an account
         </h1>
       </div>
@@ -123,7 +123,7 @@ function SignUpForm({
       <form action={signUpHandler} className="w-full space-y-4">
         <div className="space-y-2">
           <label
-            className="block text-zinc-700 text-sm font-semibold tracking-tight"
+            className="block text-zinc-700 text-base font-semibold tracking-tight font-heading"
             htmlFor="username"
           >
             Username
@@ -138,7 +138,7 @@ function SignUpForm({
         </div>
         <div className="space-y-2">
           <label
-            className="block text-zinc-700 text-sm font-semibold tracking-tight"
+            className="block text-zinc-700 text-base font-semibold tracking-tight font-heading"
             htmlFor="name"
           >
             Name
@@ -153,7 +153,7 @@ function SignUpForm({
         </div>
         <div className="space-y-2">
           <label
-            className="block text-zinc-700 text-sm font-semibold tracking-tight"
+            className="block text-zinc-700 text-base font-semibold tracking-tight font-heading"
             htmlFor="password"
           >
             Password
@@ -170,7 +170,7 @@ function SignUpForm({
         <div className="space-y-2">
           <label
             htmlFor="color"
-            className="block text-zinc-700 text-sm font-semibold tracking-tight"
+            className="block text-zinc-700 text-base font-semibold tracking-tight font-heading"
           >
             Choose a color
           </label>

@@ -146,7 +146,7 @@ export default function AnchorPopup({
     if (isLoading) return;
 
     setIsLoading(true);
-    
+
     // Set pending state to show loading indicators
     if (!setPending(true)) {
       setIsLoading(false);
@@ -156,7 +156,7 @@ export default function AnchorPopup({
     try {
       // Pass the current viewedExchange index to regenerate the specific exchange
       await regenerateResponse(docId, handleId, contextMode, viewedExchange);
-      
+
       // Don't move to next exchange or create new one - just stay on current exchange
       // The regenerated response will replace the current one in the same exchange
     } catch (error) {
@@ -219,7 +219,7 @@ export default function AnchorPopup({
       className="anchor-popup top-14 left-0 -translate-x-1/2 absolute w-xs z-50 bg-white border border-zinc-200 rounded-xl shadow-xl"
       ref={popupRef}
     >
-      <div className="text-center border-b border-zinc-200 p-2 text-xs font-medium">
+      <div className="text-center font-heading tracking-tight border-b border-zinc-200 p-2 text-sm line-clamp-1 font-medium">
         {liveHandleInfo?.title || `AI Conversation • ${title}`}
       </div>
       <div className="p-2">
@@ -304,7 +304,7 @@ export default function AnchorPopup({
       </div>
       <div className="p-2 border-t border-zinc-200 space-y-2">
         <div className="flex items-center justify-between">
-          <h4 className="font-medium text-sm">
+          <h4 className="font-medium text-sm font-heading tracking-tight">
             Response {exchanges.length > 1 ? viewedExchange + 1 : ""}
           </h4>
 
@@ -363,7 +363,9 @@ export default function AnchorPopup({
       <div className="p-2 border-t border-zinc-200 flex items-end justify-between">
         {/* {JSON.stringify(liveHandleInfo)} */}
         <div className="space-y-0">
-          <h5 className="font-medium font-sans text-sm">Context</h5>
+          <h5 className="font-medium text-sm font-heading tracking-tight">
+            Context
+          </h5>
           {/* TODO: chosen context */}
           <div className="relative text-xs text-zinc-700 border inline-block border-zinc-200 px-1 py-0.5 rounded font-medium">
             Use{}
