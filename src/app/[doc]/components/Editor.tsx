@@ -5,15 +5,15 @@ import { useEffect, useState } from "react";
 import FloatingToolbar from "./floating/FloatingToolbar";
 import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
 import Title from "./Title";
-import SkeletonEditor from "./SkeletonEditor";
-import { EditorMirrorLayer, AnchorLayer } from "./InteractionLayer";
+import SkeletonEditor from "./other/SkeletonEditor";
+import { AnchorLayer } from "./interaction/AnchorLayer";
 import { HandlesMap } from "../../../../liveblocks.config";
 import { useMutation, useStorage } from "@liveblocks/react"; // Make sure this is imported
 import Placeholder from "@tiptap/extension-placeholder";
 import TextStyle from "@tiptap/extension-text-style";
 import { NodeRange } from "@tiptap/pm/model";
 import { SpansMark } from "./SpansMark";
-import { useDebounce } from "./useDebounce";
+import { useDebounce } from "./interaction/useDebounce";
 
 export default function Editor({
   title,
@@ -113,7 +113,6 @@ export default function Editor({
   return (
     <>
       <DragToDeleteBounds draggingAnchor={draggingAnchor} />
-      {editor && loaded ? <EditorMirrorLayer html={editor.getHTML()} /> : null}
       <div className="relative">
         <SkeletonEditor loaded={loaded} />
         <article
