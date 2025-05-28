@@ -1,15 +1,17 @@
 "use client";
+import { useMutation } from "@liveblocks/react"; // Make sure this is imported
+import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
+import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useState } from "react";
-import FloatingToolbar from "./floating/FloatingToolbar";
-import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
-import Title from "./Title";
-import SkeletonEditor from "./SkeletonEditor";
-import { EditorMirrorLayer, AnchorLayer } from "./InteractionLayer";
+import { useEffect } from "react";
 import { HandlesMap } from "../../../../liveblocks.config";
-import { useStorage } from "@liveblocks/react"; // Make sure this is imported
-import Placeholder from "@tiptap/extension-placeholder";
+import Title from "./Title";
+import FloatingToolbar from "./floating/FloatingToolbar";
+import { AnchorLayer } from "./interaction/AnchorLayer";
+import { SpansMark } from "./interaction/SpansMark";
+import { useDebounce } from "./interaction/useDebounce";
+import SkeletonEditor from "./other/SkeletonEditor";
 
 export default function Editor({
   title,
@@ -42,6 +44,35 @@ export default function Editor({
 }) {
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
 
+  const updateAttachedAnchors = useMutation(({ storage }) => {
+    storage.get("attachPoints").forEach((attachment, spanId) => {
+      const anchorId = attachment.get("anchorId");
+      const span = document.getElementById(spanId) as HTMLSpanElement;
+      if (!span) {
+        // the span has been deleted, so delete the anchor
+        const anchor = storage.get("docHandles").get(anchorId);
+        const attachedSpanId = anchor?.get("attachedSpan");
+        if (attachedSpanId) {
+          storage.get("attachPoints").delete(attachedSpanId);
+        }
+
+        storage.get("docHandles").delete(anchorId);
+        return;
+      }
+
+      // update the anchor position, if necessary
+      const rect: DOMRect = span.getBoundingClientRect();
+
+      const x = rect.left + (rect.width / 2);
+      const y = rect.top - 4;
+
+      const anchor = storage.get("docHandles").get(anchorId);
+      anchor?.set("x", x - window.innerWidth / 2);
+      anchor?.set("y", y);
+    });
+  }, []);
+  const debouncedUpdateAttachedAnchors = useDebounce(updateAttachedAnchors, 5);
+
   const editor = useEditor({
     extensions: [
       liveblocks,
@@ -54,9 +85,14 @@ export default function Editor({
       Placeholder.configure({
         placeholder: "Type your text here...",
       }),
+      SpansMark,
     ],
     immediatelyRender: false,
     editable: !draggingAnchor,
+
+    onUpdate(props) {
+      debouncedUpdateAttachedAnchors();
+    },
   });
 
   useEffect(() => {
@@ -70,10 +106,10 @@ export default function Editor({
   return (
     <>
       <DragToDeleteBounds draggingAnchor={draggingAnchor} />
-      {editor && loaded ? <EditorMirrorLayer html={editor.getHTML()} /> : null}
       <div className="relative">
         <SkeletonEditor loaded={loaded} />
         <article
+          id="main-editor"
           className={`${
             draggingAnchor
               ? "pointer-events-none select-none"

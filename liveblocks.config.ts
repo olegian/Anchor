@@ -10,17 +10,28 @@ export type Conversation = LiveObject<{
   handleName: string; // optional name for the handle
   wordIdx: number; // -1 if not handle is not hooked onto any word
   paragraphIdx: number; // same as ^
-  x: number; // on screen x-position
+  x: number; // center-origin x-position
   y: number; // on screen y-position
   width: number; // width of the handle
   height: number; // height of the handle
+  attachedSpan: string; // id of attached span, "" if the anchor is not attached
 }>;
+
+export type Attachment = LiveObject<{
+  anchorId: string;
+  // TODO: -oleg-
+  // ideally, these values are synced to the associated AnchorInfo[anchorId] (x, y)
+  // and I think we can actually do that, but I am leaving this as a reminder for myself 
+//   x: number; // center-origin x-position
+//   y: number;
+}>;
+
+export type AttachedMap = LiveMap<string, Attachment>;
 
 export type Handles = LiveMap<
   string, // handleId
-  Conversation
+  AnchorInfo
 >;
-
 
 export type HandlesMap = ReadonlyMap<
   string,
@@ -36,6 +47,7 @@ export type HandlesMap = ReadonlyMap<
     readonly y: number;
     readonly width: number;
     readonly height: number;
+    readonly attachedSpan: string; // id of attached span, "" if the anchor is not attached
   }
 > | null;
 
@@ -57,6 +69,7 @@ declare global {
       // I added this but now I'm thinking we don't want it
       //paragraphs: LiveList<LiveObject<{ type: "paragraph", content: LiveList<LiveObject<{ type: "text", text: string }>> }>>;
       docHandles: Handles; // snapshotId -> snapshot information
+      attachPoints: AttachedMap;
       docTitle: string;
     };
 

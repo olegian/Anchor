@@ -1,153 +1,24 @@
-import { useEffect, useRef, useState } from "react";
-import { HandlesMap } from "../../../../liveblocks.config";
-import { useHotkeys } from "react-hotkeys-hook";
-import {
-  useMutation,
-  useMyPresence,
-  useOthers,
-  useStorage,
-} from "@liveblocks/react";
+import { Transition } from "@headlessui/react";
+import AnchorPopup from "./AnchorPopup";
+import { ANCHOR_HANDLE_SIZE } from "./constants";
 import {
   ArrowPathIcon,
   ArrowsPointingOutIcon,
-  ChevronRightIcon,
   MinusIcon,
   PlusIcon,
   XMarkIcon,
 } from "@heroicons/react/16/solid";
-import { useSession } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
+import { getUser } from "@/app/actions";
+import { SpansMark } from "./SpansMark";
+import { useMutation, useStorage } from "@liveblocks/react";
 import { useDebounce } from "./useDebounce";
-import { prompt, createExchange, getUser } from "../../actions";
 import { LiveObject, User } from "@liveblocks/client";
+import { useSession } from "next-auth/react";
 import { Editor } from "@tiptap/react";
-import { Transition } from "@headlessui/react";
-import AnchorPopup from "./AnchorPopup";
 import { calculateBlackOrWhiteContrast } from "@/app/lib/utils";
 
-export function EditorMirrorLayer({ html }: { html: string }) {
-  function wrapEveryWordInSpansPreserveHTML(html: string) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-
-    function processNode(node: Node) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const text = node.textContent || "";
-        const tokens = text.split(/(\s+)/);
-        const fragment = document.createDocumentFragment();
-
-        tokens.forEach((token) => {
-          if (/\s+/.test(token)) {
-            fragment.appendChild(document.createTextNode(token));
-          } else {
-            const span = document.createElement("span");
-            span.textContent = token;
-            // Uncomment to see the spans visually
-            // span.className = "text-black/25";
-            // span.style.backgroundColor = "rgba(255,0,0,0.5)"; // light red background for visibility
-            span.className = "text-black/0";
-            span.style.whiteSpace = "pre-wrap";
-            span.style.overflowWrap = "break-word";
-            fragment.appendChild(span);
-          }
-        });
-
-        if (node.parentNode) {
-          node.parentNode.replaceChild(fragment, node);
-        }
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        Array.from(node.childNodes).forEach(processNode);
-      }
-    }
-
-    processNode(doc.body);
-    return doc.body.innerHTML;
-  }
-
-  return (
-    <div
-      id="overlay-editor"
-      className="absolute max-w-[763px] pointer-events-none select-none w-full h-full mx-auto top-[12.35rem] px-2 prose pt-8"
-      dangerouslySetInnerHTML={{
-        __html: wrapEveryWordInSpansPreserveHTML(
-          html.replaceAll("<p></p>", "<p><br /></p>")
-        ),
-      }}
-    />
-  );
-}
-
-export function AnchorLayer({
-  anchorHandles,
-  addHandle,
-  draggingAnchor,
-  setDraggingAnchor,
-  docId,
-  editor,
-  mousePos,
-}: {
-  anchorHandles: HandlesMap;
-  addHandle: (
-    newHandleId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => void;
-  draggingAnchor: boolean;
-  setDraggingAnchor: (dragging: boolean) => void;
-  mousePos: { x: number; y: number };
-  docId: string;
-  editor: Editor;
-}) {
-  // Handle hotkey "a"
-  useHotkeys("a", () => {
-    if (
-      mousePos.x < 50 + 24 ||
-      mousePos.x > window.innerWidth - 50 - 24 ||
-      mousePos.y < 50 + 24
-    ) {
-      return;
-    }
-
-    const id = crypto.randomUUID(); // Unique ID for the new anchor
-    addHandle(
-      id,
-      mousePos.x - window.innerWidth / 2,
-      mousePos.y + window.scrollY,
-      ANCHOR_HANDLE_SIZE,
-      ANCHOR_HANDLE_SIZE
-    );
-  });
-
-  const session = useSession();
-  const [presence, updatePresense] = useMyPresence();
-  const othersPresense = useOthers();
-
-  return (
-    <div id="anchor-layer" className="transition-opacity duration-300">
-      {anchorHandles?.keys().map((handleId: string) => {
-        return (
-          <AnchorHandle
-            key={handleId}
-            id={handleId}
-            setDraggingAnchor={setDraggingAnchor}
-            session={session}
-            presence={presence} // Only pass the state, not the tuple
-            updatePresense={updatePresense}
-            othersPresense={othersPresense.slice()}
-            docId={docId}
-            editor={editor}
-          />
-        );
-      })}
-    </div>
-  );
-}
-
-const ANCHOR_HANDLE_SIZE = 24; // Size of the anchor handle in pixels
-const PUNCTUATION = ". ,;:!?"; // Punctuation characters to ignore
-
-function AnchorHandle({
+export default function AnchorHandle({
   id,
   setDraggingAnchor,
   session,
@@ -182,7 +53,6 @@ function AnchorHandle({
   const ref = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const [showConversation, setShowConversation] = useState(false);
-  const offset = useRef({ x: 0, y: 0 });
 
   const openConversation = () => {
     // add this anchor handle to opened handles by user
@@ -280,6 +150,12 @@ function AnchorHandle({
   const debouncedWritePos = useDebounce(writePos, 50); // TODO: tune out this parameter to make the sync movement feel nice
 
   const deleteAnchor = useMutation(({ storage }) => {
+    const anchor = storage.get("docHandles").get(id);
+    const attachedSpanId = anchor?.get("attachedSpan");
+    if (attachedSpanId) {
+      storage.get("attachPoints").delete(attachedSpanId);
+    }
+
     storage.get("docHandles").delete(id);
   }, []);
 
@@ -314,6 +190,26 @@ function AnchorHandle({
     };
   }, [dragging, localCoords.x, localCoords.y]);
 
+  const attachAnchor = useMutation(({ storage }, spanId) => {
+    storage.get("attachPoints").set(
+      spanId,
+      new LiveObject({
+        anchorId: id,
+      })
+    );
+
+    storage.get("docHandles").get(id)?.set("attachedSpan", spanId);
+  }, []);
+
+  const dettachAnchor = useMutation(({ storage }) => {
+    const anchor = storage.get("docHandles").get(id);
+    const attachedSpan = anchor?.get("attachedSpan");
+    if (attachedSpan) {
+      storage.get("attachPoints").delete(attachedSpan);
+      anchor?.set("attachedSpan", "");
+    }
+  }, []);
+
   useEffect(() => {
     if (dragging) return;
     let raf: number;
@@ -334,9 +230,9 @@ function AnchorHandle({
     const onMouseMove = (e: MouseEvent) => {
       if (!dragging) return;
 
-      const overlayContainer = document.getElementById("overlay-editor");
-      if (!overlayContainer) return;
-      const paragraphs = overlayContainer.querySelectorAll("p");
+      const mainEditor = document.getElementById("main-editor");
+      if (!mainEditor) return;
+      const paragraphs = mainEditor.querySelectorAll("p");
       if (!paragraphs) return;
 
       let targetX = e.clientX;
@@ -485,7 +381,7 @@ function AnchorHandle({
       animate();
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (e: MouseEvent) => {
       if (deleteState) {
         // Animate before deleting the anchor
         if (ref.current) {
@@ -504,6 +400,52 @@ function AnchorHandle({
           setDragging(false);
         }, 100);
 
+        if (dragging) {
+          const targetX = e.clientX;
+          const targetY = e.clientY;
+          console.log("dropped", targetX, targetY);
+          const editorPos = editor.view.posAtCoords({
+            left: targetX,
+            top: targetY,
+          });
+          if (editorPos) {
+            // pos is the pos of the nearest cursor position
+            // inside is the pos of the containing node
+            let { pos, inside } = editorPos;
+            pos--; // dont ask, tiptap stupid
+
+            const paragraphContent = editor
+              .$pos(pos)
+              .content.content.map((node: any) => node.text)
+              .join("");
+            const paragraphIdx = pos - inside;
+            // anchor dropped not on a space
+            if (paragraphContent[paragraphIdx] !== " ") {
+              let start = paragraphContent.lastIndexOf(" ", paragraphIdx);
+              // also dont ask me why start doesnt need a fallback on -1. it somehow works out with the off-by-one introduced
+              // by the weird indexing that `pos` uses in tiptap.
+
+              let end = paragraphContent.indexOf(" ", paragraphIdx);
+              if (end === -1) {
+                // no space before end of paragraph, so use the end of the para
+                end = paragraphContent.length;
+              }
+
+              editor
+                .chain()
+                .setTextSelection({
+                  from: inside + start + 2,
+                  to: inside + end + 1,
+                })
+                .setMark(SpansMark.name, { id: crypto.randomUUID() })
+                .run();
+
+              const spanId = editor.getAttributes(SpansMark.name)["id"];
+              attachAnchor(spanId);
+            }
+          }
+        }
+
         setDraggingAnchor(false);
         setAnchorOwner(""); // release ownership, allow others to grab it
         if (animationFrame) cancelAnimationFrame(animationFrame);
@@ -520,12 +462,6 @@ function AnchorHandle({
   }, [dragging, id, debouncedWritePos, localCoords.x]);
 
   const onMouseDown = (e: React.MouseEvent) => {
-    if (!dragging) {
-      setOpenPopup((prev) => !prev); // close the popup if we are dragging
-    } else {
-      setOpenPopup(false); // close the popup if we are dragging
-    }
-
     if (liveHandleInfo.owner !== "") {
       // someone is already moving the handle, need to disallow concurrent grab and just
       // wait till they release it
@@ -543,13 +479,35 @@ function AnchorHandle({
       return;
     }
 
-    const rect = ref.current?.getBoundingClientRect();
-    if (rect) {
-      offset.current = {
-        x: e.clientX - (rect.left + rect.width / 2),
-        y: e.clientY - (rect.top + rect.height / 2),
-      };
+    // remove old span, if there was a span attached to this anchor
+    if (liveHandleInfo.attachedSpan !== "") {
+      const spanId = liveHandleInfo.attachedSpan;
+      const span = document.getElementById(spanId) as HTMLSpanElement;
+      if (span) {
+        const rect = span.getBoundingClientRect();
+
+        const start = editor.view.posAtCoords({
+          left: rect.left,
+          top: rect.top,
+        });
+        const end = editor.view.posAtCoords({
+          left: rect.right,
+          top: rect.top,
+        });
+        if (start && end) {
+          const startPos = start.pos;
+          const endPos = end.pos;
+          console.log("removing span from ", startPos, endPos);
+          editor
+            .chain()
+            .setTextSelection({ from: startPos, to: endPos })
+            .unsetMark(SpansMark.name)
+            .run();
+        }
+        dettachAnchor();
+      }
     }
+
     setDragging(true);
     setDraggingAnchor(true);
   };
@@ -687,6 +645,9 @@ function AnchorHandle({
             }}
             ref={anchorRef}
             onMouseDown={onMouseDown}
+            onDoubleClick={() => {
+              setOpenPopup(true);
+            }}
           >
             {liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
               ? null

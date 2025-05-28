@@ -208,32 +208,29 @@ export default function AnchorPopup({
 
     const response = exchanges.at(viewedExchange)?.response || "";
     const formatResponse = response.replaceAll(/([\p{P}])  /gu, "$1 ").trim();
-    if (paragraphIdx == -1) {
-      // no paragraph is selected, insert to end of document
-      editor.commands.insertContentAt(editor.state.doc.content.size, {
+    const splitResponse = response.split("\n");
+    const nodes = splitResponse.filter((text) => text !== "").map((text) => {
+      return {
         type: "paragraph",
         content: [
           {
             type: "text",
-            text: formatResponse,
+            text: text,
           },
         ],
-      });
+      };
+    });
+
+    if (paragraphIdx == -1) {
+      // no paragraph is selected, insert to end of document
+      editor.commands.insertContentAt(editor.state.doc.content.size, nodes);
     } else {
       const paragraph = editor.state.doc.child(paragraphIdx);
       const insertionPoint =
         (editor.$doc.children.at(paragraphIdx)?.pos || 0) +
         paragraph.content.size;
 
-      editor.commands.insertContentAt(insertionPoint, {
-        type: "paragraph",
-        content: [
-          {
-            type: "text",
-            text: formatResponse,
-          },
-        ],
-      });
+      editor.commands.insertContentAt(insertionPoint, nodes);
     }
 
     close();
