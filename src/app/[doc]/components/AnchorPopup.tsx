@@ -152,11 +152,38 @@ export default function AnchorPopup({
     // } finally {
     //   setIsLoading(false);
     // }
+
+
+    // if (isLoading) return;
+  
+    // setIsLoading(true);
+    // try {
+    //   await regenerateResponse(docId, handleId, contextMode);
+    // } catch (error) {
+    //   console.error("Regeneration error:", error);
+    // } finally {
+    //   setIsLoading(false);
+    // }
     if (isLoading) return;
   
+    // Only allow regeneration if there's a response to regenerate
+    if (!exchanges.at(viewedExchange)?.response) {
+      console.warn("No response to regenerate");
+      return;
+    }
+    
     setIsLoading(true);
+    
     try {
-      await regenerateResponse(docId, handleId, contextMode);
+      console.log("Regenerating response for exchange:", viewedExchange);
+      const result = await regenerateResponse(docId, handleId, contextMode);
+      
+      if (result.status === "success") {
+        console.log("Regeneration successful:", result.text);
+        // The response should automatically update through Liveblocks reactivity
+      } else {
+        console.error("Regeneration failed:", result.message);
+      }
     } catch (error) {
       console.error("Regeneration error:", error);
     } finally {
