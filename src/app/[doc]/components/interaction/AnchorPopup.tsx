@@ -146,6 +146,12 @@ export default function AnchorPopup({
     if (isLoading) return;
 
     setIsLoading(true);
+    
+    // Set pending state to show loading indicators
+    if (!setPending(true)) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // Pass the current viewedExchange index to regenerate the specific exchange
@@ -156,6 +162,7 @@ export default function AnchorPopup({
     } catch (error) {
       console.error("Error regenerating response:", error);
     } finally {
+      setPending(false);
       setIsLoading(false);
     }
   };
