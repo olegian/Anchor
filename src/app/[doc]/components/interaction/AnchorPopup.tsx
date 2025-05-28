@@ -144,12 +144,12 @@ export default function AnchorPopup({
   const handleRegeneration = async () => {
     // TODO: handle regeneration of the last response
     if (isLoading) return;
-  
+
     setIsLoading(true);
-    
+
     try {
       await regenerateResponse(docId, handleId, contextMode);
-      
+
       // Move to the next exchange if we're not already at the last one
       if (viewedExchange < exchanges.length - 1) {
         setViewedExchange(viewedExchange + 1);
@@ -159,7 +159,6 @@ export default function AnchorPopup({
           setViewedExchange(exchanges.length); // Move to the new exchange
         }
       }
-      
     } catch (error) {
       console.error("Error regenerating response:", error);
     } finally {
@@ -185,17 +184,19 @@ export default function AnchorPopup({
     const response = exchanges.at(viewedExchange)?.response || "";
     const formatResponse = response.replaceAll(/([\p{P}])  /gu, "$1 ").trim();
     const splitResponse = response.split("\n");
-    const nodes = splitResponse.filter((text) => text !== "").map((text) => {
-      return {
-        type: "paragraph",
-        content: [
-          {
-            type: "text",
-            text: text,
-          },
-        ],
-      };
-    });
+    const nodes = splitResponse
+      .filter((text: string) => text !== "")
+      .map((text: string) => {
+        return {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: text,
+            },
+          ],
+        };
+      });
 
     if (paragraphIdx == -1) {
       // no paragraph is selected, insert to end of document
@@ -218,7 +219,7 @@ export default function AnchorPopup({
       ref={popupRef}
     >
       <div className="text-center border-b border-zinc-200 p-2 text-xs font-medium">
-        {liveHandleInfo?.title || "AI Conversation"}
+        {liveHandleInfo?.title || `AI Conversation • ${title}`}
       </div>
       <div className="p-2">
         <div className="flex items-center justify-start space-x-2">
@@ -263,11 +264,17 @@ export default function AnchorPopup({
               autoComplete="on"
             />
             <datalist id="suggestions">
-              {exchanges
-                .slice(0, exchanges.length - 1)
-                .map((exchange, index) => (
+              {exchanges.slice(0, exchanges.length - 1).map(
+                (
+                  exchange: {
+                    prompt: string;
+                    response?: string;
+                  },
+                  index: number
+                ) => (
                   <option key={index} value={exchange.prompt} />
-                ))}
+                )
+              )}
             </datalist>
             <button
               title="Regenerate response"
