@@ -34,7 +34,7 @@ export default function FloatingToolbar({
         <TabbarItem
           text="Heading"
           children={
-            <p className="text-xl flex items-center justify-center size-5 font-bold font-display">
+            <p className="text-xl flex items-center justify-center size-5 font-bold">
               H
             </p>
           }

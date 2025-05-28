@@ -535,7 +535,7 @@ export default function AnchorHandle({
                   : deleteState
                   ? "text-white border-red-600 bg-red-500"
                   : "text-zinc-700 border-zinc-200 bg-white"
-              } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block`}
+              } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block tracking-tight`}
               style={{
                 borderColor: owned && !isOwner && !deleteState ? ownerData?.color : "",
                 backgroundColor: owned && !isOwner && !deleteState ? ownerData?.color : "",
