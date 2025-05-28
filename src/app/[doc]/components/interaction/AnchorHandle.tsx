@@ -204,9 +204,9 @@ export default function AnchorHandle({
     const onMouseMove = (e: MouseEvent) => {
       if (!dragging) return;
 
-      const overlayContainer = document.getElementById("overlay-editor");
-      if (!overlayContainer) return;
-      const paragraphs = overlayContainer.querySelectorAll("p");
+      const mainEditor = document.getElementById("main-editor");
+      if (!mainEditor) return;
+      const paragraphs = mainEditor.querySelectorAll("p");
       if (!paragraphs) return;
 
       let targetX = e.clientX;
