@@ -149,10 +149,10 @@ export default function AnchorHandle({
   const debouncedWritePos = useDebounce(writePos, 50); // TODO: tune out this parameter to make the sync movement feel nice
 
   const deleteAnchor = useMutation(({ storage }) => {
-    const anchor = storage.get('docHandles').get(id);
-    const attachedSpanId = anchor?.get("attachedSpan")
+    const anchor = storage.get("docHandles").get(id);
+    const attachedSpanId = anchor?.get("attachedSpan");
     if (attachedSpanId) {
-        storage.get("attachPoints").delete(attachedSpanId);
+      storage.get("attachPoints").delete(attachedSpanId);
     }
 
     storage.get("docHandles").delete(id);
@@ -204,8 +204,8 @@ export default function AnchorHandle({
     const anchor = storage.get("docHandles").get(id);
     const attachedSpan = anchor?.get("attachedSpan");
     if (attachedSpan) {
-        storage.get("attachPoints").delete(attachedSpan);
-        anchor?.set("attachedSpan", "");
+      storage.get("attachPoints").delete(attachedSpan);
+      anchor?.set("attachedSpan", "");
     }
   }, []);
 
@@ -415,27 +415,30 @@ export default function AnchorHandle({
               .content.content.map((node: any) => node.text)
               .join("");
             const paragraphIdx = pos - inside;
-            let start = paragraphContent.lastIndexOf(" ", paragraphIdx);
-            // also dont ask me why start doesnt need a fallback on -1. it somehow works out with the off-by-one introduced
-            // by the weird indexing that `pos` uses in tiptap.
+            // anchor dropped not on a space
+            if (paragraphContent[paragraphIdx] !== " ") {
+              let start = paragraphContent.lastIndexOf(" ", paragraphIdx);
+              // also dont ask me why start doesnt need a fallback on -1. it somehow works out with the off-by-one introduced
+              // by the weird indexing that `pos` uses in tiptap.
 
-            let end = paragraphContent.indexOf(" ", paragraphIdx);
-            if (end === -1) {
-              // no space before end of paragraph, so use the end of the para
-              end = paragraphContent.length;
+              let end = paragraphContent.indexOf(" ", paragraphIdx);
+              if (end === -1) {
+                // no space before end of paragraph, so use the end of the para
+                end = paragraphContent.length;
+              }
+
+              editor
+                .chain()
+                .setTextSelection({
+                  from: inside + start + 2,
+                  to: inside + end + 1,
+                })
+                .setMark(SpansMark.name, { id: crypto.randomUUID() })
+                .run();
+
+              const spanId = editor.getAttributes(SpansMark.name)["id"];
+              attachAnchor(spanId);
             }
-
-            editor
-              .chain()
-              .setTextSelection({
-                from: inside + start + 2,
-                to: inside + end + 1,
-              })
-              .toggleMark(SpansMark.name)
-              .run();
-
-            const spanId = editor.getAttributes(SpansMark.name)["id"];
-            attachAnchor(spanId);
           }
         }
 
@@ -483,7 +486,35 @@ export default function AnchorHandle({
       return;
     }
 
-    dettachAnchor();
+    // remove old span, if there was a span attached to this anchor
+    if (liveHandleInfo.attachedSpan !== "") {
+      const spanId = liveHandleInfo.attachedSpan;
+      const span = document.getElementById(spanId) as HTMLSpanElement;
+      if (span) {
+        const rect = span.getBoundingClientRect();
+
+        const start = editor.view.posAtCoords({
+          left: rect.left,
+          top: rect.top,
+        });
+        const end = editor.view.posAtCoords({
+          left: rect.right,
+          top: rect.top,
+        });
+        if (start && end) {
+          const startPos = start.pos;
+          const endPos = end.pos;
+          console.log("removing span from ", startPos, endPos);
+          editor
+            .chain()
+            .setTextSelection({ from: startPos, to: endPos })
+            .unsetMark(SpansMark.name)
+            .run();
+        }
+        dettachAnchor();
+      }
+    }
+
     setDragging(true);
     setDraggingAnchor(true);
   };

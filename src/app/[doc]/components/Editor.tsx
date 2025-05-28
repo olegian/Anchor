@@ -1,19 +1,17 @@
 "use client";
+import { useMutation } from "@liveblocks/react"; // Make sure this is imported
+import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
+import Placeholder from "@tiptap/extension-placeholder";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { useEffect, useState } from "react";
-import FloatingToolbar from "./floating/FloatingToolbar";
-import { useLiveblocksExtension } from "@liveblocks/react-tiptap";
-import Title from "./Title";
-import SkeletonEditor from "./other/SkeletonEditor";
-import { AnchorLayer } from "./interaction/AnchorLayer";
+import { useEffect } from "react";
 import { HandlesMap } from "../../../../liveblocks.config";
-import { useMutation, useStorage } from "@liveblocks/react"; // Make sure this is imported
-import Placeholder from "@tiptap/extension-placeholder";
-import TextStyle from "@tiptap/extension-text-style";
-import { NodeRange } from "@tiptap/pm/model";
-import { SpansMark } from "./SpansMark";
+import Title from "./Title";
+import FloatingToolbar from "./floating/FloatingToolbar";
+import { AnchorLayer } from "./interaction/AnchorLayer";
+import { SpansMark } from "./interaction/SpansMark";
 import { useDebounce } from "./interaction/useDebounce";
+import SkeletonEditor from "./other/SkeletonEditor";
 
 export default function Editor({
   title,
@@ -47,7 +45,6 @@ export default function Editor({
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
 
   const updateAttachedAnchors = useMutation(({ storage }) => {
-    console.log(storage.get("attachPoints"));
     storage.get("attachPoints").forEach((attachment, spanId) => {
       const anchorId = attachment.get("anchorId");
       const span = document.getElementById(spanId) as HTMLSpanElement;
@@ -66,15 +63,15 @@ export default function Editor({
       // update the anchor position, if necessary
       const rect: DOMRect = span.getBoundingClientRect();
 
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
+      const x = rect.left + (rect.width / 2);
+      const y = rect.top - 4;
 
       const anchor = storage.get("docHandles").get(anchorId);
       anchor?.set("x", x - window.innerWidth / 2);
       anchor?.set("y", y);
     });
   }, []);
-  const debouncedUpdateAttachedAnchors = useDebounce(updateAttachedAnchors, 12.5);
+  const debouncedUpdateAttachedAnchors = useDebounce(updateAttachedAnchors, 5);
 
   const editor = useEditor({
     extensions: [
@@ -88,11 +85,7 @@ export default function Editor({
       Placeholder.configure({
         placeholder: "Type your text here...",
       }),
-      SpansMark.extend({
-        onDestroy() {
-          console.log(this);
-        },
-      }),
+      SpansMark,
     ],
     immediatelyRender: false,
     editable: !draggingAnchor,

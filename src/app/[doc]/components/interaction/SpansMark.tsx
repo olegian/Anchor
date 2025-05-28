@@ -36,7 +36,6 @@ export const SpansMark = Mark.create<SpansMarkOptions>({
   addAttributes() {
     return {
       id: {
-        default: crypto.randomUUID(),
         parseHTML(element: HTMLElement) {
             return element.hasAttribute("id") ? element.getAttribute("id") : null;
         }
