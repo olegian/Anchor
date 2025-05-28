@@ -391,6 +391,7 @@ export async function regenerateResponse(
   docId: string,
   handleId: string,
   contextMode: "doc" | "paragraph" | "word",
+  exchangeIndex?: number, // NEW: Add optional exchange index parameter
   env?: string
 ): Promise<PromptResponse> {
   try {
@@ -407,9 +408,16 @@ export async function regenerateResponse(
       throw new Error("No exchanges found to regenerate");
     }
 
-    // Get the last exchange
-    const lastExchange = handleInfo.exchanges[handleInfo.exchanges.length - 1];
-    const userPrompt = lastExchange.prompt;
+    // FIXED: Get the specific exchange to regenerate (default to last if not specified)
+    const targetExchangeIndex = exchangeIndex !== undefined ? exchangeIndex : handleInfo.exchanges.length - 1;
+    
+    // Validate the exchange index
+    if (targetExchangeIndex < 0 || targetExchangeIndex >= handleInfo.exchanges.length) {
+      throw new Error(`Invalid exchange index: ${targetExchangeIndex}`);
+    }
+
+    const targetExchange = handleInfo.exchanges[targetExchangeIndex];
+    const userPrompt = targetExchange.prompt;
 
     // Use the paragraph and word indices from handle info
     const paragraphIdx = handleInfo.paragraphIdx;
@@ -428,51 +436,81 @@ export async function regenerateResponse(
     }
     const history = conversationHistory.get(handleId)!;
     
-    // FIXED: Create a proper copy and remove the last model response only
-    const historyForRegeneration = [...history];
+    // FIXED: Create conversation history up to the target exchange
+    const historyForRegeneration = [];
     
-    // Only remove the last AI response if it exists
-    if (historyForRegeneration.length > 0 && 
-        historyForRegeneration[historyForRegeneration.length - 1].role === "model") {
-      historyForRegeneration.pop();
+    // Add all exchanges up to (but not including) the target exchange
+    for (let i = 0; i < targetExchangeIndex; i++) {
+      const exchange = handleInfo.exchanges[i];
+      // Add user message
+      historyForRegeneration.push({
+        role: "user",
+        parts: [{ text: exchange.prompt }],
+      });
+      // Add model response if it exists
+      if (exchange.response) {
+        historyForRegeneration.push({
+          role: "model",
+          parts: [{ text: exchange.response }],
+        });
+      }
     }
     
-    // DON'T remove the user message - we need it for context!
-    // The original code incorrectly removed both the model AND user message
+    // Add the current user prompt (but not the response we're regenerating)
+    historyForRegeneration.push({
+      role: "user",
+      parts: [{ text: userPrompt }],
+    });
 
     // Generate new response with increased temperature for more variation
     const text = await generateLLMResponseWithVariation(
       userPrompt, 
       documentContext, 
-      historyForRegeneration, // This now properly includes the user message
+      historyForRegeneration,
       env
     );
     console.log("regenerated response text = " + text);
 
     // FIXED: Update the conversation history correctly
-    // Remove the old model response if it exists
-    if (history.length > 0 && history[history.length - 1].role === "model") {
-      history.pop();
-    }
+    // Rebuild the entire history to match the new state
+    const newHistory = [];
     
-    // Add the new response
-    history.push({
-      role: "model",
-      parts: [{ text }],
-    });
+    // Add all exchanges up to the target exchange
+    for (let i = 0; i < handleInfo.exchanges.length; i++) {
+      const exchange = handleInfo.exchanges[i];
+      // Add user message
+      newHistory.push({
+        role: "user",
+        parts: [{ text: exchange.prompt }],
+      });
+      
+      // Add response - use the new regenerated text for the target exchange
+      if (i === targetExchangeIndex) {
+        newHistory.push({
+          role: "model",
+          parts: [{ text }],
+        });
+      } else if (exchange.response) {
+        newHistory.push({
+          role: "model",
+          parts: [{ text: exchange.response }],
+        });
+      }
+    }
 
     // Update conversation history
-    conversationHistory.set(handleId, history);
+    conversationHistory.set(handleId, newHistory);
 
-    // Update storage with new response
+    // FIXED: Update storage with new response at the correct exchange index
     await liveblocks.mutateStorage(docId, ({ root }) => {
       const handleInfo = root.get("docHandles").get(handleId);
       const exchanges = handleInfo?.get("exchanges");
 
-      if (exchanges && exchanges.length > 0) {
-        exchanges.get(exchanges.length - 1)?.set("response", text);
+      if (exchanges && targetExchangeIndex < exchanges.length) {
+        // Update the specific exchange, not necessarily the last one
+        exchanges.get(targetExchangeIndex)?.set("response", text);
         // Optional: Update timestamp to indicate regeneration
-        exchanges.get(exchanges.length - 1)?.set("timestamp", Date.now());
+        exchanges.get(targetExchangeIndex)?.set("timestamp", Date.now());
       }
     });
 
@@ -519,7 +557,6 @@ async function generateLLMResponseWithVariation(
   const regenerationNote = "\n\nPlease provide an alternative perspective or approach in your response.";
   const fullPrompt = `${contextPrompt}\n\nUser Query: ${userPrompt}${regenerationNote}`;
 
-  // FIXED: Don't add the current message to history here - use the existing history
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
     systemInstruction: {
@@ -556,9 +593,9 @@ When regenerating responses, try to provide alternative perspectives or differen
     },
   });
 
-  // FIXED: Create chat session with the existing history
+  // Create chat session with the existing history (excluding the current prompt)
   const chat = model.startChat({
-    history: history, // Use the history as-is (should include the user message)
+    history: history.slice(0, -1), // Remove the last user message since we'll send it separately
     generationConfig: {
       temperature: 1.0, // Increased temperature for more variation in regeneration
       maxOutputTokens: 2048,

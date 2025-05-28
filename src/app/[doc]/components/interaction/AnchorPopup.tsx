@@ -148,17 +148,11 @@ export default function AnchorPopup({
     setIsLoading(true);
 
     try {
-      await regenerateResponse(docId, handleId, contextMode);
-
-      // Move to the next exchange if we're not already at the last one
-      if (viewedExchange < exchanges.length - 1) {
-        setViewedExchange(viewedExchange + 1);
-      } else {
-        // We're at the last exchange, create a new one and move to it
-        if (openNewPrompt()) {
-          setViewedExchange(exchanges.length); // Move to the new exchange
-        }
-      }
+      // Pass the current viewedExchange index to regenerate the specific exchange
+      await regenerateResponse(docId, handleId, contextMode, viewedExchange);
+      
+      // Don't move to next exchange or create new one - just stay on current exchange
+      // The regenerated response will replace the current one in the same exchange
     } catch (error) {
       console.error("Error regenerating response:", error);
     } finally {
