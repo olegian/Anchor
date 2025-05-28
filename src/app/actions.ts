@@ -336,6 +336,10 @@ through your thought process.
       },
     });
 
+    const conversationTitle = await generateConversationTitle(userPrompt, documentContext.contextType);
+    console.log(`Generated conversation title: ${conversationTitle}`);
+    await setConversationTitle(docId, handleId, conversationTitle);
+
     // Create chat session with history
     const chat = model.startChat({
       history,
@@ -383,6 +387,231 @@ through your thought process.
   }
 }
 
+export async function regenerateResponse(
+  docId: string,
+  handleId: string,
+  contextMode: "doc" | "paragraph" | "word",
+  exchangeIndex?: number, // NEW: Add optional exchange index parameter
+  env?: string
+): Promise<PromptResponse> {
+  try {
+    // Get document contents and storage
+    const docContents = await getContents(docId);
+    const docStorage = await liveblocks.getStorageDocument(docId, "json");
+    const handleInfo = docStorage.docHandles[handleId];
+
+    if (!handleInfo) {
+      throw new Error(`Handle ${handleId} not found`);
+    }
+
+    if (handleInfo.exchanges.length === 0) {
+      throw new Error("No exchanges found to regenerate");
+    }
+
+    // FIXED: Get the specific exchange to regenerate (default to last if not specified)
+    const targetExchangeIndex = exchangeIndex !== undefined ? exchangeIndex : handleInfo.exchanges.length - 1;
+    
+    // Validate the exchange index
+    if (targetExchangeIndex < 0 || targetExchangeIndex >= handleInfo.exchanges.length) {
+      throw new Error(`Invalid exchange index: ${targetExchangeIndex}`);
+    }
+
+    const targetExchange = handleInfo.exchanges[targetExchangeIndex];
+    const userPrompt = targetExchange.prompt;
+
+    // Use the paragraph and word indices from handle info
+    const paragraphIdx = handleInfo.paragraphIdx;
+    const wordIdx = handleInfo.wordIdx;
+    
+    // Parse document content
+    const docJson = JSON.parse(docContents);
+    const parsedDoc = parseDocumentContent(docJson);
+    
+    // Get appropriate context
+    const documentContext = getDocumentContext(contextMode, paragraphIdx, wordIdx, parsedDoc);
+    
+    // FIXED: Get conversation history and properly reset for regeneration
+    if (!conversationHistory.has(handleId)) {
+      conversationHistory.set(handleId, []);
+    }
+    const history = conversationHistory.get(handleId)!;
+    
+    // FIXED: Create conversation history up to the target exchange
+    const historyForRegeneration = [];
+    
+    // Add all exchanges up to (but not including) the target exchange
+    for (let i = 0; i < targetExchangeIndex; i++) {
+      const exchange = handleInfo.exchanges[i];
+      // Add user message
+      historyForRegeneration.push({
+        role: "user",
+        parts: [{ text: exchange.prompt }],
+      });
+      // Add model response if it exists
+      if (exchange.response) {
+        historyForRegeneration.push({
+          role: "model",
+          parts: [{ text: exchange.response }],
+        });
+      }
+    }
+    
+    // Add the current user prompt (but not the response we're regenerating)
+    historyForRegeneration.push({
+      role: "user",
+      parts: [{ text: userPrompt }],
+    });
+
+    // Generate new response with increased temperature for more variation
+    const text = await generateLLMResponseWithVariation(
+      userPrompt, 
+      documentContext, 
+      historyForRegeneration,
+      env
+    );
+    console.log("regenerated response text = " + text);
+
+    // FIXED: Update the conversation history correctly
+    // Rebuild the entire history to match the new state
+    const newHistory = [];
+    
+    // Add all exchanges up to the target exchange
+    for (let i = 0; i < handleInfo.exchanges.length; i++) {
+      const exchange = handleInfo.exchanges[i];
+      // Add user message
+      newHistory.push({
+        role: "user",
+        parts: [{ text: exchange.prompt }],
+      });
+      
+      // Add response - use the new regenerated text for the target exchange
+      if (i === targetExchangeIndex) {
+        newHistory.push({
+          role: "model",
+          parts: [{ text }],
+        });
+      } else if (exchange.response) {
+        newHistory.push({
+          role: "model",
+          parts: [{ text: exchange.response }],
+        });
+      }
+    }
+
+    // Update conversation history
+    conversationHistory.set(handleId, newHistory);
+
+    // FIXED: Update storage with new response at the correct exchange index
+    await liveblocks.mutateStorage(docId, ({ root }) => {
+      const handleInfo = root.get("docHandles").get(handleId);
+      const exchanges = handleInfo?.get("exchanges");
+
+      if (exchanges && targetExchangeIndex < exchanges.length) {
+        // Update the specific exchange, not necessarily the last one
+        exchanges.get(targetExchangeIndex)?.set("response", text);
+        // Optional: Update timestamp to indicate regeneration
+        exchanges.get(targetExchangeIndex)?.set("timestamp", Date.now());
+      }
+    });
+
+    return {
+      text,
+      status: "success",
+    };
+  } catch (error) {
+    console.error("Error regenerating response:", error);
+    return {
+      text: "Sorry, there was an error regenerating the response.",
+      status: "error",
+      message: (error as Error).message,
+    };
+  }
+}
+
+// ALSO FIXED: The generateLLMResponseWithVariation function
+async function generateLLMResponseWithVariation(
+  userPrompt: string,
+  documentContext: DocumentContext,
+  history: Array<{ role: string; parts: { text: string }[] }>,
+  env?: string
+): Promise<string> {
+  // Create context-aware prompt with slight variation for regeneration
+  let contextPrompt = "";
+  switch (documentContext.contextType) {
+    case "word":
+      contextPrompt = `Focus on this word: "${documentContext.content}"`;
+      break;
+    case "paragraph":
+      contextPrompt = `Focus specifically on this paragraph:\n"${documentContext.content}"`;
+      break;
+    case "document":
+      contextPrompt = `Document content:\n${documentContext.content}`;
+      break;
+  }
+
+  if (env) {
+    contextPrompt += `\n\nEnvironment Variables:\n${env}`;
+  }
+
+  // Add a slight variation to the prompt to encourage different responses
+  const regenerationNote = "\n\nPlease provide an alternative perspective or approach in your response.";
+  const fullPrompt = `${contextPrompt}\n\nUser Query: ${userPrompt}${regenerationNote}`;
+
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+    systemInstruction: {
+      role: "system",
+      parts: [
+        {
+          text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, or full document) and tailor your response accordingly. 
+
+When focusing on a paragraph, discuss only that specific paragraph and its content. When focusing on a word, discuss that word in the context of its paragraph. When given the full document, you can discuss the entire document.
+
+Be concise but thorough in your analysis.
+
+When focusing on a word, you may be asked to provide a synonym, which will be indicated by the user passing the word "synonym" into the model. If you 
+receive this prompt, you should provide a sample synonym for the word. You would not need any additional context in this situation, and should therefore not discuss this.
+For example: if the user enters "was", a synonym could be "existed". 
+
+This will be similar for other instances in which the context is only the word. You will only consider the word, and not focus on other context.
+
+If the context is a paragraph, you will also discuss only that specific paragraph and its content, while thinking through your reasoning. If the user asks you to provide
+additional text for that paragraph, only provide the additional text.
+
+For instance, if the paragraph is "We want to remind you that midnight today, May 25, is the deadline for you to register/order cap and gown to attend the Commencement ceremony in Husky Stadium on June 14! 
+It is easy to sign up to share this special day with your friends and family.",
+additional text for that paragraph may be "Don't miss your chance to join us on this special day! We hope to see you there, and we are excited to have you join us. More information will be revealed shortly";
+the user is also able to request for specific sentence lengths or for more information after this point. 
+
+If the context is the document, analyze the document fully, being sure to consider the perspective of the user and what goals they want, while thinking
+through your thought process.
+
+When regenerating responses, try to provide alternative perspectives or different approaches while maintaining accuracy and relevance.
+`,
+        },
+      ],
+    },
+  });
+
+  // Create chat session with the existing history (excluding the current prompt)
+  const chat = model.startChat({
+    history: history.slice(0, -1), // Remove the last user message since we'll send it separately
+    generationConfig: {
+      temperature: 1.0, // Increased temperature for more variation in regeneration
+      maxOutputTokens: 2048,
+      topP: 0.9, // Add top-p sampling for more diversity
+      topK: 40, // Add top-k sampling for more diversity
+    },
+  });
+
+  // Generate response with the new prompt
+  const result = await chat.sendMessage(fullPrompt);
+  const response = result.response;
+  const text = response.text();
+
+  return text;
+}
+
 export async function resetConversation(handleId: string): Promise<void> {
   conversationHistory.delete(handleId);
 }
@@ -406,7 +635,6 @@ export async function createExchange(
   handleId: string,
   promptText: string
 ): Promise<void> {
-  //docId = "bc8eb889-6d61-4bd9-9389-7d84558c8685"
   await liveblocks.mutateStorage(docId, ({ root }) => {
     const handleInfo = root.get("docHandles").get(handleId);
     const exchanges = handleInfo?.get("exchanges");
@@ -570,4 +798,53 @@ export async function getUserColor(username: string) {
 
 export async function getUsers() {
   return await getAllUsers();
+}
+
+async function generateConversationTitle(
+  firstPrompt: string,
+  contextType: string
+): Promise<string> {
+  try {
+    const titleModel = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: {
+        role: "system",
+        parts: [
+          {
+            text: `You are a helpful assistant that generates concise, descriptive titles for conversations. 
+            Based on the user's first prompt and the context type (word, paragraph, or document), create a brief title (2-6 words) that captures the essence of what the user is asking about.
+            
+            Examples:
+            - For "What does this word mean?" with word context → "Word Definition"
+            - For "Summarize this paragraph" with paragraph context → "Paragraph Summary"
+            - For "What are the main themes?" with document context → "Document Themes"
+            - For "synonym" with word context → "Word Synonym"
+            - For "Can you expand on this?" with paragraph context → "Paragraph Expansion"
+            
+            Keep titles concise, clear, and relevant to the query.`,
+          },
+        ],
+      },
+    });
+
+    const prompt = `Context type: ${contextType}\nUser prompt: ${firstPrompt}\n\nGenerate a concise title (2-6 words):`;
+    const result = await titleModel.generateContent(prompt);
+    const title = result.response.text().trim();
+    
+    // Clean up the title (remove quotes if present, limit length)
+    const cleanTitle = title.replace(/['"]/g, '').substring(0, 50);
+    return cleanTitle || "AI Conversation";
+  } catch (error) {
+    console.error("Error generating conversation title:", error);
+    return "AI Conversation";
+  }
+}
+
+async function setConversationTitle(docId: string, handleId: string, newTitle: string) {
+  await liveblocks.mutateStorage(docId, ({ root }) => {
+    const handleInfo = root.get("docHandles").get(handleId);
+    if (handleInfo) {
+      handleInfo.set("title", newTitle);
+    }
+  });
 }

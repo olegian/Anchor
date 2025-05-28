@@ -1,4 +1,5 @@
 import {
+  ArrowPathIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   ChevronUpDownIcon,
@@ -9,7 +10,7 @@ import { LiveObject } from "@liveblocks/client";
 import { useMutation, useStorage } from "@liveblocks/react";
 import { Editor } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
-import { prompt } from "@/app/actions";
+import { prompt, regenerateResponse } from "@/app/actions";
 
 export default function AnchorPopup({
   title,
@@ -140,6 +141,32 @@ export default function AnchorPopup({
     }
   };
 
+  const handleRegeneration = async () => {
+    // TODO: handle regeneration of the last response
+    if (isLoading) return;
+
+    setIsLoading(true);
+    
+    // Set pending state to show loading indicators
+    if (!setPending(true)) {
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      // Pass the current viewedExchange index to regenerate the specific exchange
+      await regenerateResponse(docId, handleId, contextMode, viewedExchange);
+      
+      // Don't move to next exchange or create new one - just stay on current exchange
+      // The regenerated response will replace the current one in the same exchange
+    } catch (error) {
+      console.error("Error regenerating response:", error);
+    } finally {
+      setPending(false);
+      setIsLoading(false);
+    }
+  };
+
   // New function to insert response into document
   const insertResponseIntoDocument = () => {
     if (
@@ -158,17 +185,19 @@ export default function AnchorPopup({
     const response = exchanges.at(viewedExchange)?.response || "";
     const formatResponse = response.replaceAll(/([\p{P}])  /gu, "$1 ").trim();
     const splitResponse = response.split("\n");
-    const nodes = splitResponse.filter((text) => text !== "").map((text) => {
-      return {
-        type: "paragraph",
-        content: [
-          {
-            type: "text",
-            text: text,
-          },
-        ],
-      };
-    });
+    const nodes = splitResponse
+      .filter((text: string) => text !== "")
+      .map((text: string) => {
+        return {
+          type: "paragraph",
+          content: [
+            {
+              type: "text",
+              text: text,
+            },
+          ],
+        };
+      });
 
     if (paragraphIdx == -1) {
       // no paragraph is selected, insert to end of document
@@ -191,7 +220,7 @@ export default function AnchorPopup({
       ref={popupRef}
     >
       <div className="text-center border-b border-zinc-200 p-2 text-xs font-medium">
-        {title}
+        {liveHandleInfo?.title || `AI Conversation • ${title}`}
       </div>
       <div className="p-2">
         <div className="flex items-center justify-start space-x-2">
@@ -208,29 +237,69 @@ export default function AnchorPopup({
               } animate-spin size-7 rounded-full shrink-0 blur-xs transition-all`}
             />
           </div>
-          <input
-            type="text"
-            className="disabled:border-zinc-100 w-full border text-sm border-zinc-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Ask AI about this content..."
-            disabled={viewedExchange != exchanges.length - 1}
-            value={exchanges.at(viewedExchange)?.prompt}
-            // press enter to send
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
+          <div className="relative w-full">
+            <input
+              type="text"
+              className="disabled:border-zinc-100 w-full border text-sm border-zinc-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ask AI about this content..."
+              disabled={viewedExchange != exchanges.length - 1}
+              value={exchanges.at(viewedExchange)?.prompt}
+              // press enter to send
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  setIsLoading(true);
+                  handleSubmit()
+                    .then(() => {
+                      setIsLoading(false);
+                    })
+                    .catch(() => {
+                      console.error("error occurred on prompt:", e);
+                      setIsLoading(false);
+                    });
+                }
+              }}
+              onChange={(e) => changeCurrentPrompt(e.target.value)}
+              list="suggestions"
+              autoFocus
+              autoComplete="on"
+            />
+            <datalist id="suggestions">
+              {exchanges.slice(0, exchanges.length - 1).map(
+                (
+                  exchange: {
+                    prompt: string;
+                    response?: string;
+                  },
+                  index: number
+                ) => (
+                  <option key={index} value={exchange.prompt} />
+                )
+              )}
+            </datalist>
+            <button
+              title="Regenerate response"
+              className="absolute  disabled:hidden top-1.75 right-1.75 disabled:opacity-25 size-6 p-1.5 hover:bg-zinc-200 transition-colors rounded flex items-center justify-center shrink-0 disabled:pointer-events-none text-zinc-600 hover:text-zinc-800 cursor-pointer"
+              disabled={
+                exchanges.at(viewedExchange)?.response === undefined ||
+                exchanges.at(viewedExchange)?.response === ""
+              }
+              onClick={() => {
                 setIsLoading(true);
-                handleSubmit()
+                handleRegeneration()
                   .then(() => {
+                    // TODO: handle regeneration of the last response
                     setIsLoading(false);
                   })
                   .catch(() => {
-                    console.error("error occurred on prompt:", e);
+                    console.error("error occurred on prompt:", exchanges);
                     setIsLoading(false);
                   });
-              }
-            }}
-            onChange={(e) => changeCurrentPrompt(e.target.value)}
-          />
+              }}
+            >
+              <ArrowPathIcon className="inline size-4 shrink-0" />
+            </button>
+          </div>
         </div>
       </div>
       <div className="p-2 border-t border-zinc-200 space-y-2">
@@ -238,6 +307,7 @@ export default function AnchorPopup({
           <h4 className="font-medium text-sm">
             Response {exchanges.length > 1 ? viewedExchange + 1 : ""}
           </h4>
+
           <div className="flex items-center space-x-1 justify-end">
             <button
               title="Previous exchange"
@@ -246,7 +316,7 @@ export default function AnchorPopup({
                 // go back to previous exchange
                 setViewedExchange((prev) => prev - 1);
               }}
-              className="disabled:opacity-25 size-5 flex items-center justify-center shrink-0 disabled:pointer-events-none text-zinc-600 hover:text-zinc-800 cursor-pointer"
+              className="disabled:opacity-25 size-5 p-1 hover:bg-zinc-200 transition-colors rounded flex items-center justify-center shrink-0 disabled:pointer-events-none text-zinc-600 hover:text-zinc-800 cursor-pointer"
             >
               <ChevronLeftIcon className="inline size-5 shrink-0" />
             </button>
@@ -262,7 +332,7 @@ export default function AnchorPopup({
                 // go to next exchange
                 setViewedExchange((prev) => prev + 1);
               }}
-              className="disabled:opacity-25 size-5 flex items-center justify-center shrink-0 disabled:pointer-events-none text-zinc-600 hover:text-zinc-800 cursor-pointer"
+              className="disabled:opacity-25 size-5 p-1 hover:bg-zinc-200 transition-colors rounded flex items-center justify-center shrink-0 disabled:pointer-events-none text-zinc-600 hover:text-zinc-800 cursor-pointer"
             >
               {viewedExchange < exchanges.length - 2 ? (
                 <ChevronRightIcon className="inline size-5 shrink-0" />
@@ -272,27 +342,23 @@ export default function AnchorPopup({
             </button>
           </div>
         </div>
-        <p className="border border-zinc-200 p-2 rounded-lg text-sm text-zinc-700 max-h-64 overflow-y-auto">
+        <div className="border border-zinc-200 p-2 rounded-lg text-sm text-zinc-700 max-h-64 overflow-y-auto">
           {isLoading ? (
-            <div className="">
-              <div className="animate-pulse flex flex-wrap items-start justify-start gap-1">
-                {Array(6)
-                  .fill(null)
-                  .map((_, index) => (
-                    <>
-                      <div className="w-full bg-zinc-200 h-4 rounded" />
-                    </>
-                  ))}
-              </div>
-            </div>
+            <ul className="animate-pulse flex flex-wrap items-start justify-start gap-1">
+              {Array(6)
+                .fill(null)
+                .map((_, index) => (
+                  <li key={index} className="w-full bg-zinc-200 h-4 rounded" />
+                ))}
+            </ul>
           ) : exchanges.at(viewedExchange)?.response ? (
-            exchanges.at(viewedExchange)?.response
+            <p>{exchanges.at(viewedExchange)?.response}</p>
           ) : (
-            <div className="py-6 text-center">
+            <p className="py-6 text-center">
               Ask about the content to get a response.
-            </div>
+            </p>
           )}
-        </p>
+        </div>
       </div>
       <div className="p-2 border-t border-zinc-200 flex items-end justify-between">
         {/* {JSON.stringify(liveHandleInfo)} */}
