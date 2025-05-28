@@ -3,6 +3,7 @@
 import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 
 export type Conversation = LiveObject<{
+  title: string;
   isPending: boolean; // whether there is a request that is currently outstanding
   exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>; // in order
   owner: string; //  userid of person who is currently moving a specific anchor, or "" for no owner

@@ -10,7 +10,7 @@ import { LiveObject } from "@liveblocks/client";
 import { useMutation, useStorage } from "@liveblocks/react";
 import { Editor } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
-import { prompt } from "@/app/actions";
+import { prompt, regenerateResponse } from "@/app/actions";
 
 export default function AnchorPopup({
   title,
@@ -143,6 +143,15 @@ export default function AnchorPopup({
 
   const handleRegeneration = async () => {
     // TODO: handle regeneration of the last response
+    setIsLoading(true);
+    try {
+      await regenerateResponse(docId, handleId, contextMode);
+      // Optionally refresh local state if needed
+    } catch (error) {
+      console.error("Error regenerating response:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // New function to insert response into document
@@ -199,7 +208,7 @@ export default function AnchorPopup({
       ref={popupRef}
     >
       <div className="text-center border-b border-zinc-200 p-2 text-xs font-medium">
-        {title}
+        {liveHandleInfo?.title || "AI Conversation"}
       </div>
       <div className="p-2">
         <div className="flex items-center justify-start space-x-2">
