@@ -116,6 +116,7 @@ export default function Editor({
       <div className="relative">
         <SkeletonEditor loaded={loaded} />
         <article
+          id="main-editor"
           className={`${
             draggingAnchor
               ? "pointer-events-none select-none"
