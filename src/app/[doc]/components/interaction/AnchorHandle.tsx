@@ -396,6 +396,9 @@ export default function AnchorHandle({
       } else {
         // gives time for anchor to settle after local movment
         // before we start syncing from live position
+        setTimeout(() => {
+          setDragging(false);
+        }, 100);
 
         if (dragging) {
           const targetX = e.clientX;
@@ -443,10 +446,6 @@ export default function AnchorHandle({
           }
         }
 
-        setTimeout(() => {
-          setDragging(false);
-        }, 100);
-
         setDraggingAnchor(false);
         setAnchorOwner(""); // release ownership, allow others to grab it
         if (animationFrame) cancelAnimationFrame(animationFrame);
@@ -463,13 +462,6 @@ export default function AnchorHandle({
   }, [dragging, id, debouncedWritePos, localCoords.x]);
 
   const onMouseDown = (e: React.MouseEvent) => {
-    // TODO: change the open popup handler to be a double click, to remove the double handling of stuff here
-    if (!dragging) {
-      setOpenPopup((prev) => !prev); // close the popup if we are dragging
-    } else {
-      setOpenPopup(false); // close the popup if we are dragging
-    }
-
     if (liveHandleInfo.owner !== "") {
       // someone is already moving the handle, need to disallow concurrent grab and just
       // wait till they release it
@@ -653,6 +645,9 @@ export default function AnchorHandle({
             }}
             ref={anchorRef}
             onMouseDown={onMouseDown}
+            onDoubleClick={() => {
+              setOpenPopup(true);
+            }}
           >
             {liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
               ? null
