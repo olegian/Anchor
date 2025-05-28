@@ -545,7 +545,8 @@ through your thought process.
   });
 
   // Generate response
-  const result = await chat.sendMessage(userPrompt);
+  // used to be user prompt
+  const result = await chat.sendMessage(fullPrompt);
   const response = result.response;
   const text = response.text();
 

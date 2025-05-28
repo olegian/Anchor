@@ -143,12 +143,22 @@ export default function AnchorPopup({
 
   const handleRegeneration = async () => {
     // TODO: handle regeneration of the last response
+    // setIsLoading(true);
+    // try {
+    //   await regenerateResponse(docId, handleId, contextMode);
+    //   // Optionally refresh local state if needed
+    // } catch (error) {
+    //   console.error("Error regenerating response:", error);
+    // } finally {
+    //   setIsLoading(false);
+    // }
+    if (isLoading) return;
+  
     setIsLoading(true);
     try {
       await regenerateResponse(docId, handleId, contextMode);
-      // Optionally refresh local state if needed
     } catch (error) {
-      console.error("Error regenerating response:", error);
+      console.error("Regeneration error:", error);
     } finally {
       setIsLoading(false);
     }
