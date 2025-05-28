@@ -336,6 +336,10 @@ through your thought process.
       },
     });
 
+    const conversationTitle = await generateConversationTitle(userPrompt, documentContext.contextType);
+    console.log(`Generated conversation title: ${conversationTitle}`);
+    await setConversationTitle(docId, handleId, conversationTitle);
+
     // Create chat session with history
     const chat = model.startChat({
       history,
@@ -760,4 +764,53 @@ export async function getUserColor(username: string) {
 
 export async function getUsers() {
   return await getAllUsers();
+}
+
+async function generateConversationTitle(
+  firstPrompt: string,
+  contextType: string
+): Promise<string> {
+  try {
+    const titleModel = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: {
+        role: "system",
+        parts: [
+          {
+            text: `You are a helpful assistant that generates concise, descriptive titles for conversations. 
+            Based on the user's first prompt and the context type (word, paragraph, or document), create a brief title (2-6 words) that captures the essence of what the user is asking about.
+            
+            Examples:
+            - For "What does this word mean?" with word context → "Word Definition"
+            - For "Summarize this paragraph" with paragraph context → "Paragraph Summary"
+            - For "What are the main themes?" with document context → "Document Themes"
+            - For "synonym" with word context → "Word Synonym"
+            - For "Can you expand on this?" with paragraph context → "Paragraph Expansion"
+            
+            Keep titles concise, clear, and relevant to the query.`,
+          },
+        ],
+      },
+    });
+
+    const prompt = `Context type: ${contextType}\nUser prompt: ${firstPrompt}\n\nGenerate a concise title (2-6 words):`;
+    const result = await titleModel.generateContent(prompt);
+    const title = result.response.text().trim();
+    
+    // Clean up the title (remove quotes if present, limit length)
+    const cleanTitle = title.replace(/['"]/g, '').substring(0, 50);
+    return cleanTitle || "AI Conversation";
+  } catch (error) {
+    console.error("Error generating conversation title:", error);
+    return "AI Conversation";
+  }
+}
+
+async function setConversationTitle(docId: string, handleId: string, newTitle: string) {
+  await liveblocks.mutateStorage(docId, ({ root }) => {
+    const handleInfo = root.get("docHandles").get(handleId);
+    if (handleInfo) {
+      handleInfo.set("title", newTitle);
+    }
+  });
 }
