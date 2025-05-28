@@ -16,16 +16,16 @@ export type AnchorInfo = LiveObject<{
   attachedSpan: string; // id of attached span, "" if the anchor is not attached
 }>;
 
-export type Attach = LiveObject<{
+export type Attachment = LiveObject<{
   anchorId: string;
   // TODO: -oleg-
   // ideally, these values are synced to the associated AnchorInfo[anchorId] (x, y)
   // and I think we can actually do that, but I am leaving this as a reminder for myself 
-  x: number; // center-origin x-position
-  y: number;
+//   x: number; // center-origin x-position
+//   y: number;
 }>;
 
-export type AttachedMap = LiveMap<string, Attach>;
+export type AttachedMap = LiveMap<string, Attachment>;
 
 export type Handles = LiveMap<
   string, // handleId
@@ -68,6 +68,7 @@ declare global {
       // I added this but now I'm thinking we don't want it
       //paragraphs: LiveList<LiveObject<{ type: "paragraph", content: LiveList<LiveObject<{ type: "text", text: string }>> }>>;
       docHandles: Handles; // snapshotId -> snapshot information
+      attachPoints: AttachedMap;
       docTitle: string;
     };
 

@@ -1,3 +1,4 @@
+import { useMutation } from "@liveblocks/react";
 import { Mark, mergeAttributes } from "@tiptap/core";
 
 export interface SpansMarkOptions {

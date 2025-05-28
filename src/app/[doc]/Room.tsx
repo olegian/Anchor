@@ -66,6 +66,7 @@ export function Room({
         initialStorage={{
           docHandles: new LiveMap(),
           docTitle: "New Document",
+          attachPoints: new LiveMap(),
         }}
       >
         <ClientSideSuspense fallback={<LoadingState />}>

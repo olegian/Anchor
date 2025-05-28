@@ -280,6 +280,12 @@ function AnchorHandle({
   const debouncedWritePos = useDebounce(writePos, 50); // TODO: tune out this parameter to make the sync movement feel nice
 
   const deleteAnchor = useMutation(({ storage }) => {
+    const anchor = storage.get('docHandles').get(id);
+    const attachedSpanId = anchor?.get("attachedSpan")
+    if (attachedSpanId) {
+        storage.get("attachPoints").delete(attachedSpanId);
+    }
+
     storage.get("docHandles").delete(id);
   }, []);
 
@@ -313,6 +319,22 @@ function AnchorHandle({
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
   }, [dragging, localCoords.x, localCoords.y]);
+
+  const attachAnchor = useMutation(({ storage }, spanId) => {
+    storage.get("attachPoints").set(
+      spanId,
+      new LiveObject({
+        anchorId: id,
+      })
+    );
+
+    storage.get("docHandles").get(id)?.set("attachedSpan", spanId);
+  }, []);
+
+  const dettachAnchor = useMutation(({ storage }, spanId) => {
+    storage.get("attachPoints").delete(spanId);
+    storage.get("docHandles").get(id)?.set("attachedSpan", "");
+  }, []);
 
   useEffect(() => {
     if (dragging) return;
@@ -538,6 +560,9 @@ function AnchorHandle({
               })
               .toggleMark(SpansMark.name)
               .run();
+
+            const spanId = editor.getAttributes(SpansMark.name)["id"];
+            attachAnchor(spanId);
           }
         }
 
