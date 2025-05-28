@@ -12,7 +12,7 @@ export default function FloatingNavbar({
     <>
       <div className="fixed top-0 left-0 right-0 z-10 transition-opacity p-4 bg-linear-to-b w-full text-center from-zinc-50 via-white/75 to-transparent">
         <h2
-          className={`line-clamp-1 flex items-start justify-center gap-8 overflow-hidden duration-200 text-sm transition-colors rounded-lg ${
+          className={`line-clamp-1 flex items-start justify-center gap-8 overflow-hidden duration-200 transition-colors rounded-lg ${
             scrollPosition < 180 ? "opacity-0" : "opacity-100"
           } transition-opacity`}
         >
@@ -20,10 +20,10 @@ export default function FloatingNavbar({
             className="text-center group cursor-pointer"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           >
-            <h4 className="font-semibold line-clamp-1 max-w-md font-sans relative">
+            <h4 className="font-semibold line-clamp-1 max-w-md text-base relative font-heading tracking-tight">
               {title || "No title"}
             </h4>
-            <p className="text-zinc-500 text-xs font-semibold font-sans opacity-0 group-hover:translate-y-0 transition-all group-hover:opacity-100 -translate-y-5">
+            <p className="text-zinc-500 text-xs font-semibold font-sans opacity-0 text-sm group-hover:translate-y-0 transition-all group-hover:opacity-100 -translate-y-5">
               Last updated 2 days ago
             </p>
           </div>
