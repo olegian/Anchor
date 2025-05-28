@@ -13,6 +13,7 @@ import { useMutation, useMyPresence, useStorage } from "@liveblocks/react";
 import { useScrollPosition } from "../components/hooks/useScrollPosition";
 import BackButton from "./components/floating/BackButton";
 import { useEffect, useRef, useState } from "react";
+import { ANCHOR_HANDLE_SIZE } from "./components/interaction/constants";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
@@ -110,9 +111,9 @@ function EditingInterface({ docId }: { docId: string }) {
         !borderRef.current.contains(event.target as Node)
       ) {
         if (
-          mousePos.x < 50 + 24 ||
-          mousePos.x > window.innerWidth - 50 - 24 ||
-          mousePos.y + window.scrollY < 200 + 24
+          mousePos.x < 50 + ANCHOR_HANDLE_SIZE ||
+          mousePos.x > window.innerWidth - 50 - ANCHOR_HANDLE_SIZE ||
+          mousePos.y + window.scrollY < 200 + ANCHOR_HANDLE_SIZE
         ) {
           return;
         }
@@ -124,8 +125,8 @@ function EditingInterface({ docId }: { docId: string }) {
         const existsNearby = handles
           ? Array.from(handles.values()).some(
               (handle) =>
-                Math.abs(handle.x - potentialX) < 24 &&
-                Math.abs(handle.y - potentialY) < 24
+                Math.abs(handle.x - potentialX) < ANCHOR_HANDLE_SIZE &&
+                Math.abs(handle.y - potentialY) < ANCHOR_HANDLE_SIZE
             )
           : false;
 
@@ -138,8 +139,8 @@ function EditingInterface({ docId }: { docId: string }) {
           id,
           potentialX,
           potentialY,
-          24, // ANCHOR_HANDLE_SIZE
-          24 // ANCHOR_HANDLE_SIZE
+          ANCHOR_HANDLE_SIZE,
+          ANCHOR_HANDLE_SIZE
         );
       }
     }
