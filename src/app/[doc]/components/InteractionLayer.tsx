@@ -182,7 +182,6 @@ function AnchorHandle({
   const ref = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState(false);
   const [showConversation, setShowConversation] = useState(false);
-  const offset = useRef({ x: 0, y: 0 });
 
   const openConversation = () => {
     // add this anchor handle to opened handles by user
@@ -331,9 +330,13 @@ function AnchorHandle({
     storage.get("docHandles").get(id)?.set("attachedSpan", spanId);
   }, []);
 
-  const dettachAnchor = useMutation(({ storage }, spanId) => {
-    storage.get("attachPoints").delete(spanId);
-    storage.get("docHandles").get(id)?.set("attachedSpan", "");
+  const dettachAnchor = useMutation(({ storage }) => {
+    const anchor = storage.get("docHandles").get(id);
+    const attachedSpan = anchor?.get("attachedSpan");
+    if (attachedSpan) {
+        storage.get("attachPoints").delete(attachedSpan);
+        anchor?.set("attachedSpan", "");
+    }
   }, []);
 
   useEffect(() => {
@@ -586,6 +589,7 @@ function AnchorHandle({
   }, [dragging, id, debouncedWritePos, localCoords.x]);
 
   const onMouseDown = (e: React.MouseEvent) => {
+    // TODO: change the open popup handler to be a double click, to remove the double handling of stuff here
     if (!dragging) {
       setOpenPopup((prev) => !prev); // close the popup if we are dragging
     } else {
@@ -609,13 +613,7 @@ function AnchorHandle({
       return;
     }
 
-    const rect = ref.current?.getBoundingClientRect();
-    if (rect) {
-      offset.current = {
-        x: e.clientX - (rect.left + rect.width / 2),
-        y: e.clientY - (rect.top + rect.height / 2),
-      };
-    }
+    dettachAnchor();
     setDragging(true);
     setDraggingAnchor(true);
   };
