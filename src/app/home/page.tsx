@@ -10,6 +10,7 @@ import dynamic from "next/dynamic";
 import { getAccessibleRooms, getRoomStorage } from "../actions";
 import UserMenu from "./components/UserMenu";
 import LoadingState from "../components/LoadingState";
+import AnchorLogo from "../components/AnchorLogo";
 const NewDocDialog = dynamic(() => import("./components/NewDocDialog"));
 
 export default function Home() {
@@ -54,9 +55,14 @@ export default function Home() {
     <>
       <div className="py-32">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-start justify-between">
             <div className="space-y-2">
-              <h1 className="text-4xl font-semibold">Documents</h1>
+              <div className="space-y-2">
+                <AnchorLogo className="w-24 h-8 fill-zinc-800" />
+                <h1 className="text-4xl font-semibold tracking-tighter">
+                  Documents
+                </h1>
+              </div>
               <p className="text-lg font-medium text-zinc-700">
                 {isLoading
                   ? "Figuring out who you are..."

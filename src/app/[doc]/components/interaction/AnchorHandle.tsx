@@ -16,6 +16,7 @@ import { useDebounce } from "./useDebounce";
 import { LiveObject, User } from "@liveblocks/client";
 import { useSession } from "next-auth/react";
 import { Editor } from "@tiptap/react";
+import { calculateBlackOrWhiteContrast } from "@/app/lib/utils";
 
 export default function AnchorHandle({
   id,
@@ -601,6 +602,12 @@ export default function AnchorHandle({
                   owned && !isOwner && !deleteState ? ownerData?.color : "",
                 backgroundColor:
                   owned && !isOwner && !deleteState ? ownerData?.color : "",
+                color:
+                  owned && !isOwner && !deleteState
+                    ? calculateBlackOrWhiteContrast(
+                        ownerData?.color ?? "#000000"
+                      )
+                    : "",
               }}
             >
               {title}
@@ -636,6 +643,10 @@ export default function AnchorHandle({
                     liveHandleInfo.wordIdx >= 0
                       ? "25"
                       : "")
+                  : "",
+              color:
+                owned && !isOwner && !deleteState
+                  ? calculateBlackOrWhiteContrast(ownerData?.color ?? "#000000")
                   : "",
               width: `${liveHandleInfo.width ?? ANCHOR_HANDLE_SIZE}px`,
               height: `${liveHandleInfo.height ?? ANCHOR_HANDLE_SIZE}px`,

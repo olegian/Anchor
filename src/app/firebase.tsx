@@ -91,6 +91,13 @@ export async function registerUser(
   color: string
 ) {
   // TODO: add duplicate username detection
+  const doesUsernameExist = await getAllUsers().then((users) => {
+    return users?.some((user) => user.name === username);
+  });
+
+  if (doesUsernameExist) {
+    throw new Error("Username already exists");
+  }
 
   const shPassword = await saltAndHash(password);
 

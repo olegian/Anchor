@@ -1,6 +1,7 @@
 import { getUser } from "@/app/actions";
 import { signOut } from "@/app/auth";
 import { getUserInfo } from "@/app/firebase";
+import { calculateBlackOrWhiteContrast } from "@/app/lib/utils";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
 
 import { UserCircleIcon } from "@heroicons/react/20/solid";
@@ -22,7 +23,9 @@ export default function UserMenu({ user }: { user: User | null }) {
       });
     }
   }, [user]);
-  const [first = "", last = ""] = profile?.name.split(" ") || [];
+  const [first = "", last = ""] = profile?.name.includes(" ")
+    ? profile.name.split(" ")
+    : [profile?.name || "", ""];
 
   return (
     <Menu>
@@ -31,11 +34,12 @@ export default function UserMenu({ user }: { user: User | null }) {
           <div
             style={{
               backgroundColor: profile?.color,
+              color: calculateBlackOrWhiteContrast(profile?.color ?? "#000000"),
             }}
             className="uppercase cursor-pointer hover:opacity-75 transition-opacity flex items-center justify-center size-10 rounded-full text-white font-semibold text-base"
           >
             {first.charAt(0)}
-            {last.charAt(0)}
+            {last.charAt(0) ? last.charAt(0) : ""}
           </div>
         ) : (
           <UserCircleIcon className="size-10 fill-zinc-500 animate-pulse" />
