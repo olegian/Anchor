@@ -129,10 +129,18 @@ export default function AnchorHandle({
 
   const writeInfo = useMutation(({ storage }, paragraphIdx, wordIdx, anchorWidth, anchorHeight) => {
     const handle = storage.get("docHandles").get(id);
-    handle?.set("paragraphIdx", paragraphIdx);
-    handle?.set("wordIdx", wordIdx);
-    handle?.set("width", anchorWidth);
-    handle?.set("height", anchorHeight);
+    if (paragraphIdx !== undefined) {
+      handle?.set("paragraphIdx", paragraphIdx);
+    }
+    if (wordIdx !== undefined) {
+      handle?.set("wordIdx", wordIdx);
+    }
+    if (anchorHeight !== undefined) {
+      handle?.set("height", anchorHeight);
+    }
+    if (anchorWidth !== undefined) {
+      handle?.set("width", anchorWidth);
+    }
   }, []);
   const debouncedWriteInfo = useDebounce(writeInfo, 30);
 
@@ -306,7 +314,7 @@ export default function AnchorHandle({
 
       // write new position to live
       debouncedWritePos(targetX, targetY + window.scrollY);
-      debouncedWriteInfo(-1, -1, 24, 24);
+      debouncedWriteInfo(paragraphIdx, -1, 24, 24);
       animate();
     };
 
@@ -350,6 +358,7 @@ export default function AnchorHandle({
               .content.content.map((node: any) => node.text)
               .join("");
             const idxInParagraph = pos - inside;
+            let wordIdx = -1;
             // anchor dropped not on a space
             if (
               paragraphContent[idxInParagraph] !== " " &&
@@ -379,15 +388,13 @@ export default function AnchorHandle({
 
               const span = document.getElementById(spanId) as HTMLSpanElement;
               const rect = span.getBoundingClientRect();
-
               debouncedWritePos(rect.left + rect.width / 2, rect.top - 6 + window.scrollY);
 
-              const paragraphNode = editor.$pos(pos).node;
-              // console.log(paragraphNode);
-
-              const wordIdx = -1;
+              const words = paragraphContent.substring(0, start).split(/\s/);
+              wordIdx = (words[0] == "") ? 0 : words.length;
+              console.log("wi", wordIdx);
               debouncedWriteInfo(
-                -1,
+                undefined,  // leave paragraph idx to be whatever it was when the anchor was moved
                 wordIdx,
                 span ? span.offsetWidth : 24,
                 span ? span.offsetHeight : 24
@@ -399,8 +406,8 @@ export default function AnchorHandle({
           }
           setAnchorOwner(""); // release ownership, allow others to grab it
           debouncedWritePos(targetX, targetY + window.scrollY);
-          debouncedWriteInfo(-1, -1, 24, 24);
-        }
+          debouncedWriteInfo(undefined, -1, 24, 24);
+        }  // end if dragging
         if (animationFrame) cancelAnimationFrame(animationFrame);
       }
     };
