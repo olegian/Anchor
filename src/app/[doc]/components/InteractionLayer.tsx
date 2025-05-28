@@ -22,6 +22,7 @@ import { LiveObject, User } from "@liveblocks/client";
 import { Editor } from "@tiptap/react";
 import { Transition } from "@headlessui/react";
 import AnchorPopup from "./AnchorPopup";
+import { SpansMark } from "./SpansMark";
 
 export function EditorMirrorLayer({ html }: { html: string }) {
   function wrapEveryWordInSpansPreserveHTML(html: string) {
@@ -484,7 +485,7 @@ function AnchorHandle({
       animate();
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (e: MouseEvent) => {
       if (deleteState) {
         // Animate before deleting the anchor
         if (ref.current) {
@@ -497,8 +498,55 @@ function AnchorHandle({
           }, 500);
         }
       } else {
-        // gives time for anchor to settle after local movment 
+        // gives time for anchor to settle after local movment
         // before we start syncing from live position
+
+        if (dragging) {
+          const targetX = e.clientX;
+          const targetY = e.clientY;
+          console.log("dropped", targetX, targetY);
+          const editorPos = editor.view.posAtCoords({
+            left: targetX,
+            top: targetY,
+          });
+          if (editorPos) {
+            // pos is the pos of the nearest cursor position
+            // inside is the pos of the containing node
+            let { pos, inside } = editorPos;
+            pos--; // dont ask, tiptap stupid
+
+            const paragraphContent = editor
+              .$pos(pos)
+              .content.content.map((node) => node.text)
+              .join("");
+            const paragraphIdx = pos - inside;
+            let start = paragraphContent.lastIndexOf(" ", paragraphIdx);
+            // also dont ask me why start doesnt need a fallback on -1. it somehow works out with the off-by-one introduced
+            // by the weird indexing that `pos` uses in tiptap.
+
+            let end = paragraphContent.indexOf(" ", paragraphIdx);
+            if (end === -1) {
+              // no space before end of paragraph, so use the end of the para
+              end = paragraphContent.length;
+            }
+
+            console.log(
+              editor.state.doc.textBetween(inside + start + 2, inside + end + 1)
+            );
+
+            console.log(editor.extensionManager)
+
+            editor
+              .chain()
+              .setTextSelection({
+                from: inside + start + 2,
+                to: inside + end + 1,
+              })
+              .toggleMark(SpansMark.name)
+              .run();
+          }
+        }
+
         setTimeout(() => {
           setDragging(false);
         }, 100);

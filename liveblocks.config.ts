@@ -2,24 +2,35 @@
 
 import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 
-export type Conversation = LiveObject<{
+export type AnchorInfo = LiveObject<{
   isPending: boolean; // whether there is a request that is currently outstanding
   exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>; // in order
   owner: string; //  userid of person who is currently moving a specific anchor, or "" for no owner
   handleName: string; // optional name for the handle
   wordIdx: number; // -1 if not handle is not hooked onto any word
   paragraphIdx: number; // same as ^
-  x: number; // on screen x-position
+  x: number; // center-origin x-position
   y: number; // on screen y-position
   width: number; // width of the handle
   height: number; // height of the handle
+  attachedSpan: string; // id of attached span, "" if the anchor is not attached
 }>;
+
+export type Attach = LiveObject<{
+  anchorId: string;
+  // TODO: -oleg-
+  // ideally, these values are synced to the associated AnchorInfo[anchorId] (x, y)
+  // and I think we can actually do that, but I am leaving this as a reminder for myself 
+  x: number; // center-origin x-position
+  y: number;
+}>;
+
+export type AttachedMap = LiveMap<string, Attach>;
 
 export type Handles = LiveMap<
   string, // handleId
-  Conversation
+  AnchorInfo
 >;
-
 
 export type HandlesMap = ReadonlyMap<
   string,
@@ -35,6 +46,7 @@ export type HandlesMap = ReadonlyMap<
     readonly y: number;
     readonly width: number;
     readonly height: number;
+    readonly attachedSpan: string; // id of attached span, "" if the anchor is not attached
   }
 > | null;
 

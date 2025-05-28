@@ -64,6 +64,7 @@ function EditingInterface({ docId }: { docId: string }) {
           y: y,
           width: width,
           height: height,
+          attachedSpan: "",
         })
       );
     },

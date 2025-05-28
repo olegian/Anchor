@@ -10,6 +10,9 @@ import { EditorMirrorLayer, AnchorLayer } from "./InteractionLayer";
 import { HandlesMap } from "../../../../liveblocks.config";
 import { useStorage } from "@liveblocks/react"; // Make sure this is imported
 import Placeholder from "@tiptap/extension-placeholder";
+import TextStyle from "@tiptap/extension-text-style";
+import { NodeRange } from "@tiptap/pm/model";
+import { SpansMark } from "./SpansMark";
 
 export default function Editor({
   title,
@@ -54,6 +57,7 @@ export default function Editor({
       Placeholder.configure({
         placeholder: "Type your text here...",
       }),
+      SpansMark,
     ],
     immediatelyRender: false,
     editable: !draggingAnchor,
