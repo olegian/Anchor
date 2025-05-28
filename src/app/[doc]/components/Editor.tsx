@@ -64,7 +64,7 @@ export default function Editor({
       const rect: DOMRect = span.getBoundingClientRect();
 
       const x = rect.left + (rect.width / 2);
-      const y = rect.top - 4;
+      const y = rect.top - 4 + window.scrollY;
 
       const anchor = storage.get("docHandles").get(anchorId);
       anchor?.set("x", x - window.innerWidth / 2);

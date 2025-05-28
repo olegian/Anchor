@@ -66,9 +66,7 @@ export default function AnchorHandle({
 
   const closeConversation = () => {
     updatePresense({
-      openHandles: (presence.openHandles || []).filter(
-        (handleId) => handleId !== id
-      ),
+      openHandles: (presence.openHandles || []).filter((handleId) => handleId !== id),
     });
     setShowConversation(false);
   };
@@ -107,14 +105,8 @@ export default function AnchorHandle({
         const targetY = liveHandleInfo!.y;
         // Lerp factor: 0.2 is smooth, 1 is instant
         const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-        const newX =
-          Math.abs(prev.x - targetX) < 0.5
-            ? targetX
-            : lerp(prev.x, targetX, 0.2);
-        const newY =
-          Math.abs(prev.y - targetY) < 0.5
-            ? targetY
-            : lerp(prev.y, targetY, 0.2);
+        const newX = Math.abs(prev.x - targetX) < 0.5 ? targetX : lerp(prev.x, targetX, 0.2);
+        const newY = Math.abs(prev.y - targetY) < 0.5 ? targetY : lerp(prev.y, targetY, 0.2);
         return { x: newX, y: newY };
       });
       animationFrame = requestAnimationFrame(animate);
@@ -130,22 +122,19 @@ export default function AnchorHandle({
   // update live position, debounce to not send 20 billion requests
   const writePos = useMutation(({ storage }, targetX, targetY) => {
     const handle = storage.get("docHandles").get(id);
-    console.log("target", targetX, targetY);
     handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
     handle?.set("y", targetY);
   }, []);
-  const debouncedWritePos = useDebounce(writePos, 50); // TODO: tune out this parameter to make the sync movement feel nice
+  const debouncedWritePos = useDebounce(writePos, 30); // TODO: tune out this parameter to make the sync movement feel nice
 
-  const writeInfo = useMutation(
-    ({ storage }, paragraphIdx, wordIdx, anchorWidth, anchorHeight) => {
-      const handle = storage.get("docHandles").get(id);
-      handle?.set("paragraphIdx", paragraphIdx);
-      handle?.set("wordIdx", wordIdx);
-      handle?.set("width", anchorWidth);
-      handle?.set("height", anchorHeight);
-    },
-    []
-  );
+  const writeInfo = useMutation(({ storage }, paragraphIdx, wordIdx, anchorWidth, anchorHeight) => {
+    const handle = storage.get("docHandles").get(id);
+    handle?.set("paragraphIdx", paragraphIdx);
+    handle?.set("wordIdx", wordIdx);
+    handle?.set("width", anchorWidth);
+    handle?.set("height", anchorHeight);
+  }, []);
+  const debouncedWriteInfo = useDebounce(writeInfo, 30);
 
   const deleteAnchor = useMutation(({ storage }) => {
     const anchor = storage.get("docHandles").get(id);
@@ -165,8 +154,7 @@ export default function AnchorHandle({
   const animationRef = useRef<number | null>(null);
 
   const deleteState =
-    localCoords.x < 50 ||
-    window.innerWidth - 50 - ANCHOR_HANDLE_SIZE < localCoords.x;
+    localCoords.x < 50 || window.innerWidth - 50 - ANCHOR_HANDLE_SIZE < localCoords.x;
 
   // --- Rotation animation effect ---
   useEffect(() => {
@@ -236,15 +224,12 @@ export default function AnchorHandle({
       let targetX = e.clientX;
       let targetY = e.clientY + window.scrollY;
 
-      // console.log(e.clientX, e.clientY);
-
       const editorLeftEdge = paragraphs[0].getBoundingClientRect().x;
       const editorRightEdge = 752 + editorLeftEdge; // TODO from Ritesh: 752 is great for anything non-mobile, due to the max-w-3xl (or smth)
 
       const anchorOnLeft = targetX < editorLeftEdge;
       const anchorOnRight = targetX > editorRightEdge;
-      const anchorInEditor =
-        targetX >= editorLeftEdge && targetX <= editorRightEdge;
+      const anchorInEditor = targetX >= editorLeftEdge && targetX <= editorRightEdge;
 
       // Should we snap to the left side of the editor?
       // if (anchorOnLeft && !anchorOnRight) {
@@ -268,10 +253,7 @@ export default function AnchorHandle({
       let wordIdx = -1;
       let anchorWidth = ANCHOR_HANDLE_SIZE;
       let anchorHeight = ANCHOR_HANDLE_SIZE;
-      if (
-        anchorInEditor ||
-        (anchorOnLeft && editorLeftEdge - targetX < editorLeftEdge / 6)
-      ) {
+      if (anchorInEditor || (anchorOnLeft && editorLeftEdge - targetX < editorLeftEdge / 6)) {
         // no need to try to identify if we already know we aren't over the editor
         outer: for (let i = 0; i < paragraphs.length; i++) {
           const paragraph = paragraphs[i];
@@ -323,8 +305,8 @@ export default function AnchorHandle({
       };
 
       // write new position to live
-      debouncedWritePos(targetX, targetY);
-      writeInfo(-1, -1, 24, 24);
+      debouncedWritePos(targetX, targetY + window.scrollY);
+      debouncedWriteInfo(-1, -1, 24, 24);
       animate();
     };
 
@@ -350,21 +332,14 @@ export default function AnchorHandle({
           setOpenPopup(false);
 
           const targetX = e.clientX;
-          const targetY = e.clientY + window.scrollY;
-          console.log("dropped", targetX, targetY);
+          const targetY = e.clientY;
 
           const editorPos = editor.view.posAtCoords({
             left: targetX,
             top: targetY,
           });
 
-          console.log("editor pos");
-          console.log(editorPos);
-
           if (editorPos) {
-            console.log("editor pos (inside)");
-            console.log(editorPos);
-
             // pos is the pos of the nearest cursor position
             // inside is the pos of the containing node
             let { pos, inside } = editorPos;
@@ -380,10 +355,6 @@ export default function AnchorHandle({
               paragraphContent[idxInParagraph] !== " " &&
               paragraphContent[idxInParagraph] !== undefined
             ) {
-              console.log(
-                "anchor dropped not on a space, trying to find nearest space",
-                paragraphContent[idxInParagraph]
-              );
               let start = paragraphContent.lastIndexOf(" ", idxInParagraph);
               // also dont ask me why start doesnt need a fallback on -1. it somehow works out with the off-by-one introduced
               // by the weird indexing that `pos` uses in tiptap.
@@ -393,7 +364,6 @@ export default function AnchorHandle({
                 // no space before end of paragraph, so use the end of the para
                 end = paragraphContent.length;
               }
-              console.log(paragraphContent.substring(start, end));
 
               editor
                 .chain()
@@ -409,34 +379,28 @@ export default function AnchorHandle({
 
               const span = document.getElementById(spanId) as HTMLSpanElement;
               const rect = span.getBoundingClientRect();
-              console.log("span", span);
 
-              debouncedWritePos(rect.left + rect.width / 2, rect.top - 6);
+              debouncedWritePos(rect.left + rect.width / 2, rect.top - 6 + window.scrollY);
 
-              const paragraphIdx = -1;
+              const paragraphNode = editor.$pos(pos).node;
+              // console.log(paragraphNode);
+
               const wordIdx = -1;
-              writeInfo(
-                paragraphIdx,
+              debouncedWriteInfo(
+                -1,
                 wordIdx,
                 span ? span.offsetWidth : 24,
                 span ? span.offsetHeight : 24
               );
-
-              // undefined,
-              // undefined,
-
-              // if (span) {
-              //   console.log("span found", span);
-              //   if (anchorRef.current) {
-              //     console.log("current", span);
-              //     anchorRef.current.style.width = `${span.offsetWidth}px`;
-              //     anchorRef.current.style.height = `${span.offsetHeight}px`;
-              //   }
-              // }
+              setAnchorOwner(""); // release ownership, allow others to grab it
+              if (animationFrame) cancelAnimationFrame(animationFrame);
+              return;
             }
           }
+          setAnchorOwner(""); // release ownership, allow others to grab it
+          debouncedWritePos(targetX, targetY + window.scrollY);
+          debouncedWriteInfo(-1, -1, 24, 24);
         }
-        setAnchorOwner(""); // release ownership, allow others to grab it
         if (animationFrame) cancelAnimationFrame(animationFrame);
       }
     };
@@ -490,7 +454,6 @@ export default function AnchorHandle({
         if (start && end) {
           const startPos = start.pos;
           const endPos = end.pos;
-          console.log("removing span from ", startPos, endPos);
           editor
             .chain()
             .setTextSelection({ from: startPos, to: endPos })
@@ -556,19 +519,13 @@ export default function AnchorHandle({
           left: localCoords.x,
           top: localCoords.y,
           transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-          transition: dragging
-            ? "none"
-            : "transform 0.4s cubic-bezier(.4,2,.6,1)",
+          transition: dragging ? "none" : "transform 0.4s cubic-bezier(.4,2,.6,1)",
         }}
       >
         <div className="flex flex-col items-center justify-center group relative  space-y-2">
           <div
             className={`${
-              owned && !isOwner && !deleteState
-                ? ""
-                : deleteState
-                ? "opacity-0"
-                : "opacity-0"
+              owned && !isOwner && !deleteState ? "" : deleteState ? "opacity-0" : "opacity-0"
             } flex items-center justify-center group-hover:opacity-100 translate-y-0  space-x-1 transition-all font-semibold transform text-xs`}
           >
             <div
@@ -580,15 +537,11 @@ export default function AnchorHandle({
                   : "text-zinc-700 border-zinc-200 bg-white"
               } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block`}
               style={{
-                borderColor:
-                  owned && !isOwner && !deleteState ? ownerData?.color : "",
-                backgroundColor:
-                  owned && !isOwner && !deleteState ? ownerData?.color : "",
+                borderColor: owned && !isOwner && !deleteState ? ownerData?.color : "",
+                backgroundColor: owned && !isOwner && !deleteState ? ownerData?.color : "",
                 color:
                   owned && !isOwner && !deleteState
-                    ? calculateBlackOrWhiteContrast(
-                        ownerData?.color ?? "#000000"
-                      )
+                    ? calculateBlackOrWhiteContrast(ownerData?.color ?? "#000000")
                     : "",
               }}
             >
@@ -620,8 +573,7 @@ export default function AnchorHandle({
             style={{
               backgroundColor:
                 owned && !isOwner && !deleteState
-                  ? ownerData?.color +
-                    (liveHandleInfo.attachedSpan.length > 0 ? "25" : "")
+                  ? ownerData?.color + (liveHandleInfo.attachedSpan.length > 0 ? "25" : "")
                   : "",
               color:
                 owned && !isOwner && !deleteState
@@ -632,7 +584,6 @@ export default function AnchorHandle({
             }}
             onMouseDown={onMouseDown}
             onDoubleClick={() => {
-              console.log("double click!");
               setOpenPopup(true);
             }}
           >
