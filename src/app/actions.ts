@@ -422,31 +422,35 @@ export async function regenerateResponse(
     // Get appropriate context
     const documentContext = getDocumentContext(contextMode, paragraphIdx, wordIdx, parsedDoc);
     
-    // Get conversation history and properly reset for regeneration
+    // FIXED: Get conversation history and properly reset for regeneration
     if (!conversationHistory.has(handleId)) {
       conversationHistory.set(handleId, []);
     }
     const history = conversationHistory.get(handleId)!;
     
-    // Create a copy of the history to avoid modifying the original
+    // FIXED: Create a proper copy and remove the last model response only
     const historyForRegeneration = [...history];
     
-    // Remove the last AI response if it exists
-    if (historyForRegeneration.length > 0 && historyForRegeneration[historyForRegeneration.length - 1].role === "model") {
+    // Only remove the last AI response if it exists
+    if (historyForRegeneration.length > 0 && 
+        historyForRegeneration[historyForRegeneration.length - 1].role === "model") {
       historyForRegeneration.pop();
     }
     
-    // Also remove the last user message to regenerate the entire exchange
-    if (historyForRegeneration.length > 0 && historyForRegeneration[historyForRegeneration.length - 1].role === "user") {
-      historyForRegeneration.pop();
-    }
+    // DON'T remove the user message - we need it for context!
+    // The original code incorrectly removed both the model AND user message
 
     // Generate new response with increased temperature for more variation
-    const text = await generateLLMResponseWithVariation(userPrompt, documentContext, historyForRegeneration, env);
+    const text = await generateLLMResponseWithVariation(
+      userPrompt, 
+      documentContext, 
+      historyForRegeneration, // This now properly includes the user message
+      env
+    );
     console.log("regenerated response text = " + text);
 
-    // Update the original conversation history with the new response
-    // Remove the old response first
+    // FIXED: Update the conversation history correctly
+    // Remove the old model response if it exists
     if (history.length > 0 && history[history.length - 1].role === "model") {
       history.pop();
     }
@@ -468,7 +472,7 @@ export async function regenerateResponse(
       if (exchanges && exchanges.length > 0) {
         exchanges.get(exchanges.length - 1)?.set("response", text);
         // Optional: Update timestamp to indicate regeneration
-        // exchanges.get(exchanges.length - 1)?.set("timestamp", Date.now());
+        exchanges.get(exchanges.length - 1)?.set("timestamp", Date.now());
       }
     });
 
@@ -486,7 +490,7 @@ export async function regenerateResponse(
   }
 }
 
-// New function specifically for regeneration with higher temperature and variation
+// ALSO FIXED: The generateLLMResponseWithVariation function
 async function generateLLMResponseWithVariation(
   userPrompt: string,
   documentContext: DocumentContext,
@@ -515,13 +519,7 @@ async function generateLLMResponseWithVariation(
   const regenerationNote = "\n\nPlease provide an alternative perspective or approach in your response.";
   const fullPrompt = `${contextPrompt}\n\nUser Query: ${userPrompt}${regenerationNote}`;
 
-  // Add user message to history
-  const updatedHistory = [...history, {
-    role: "user",
-    parts: [{ text: fullPrompt }],
-  }];
-
-  // Set up Gemini model with system instruction (same as before)
+  // FIXED: Don't add the current message to history here - use the existing history
   const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
     systemInstruction: {
@@ -558,9 +556,9 @@ When regenerating responses, try to provide alternative perspectives or differen
     },
   });
 
-  // Create chat session with history and higher temperature for more variation
+  // FIXED: Create chat session with the existing history
   const chat = model.startChat({
-    history: updatedHistory.slice(0, -1), // Exclude the current message from history
+    history: history, // Use the history as-is (should include the user message)
     generationConfig: {
       temperature: 1.0, // Increased temperature for more variation in regeneration
       maxOutputTokens: 2048,
@@ -569,7 +567,7 @@ When regenerating responses, try to provide alternative perspectives or differen
     },
   });
 
-  // Generate response
+  // Generate response with the new prompt
   const result = await chat.sendMessage(fullPrompt);
   const response = result.response;
   const text = response.text();
@@ -600,7 +598,6 @@ export async function createExchange(
   handleId: string,
   promptText: string
 ): Promise<void> {
-  //docId = "bc8eb889-6d61-4bd9-9389-7d84558c8685"
   await liveblocks.mutateStorage(docId, ({ root }) => {
     const handleInfo = root.get("docHandles").get(handleId);
     const exchanges = handleInfo?.get("exchanges");

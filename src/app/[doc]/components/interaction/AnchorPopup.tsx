@@ -143,49 +143,25 @@ export default function AnchorPopup({
 
   const handleRegeneration = async () => {
     // TODO: handle regeneration of the last response
-    // setIsLoading(true);
-    // try {
-    //   await regenerateResponse(docId, handleId, contextMode);
-    //   // Optionally refresh local state if needed
-    // } catch (error) {
-    //   console.error("Error regenerating response:", error);
-    // } finally {
-    //   setIsLoading(false);
-    // }
-
-
-    // if (isLoading) return;
-  
-    // setIsLoading(true);
-    // try {
-    //   await regenerateResponse(docId, handleId, contextMode);
-    // } catch (error) {
-    //   console.error("Regeneration error:", error);
-    // } finally {
-    //   setIsLoading(false);
-    // }
     if (isLoading) return;
   
-    // Only allow regeneration if there's a response to regenerate
-    if (!exchanges.at(viewedExchange)?.response) {
-      console.warn("No response to regenerate");
-      return;
-    }
-    
     setIsLoading(true);
     
     try {
-      console.log("Regenerating response for exchange:", viewedExchange);
-      const result = await regenerateResponse(docId, handleId, contextMode);
+      await regenerateResponse(docId, handleId, contextMode);
       
-      if (result.status === "success") {
-        console.log("Regeneration successful:", result.text);
-        // The response should automatically update through Liveblocks reactivity
+      // Move to the next exchange if we're not already at the last one
+      if (viewedExchange < exchanges.length - 1) {
+        setViewedExchange(viewedExchange + 1);
       } else {
-        console.error("Regeneration failed:", result.message);
+        // We're at the last exchange, create a new one and move to it
+        if (openNewPrompt()) {
+          setViewedExchange(exchanges.length); // Move to the new exchange
+        }
       }
+      
     } catch (error) {
-      console.error("Regeneration error:", error);
+      console.error("Error regenerating response:", error);
     } finally {
       setIsLoading(false);
     }
