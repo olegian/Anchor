@@ -530,12 +530,6 @@ function AnchorHandle({
               end = paragraphContent.length;
             }
 
-            console.log(
-              editor.state.doc.textBetween(inside + start + 2, inside + end + 1)
-            );
-
-            console.log(editor.extensionManager)
-
             editor
               .chain()
               .setTextSelection({
