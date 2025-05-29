@@ -67,7 +67,7 @@ export default function Editor({
           const x = rect.left + rect.width / 2;
           const y = rect.top - 4 + window.scrollY;
           anchor?.set("x", x - window.innerWidth / 2);
-          anchor?.set("y", y);
+          anchor?.set("y", y + window.scrollY);
           anchor?.set("width", span.offsetWidth);
           anchor?.set("height", span.offsetHeight);
 
@@ -105,7 +105,7 @@ export default function Editor({
           const y = rect.top + rect.height / 2 - 13;
 
           anchor?.set("x", x - window.innerWidth / 2);
-          anchor?.set("y", y);
+          anchor?.set("y", y + window.scrollY);
           anchor?.set("width", 24);
           anchor?.set("height", 24);
 
