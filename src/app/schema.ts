@@ -15,8 +15,9 @@ export const SCHEMA = {
       ],
     },
     paraAttachedSpan: {
-      content: "inline*",
+      content: "block+",
       group: "block",
+      defining: true,
       attrs: {
         id: {
           default: null,
