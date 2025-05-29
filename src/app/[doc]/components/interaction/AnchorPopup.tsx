@@ -121,6 +121,7 @@ export default function AnchorPopup({
     if (promptText.length == 0 || isLoading) return;
     console.log("prompting: ", promptText);
 
+    console.log(editor.schema.spec)
     if (!setPending(true)) {
       setIsLoading(false);
       return;

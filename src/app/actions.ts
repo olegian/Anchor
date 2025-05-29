@@ -18,6 +18,8 @@ import {
   getUserInfo,
 } from "./firebase";
 import { RoomData } from "@liveblocks/node";
+import { Schema } from "@tiptap/pm/model";
+import { SCHEMA } from "./schema";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
@@ -105,25 +107,23 @@ function parseDocumentContent(docJson: any): {
         });
       }
 
-      if (paragraphText.trim()) {
-        const paragraphEnd = currentPos;
-        paragraphs.push({
-          content: paragraphText.trim(),
-          startPos: paragraphStart,
-          endPos: paragraphEnd,
-          index: paragraphIndex,
-        });
+      const paragraphEnd = currentPos;
+      paragraphs.push({
+        content: paragraphText.trim(),
+        startPos: paragraphStart,
+        endPos: paragraphEnd,
+        index: paragraphIndex,
+      });
 
-        // Add paragraph words to global words array
-        paragraphWords.forEach((word) => {
-          words.push({
-            ...word,
-            paragraphIndex: paragraphIndex,
-          });
+      // Add paragraph words to global words array
+      paragraphWords.forEach((word) => {
+        words.push({
+          ...word,
+          paragraphIndex: paragraphIndex,
         });
+      });
 
-        paragraphIndex++;
-      }
+      paragraphIndex++;
 
       fullText += paragraphText + "\n";
       currentPos += 1; // Account for paragraph break
@@ -146,76 +146,95 @@ function getDocumentContext(
   wordIdx: number,
   parsedDoc: ReturnType<typeof parseDocumentContent>
 ): DocumentContext {
-  console.log(`Getting context with mode: ${contextMode}, paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`);
-  
+  console.log(
+    `Getting context with mode: ${contextMode}, paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`
+  );
+
   // Use the explicit contextMode to determine context type
   switch (contextMode) {
     case "doc":
       console.log("Using document context (explicit mode)");
       return {
         content: parsedDoc.fullText,
-        contextType: "document"
+        contextType: "document",
       };
-      
+
     case "paragraph":
       // Use paragraph context if valid paragraph index exists
       if (paragraphIdx >= 0 && paragraphIdx < parsedDoc.paragraphs.length) {
         const targetParagraph = parsedDoc.paragraphs[paragraphIdx];
-        console.log(`Using paragraph context: "${targetParagraph.content.substring(0, 50)}..."`);
-        
+        console.log(
+          `Using paragraph context: "${targetParagraph.content.substring(
+            0,
+            50
+          )}..."`
+        );
+
         return {
           content: targetParagraph.content,
-          contextType: "paragraph"
+          contextType: "paragraph",
         };
       } else {
         // Fall back to document if no valid paragraph
-        console.log("No valid paragraph found, falling back to document context");
+        console.log(
+          "No valid paragraph found, falling back to document context"
+        );
         return {
           content: parsedDoc.fullText,
-          contextType: "document"
+          contextType: "document",
         };
       }
-      
+
     case "word":
       // Use word context if valid indices exist
-      if (paragraphIdx >= 0 && paragraphIdx < parsedDoc.paragraphs.length && wordIdx >= 0) {
-        const wordsInParagraph = parsedDoc.words.filter(w => w.paragraphIndex === paragraphIdx);
-        
+      if (
+        paragraphIdx >= 0 &&
+        paragraphIdx < parsedDoc.paragraphs.length &&
+        wordIdx >= 0
+      ) {
+        const wordsInParagraph = parsedDoc.words.filter(
+          (w) => w.paragraphIndex === paragraphIdx
+        );
+
         if (wordIdx < wordsInParagraph.length) {
           const targetWord = wordsInParagraph[wordIdx];
           console.log(`Using word context: "${targetWord.content}"`);
-          
+
           return {
             content: targetWord.content,
-            contextType: "word"
+            contextType: "word",
           };
         } else {
           // Word index out of bounds, fall back to paragraph if available
-          console.log(`Word index ${wordIdx} out of bounds, falling back to paragraph context`);
+          console.log(
+            `Word index ${wordIdx} out of bounds, falling back to paragraph context`
+          );
           if (paragraphIdx >= 0 && paragraphIdx < parsedDoc.paragraphs.length) {
             const targetParagraph = parsedDoc.paragraphs[paragraphIdx];
-            
+
             return {
               content: targetParagraph.content,
-              contextType: "paragraph"
+              contextType: "paragraph",
             };
           }
         }
       }
-      
+
       // Fall back to document context if word context is not available
-      console.log("Word context not available, falling back to document context");
+      console.log(
+        "Word context not available, falling back to document context"
+      );
       return {
         content: parsedDoc.fullText,
-        contextType: "document"
+        contextType: "document",
       };
-      
+
     default:
       // Fallback to document context
       console.log("Unknown context mode, falling back to document context");
       return {
         content: parsedDoc.fullText,
-        contextType: "document"
+        contextType: "document",
       };
   }
 }
@@ -230,12 +249,6 @@ export async function prompt(
   env?: string
 ): Promise<PromptResponse> {
   try {
-    // lock should have been acquired client side, to stop other clients from sending request
-    // TODO: oleg - do the user id association to isPending described in HandleInput.tsx, then update this a little
-
-    // Get document contents to use as context
-    // !!! TODO: This call no longer returns just a string, but a JSON string representation of the entire doc contents
-    // thats good for keeping all the information within the document, but could complicate the below y-coordinate stuff
     const docContents = await getContents(docId);
     const docStorage = await liveblocks.getStorageDocument(docId, "json");
     const handleInfo = docStorage.docHandles[handleId];
@@ -250,9 +263,11 @@ export async function prompt(
     // Use the paragraph and word indices from handle info
     const paragraphIdx = handleInfo.paragraphIdx;
     const wordIdx = handleInfo.wordIdx;
-    
-    console.log(`Handle info - paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}, contextMode: ${contextMode}`);
-    
+
+    console.log(
+      `Handle info - paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}, contextMode: ${contextMode}`
+    );
+
     // Parse document content
     const docJson = JSON.parse(docContents);
     const parsedDoc = parseDocumentContent(docJson);
@@ -263,12 +278,21 @@ export async function prompt(
     parsedDoc.paragraphs.forEach((p, i) => {
       console.log(`Paragraph ${i}: "${p.content.substring(0, 50)}..."`);
     });
-    
+
     // Get appropriate context using the explicit contextMode
-    const documentContext = getDocumentContext(contextMode, paragraphIdx, wordIdx, parsedDoc);
-    
-    console.log(`Final context: ${documentContext.contextType} - "${documentContext.content.substring(0, 100)}..."`);
-    
+    const documentContext = getDocumentContext(
+      contextMode,
+      paragraphIdx,
+      wordIdx,
+      parsedDoc
+    );
+
+    console.log(
+      `Final context: ${
+        documentContext.contextType
+      } - "${documentContext.content.substring(0, 100)}..."`
+    );
+
     // Get or initialize conversation history for this handle
     if (!conversationHistory.has(handleId)) {
       conversationHistory.set(handleId, []);
@@ -336,10 +360,15 @@ through your thought process.
       },
     });
 
-    const conversationTitle = await generateConversationTitle(userPrompt, documentContext.contextType);
-    console.log(`Generated conversation title: ${conversationTitle}`);
-    await setConversationTitle(docId, handleId, conversationTitle);
-
+    // regenerate title every 5 prompts
+    if ((handleInfo.exchanges.length - 1) % 5 === 0) {
+      const conversationTitle = await generateConversationTitle(
+        userPrompt,
+        documentContext.contextType
+      );
+      console.log(`Generated conversation title: ${conversationTitle}`);
+      await setConversationTitle(docId, handleId, conversationTitle);
+    }
     // Create chat session with history
     const chat = model.startChat({
       history,
@@ -409,10 +438,16 @@ export async function regenerateResponse(
     }
 
     // FIXED: Get the specific exchange to regenerate (default to last if not specified)
-    const targetExchangeIndex = exchangeIndex !== undefined ? exchangeIndex : handleInfo.exchanges.length - 1;
-    
+    const targetExchangeIndex =
+      exchangeIndex !== undefined
+        ? exchangeIndex
+        : handleInfo.exchanges.length - 1;
+
     // Validate the exchange index
-    if (targetExchangeIndex < 0 || targetExchangeIndex >= handleInfo.exchanges.length) {
+    if (
+      targetExchangeIndex < 0 ||
+      targetExchangeIndex >= handleInfo.exchanges.length
+    ) {
       throw new Error(`Invalid exchange index: ${targetExchangeIndex}`);
     }
 
@@ -422,23 +457,28 @@ export async function regenerateResponse(
     // Use the paragraph and word indices from handle info
     const paragraphIdx = handleInfo.paragraphIdx;
     const wordIdx = handleInfo.wordIdx;
-    
+
     // Parse document content
     const docJson = JSON.parse(docContents);
     const parsedDoc = parseDocumentContent(docJson);
-    
+
     // Get appropriate context
-    const documentContext = getDocumentContext(contextMode, paragraphIdx, wordIdx, parsedDoc);
-    
+    const documentContext = getDocumentContext(
+      contextMode,
+      paragraphIdx,
+      wordIdx,
+      parsedDoc
+    );
+
     // FIXED: Get conversation history and properly reset for regeneration
     if (!conversationHistory.has(handleId)) {
       conversationHistory.set(handleId, []);
     }
     const history = conversationHistory.get(handleId)!;
-    
+
     // FIXED: Create conversation history up to the target exchange
     const historyForRegeneration = [];
-    
+
     // Add all exchanges up to (but not including) the target exchange
     for (let i = 0; i < targetExchangeIndex; i++) {
       const exchange = handleInfo.exchanges[i];
@@ -455,7 +495,7 @@ export async function regenerateResponse(
         });
       }
     }
-    
+
     // Add the current user prompt (but not the response we're regenerating)
     historyForRegeneration.push({
       role: "user",
@@ -464,8 +504,8 @@ export async function regenerateResponse(
 
     // Generate new response with increased temperature for more variation
     const text = await generateLLMResponseWithVariation(
-      userPrompt, 
-      documentContext, 
+      userPrompt,
+      documentContext,
       historyForRegeneration,
       env
     );
@@ -474,7 +514,7 @@ export async function regenerateResponse(
     // FIXED: Update the conversation history correctly
     // Rebuild the entire history to match the new state
     const newHistory = [];
-    
+
     // Add all exchanges up to the target exchange
     for (let i = 0; i < handleInfo.exchanges.length; i++) {
       const exchange = handleInfo.exchanges[i];
@@ -483,7 +523,7 @@ export async function regenerateResponse(
         role: "user",
         parts: [{ text: exchange.prompt }],
       });
-      
+
       // Add response - use the new regenerated text for the target exchange
       if (i === targetExchangeIndex) {
         newHistory.push({
@@ -554,7 +594,8 @@ async function generateLLMResponseWithVariation(
   }
 
   // Add a slight variation to the prompt to encourage different responses
-  const regenerationNote = "\n\nPlease provide an alternative perspective or approach in your response.";
+  const regenerationNote =
+    "\n\nPlease provide an alternative perspective or approach in your response.";
   const fullPrompt = `${contextPrompt}\n\nUser Query: ${userPrompt}${regenerationNote}`;
 
   const model = genAI.getGenerativeModel({
@@ -617,11 +658,13 @@ export async function resetConversation(handleId: string): Promise<void> {
 }
 
 export async function getContents(roomId: string) {
+  const schema = new Schema(SCHEMA);
   return await withProsemirrorDocument(
     {
       roomId: roomId,
       field: "maindoc",
       client: liveblocks,
+      schema: schema,
     },
     (api) => {
       const contents = api.toJSON();
@@ -685,7 +728,14 @@ export async function invokeAllPrompts(
   env?: string
 ): Promise<string[]> {
   try {
-    const response = await prompt(docId, handleId, "doc", undefined, undefined, env);
+    const response = await prompt(
+      docId,
+      handleId,
+      "doc",
+      undefined,
+      undefined,
+      env
+    );
     return response.status === "success" ? [response.text] : [];
   } catch (error) {
     console.error("Error in invokeAllPrompts:", error);
@@ -830,9 +880,9 @@ async function generateConversationTitle(
     const prompt = `Context type: ${contextType}\nUser prompt: ${firstPrompt}\n\nGenerate a concise title (2-6 words):`;
     const result = await titleModel.generateContent(prompt);
     const title = result.response.text().trim();
-    
+
     // Clean up the title (remove quotes if present, limit length)
-    const cleanTitle = title.replace(/['"]/g, '').substring(0, 50);
+    const cleanTitle = title.replace(/['"]/g, "").substring(0, 50);
     return cleanTitle || "AI Conversation";
   } catch (error) {
     console.error("Error generating conversation title:", error);
@@ -840,7 +890,11 @@ async function generateConversationTitle(
   }
 }
 
-async function setConversationTitle(docId: string, handleId: string, newTitle: string) {
+async function setConversationTitle(
+  docId: string,
+  handleId: string,
+  newTitle: string
+) {
   await liveblocks.mutateStorage(docId, ({ root }) => {
     const handleInfo = root.get("docHandles").get(handleId);
     if (handleInfo) {
