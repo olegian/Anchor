@@ -67,7 +67,7 @@ export default function AnchorPopup({
   }
 
   const [viewedExchange, setViewedExchange] = useState(
-    exchanges > 1 ? exchanges.length - 2 : 0
+    exchanges.length > 1 ? exchanges.length - 2 : 0
   ); // Initalize to the second last exchange if there are more than one, otherwise to the first exchange
   const [isLoading, setIsLoading] = useState(false);
 

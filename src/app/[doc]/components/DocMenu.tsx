@@ -10,26 +10,23 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 const DeleteDocDialog = dynamic(() => import("./dialog/DeleteDocDialog"));
-const DeleteAnchorsDialog = dynamic(
-  () => import("./dialog/DeleteAnchorsDialog")
-);
+const DeleteAnchorsDialog = dynamic(() => import("./dialog/DeleteAnchorsDialog"));
 import { useState } from "react";
 import { useMutation } from "@liveblocks/react";
+import { Editor } from "@tiptap/react";
+import { ParaSpansNode } from "./interaction/ParagraphSpanMark";
+import { SpansMark } from "./interaction/SpansMark";
 
 // You'll need to install these dependencies:
 // npm install jspdf turndown
 
 interface DocMenuProps {
   showText?: boolean;
-  editor?: any; // TipTap editor instance
+  editor?: Editor; // TipTap editor instance
   title?: string; // Document title for filename
 }
 
-export default function DocMenu({
-  showText = false,
-  editor,
-  title = "document",
-}: DocMenuProps) {
+export default function DocMenu({ showText = false, editor, title = "document" }: DocMenuProps) {
   const params = useParams<{ doc: string }>();
   const router = useRouter();
 
@@ -51,11 +48,19 @@ export default function DocMenu({
 
     storage.get("attachPoints").forEach((point, spanId) => {
       storage.get("attachPoints").delete(spanId);
-    }) 
+    });
   }, []);
 
   const deleteAnchorsHandler = () => {
     deleteAllAnchors();
+
+    // remove all spans
+    const paraNodes = editor?.$nodes("paraAttachedSpan");
+    paraNodes?.forEach((node) => {
+      editor?.chain().setNodeSelection(node.pos).toggleWrap(ParaSpansNode.name).run();
+    })
+
+    editor?.chain().selectAll().unsetMark(SpansMark.name).run()
   };
 
   const exportToPDF = async () => {
@@ -126,10 +131,7 @@ export default function DocMenu({
 
               const paragraphText = extractTextFromNode(node);
               if (paragraphText.trim()) {
-                const paragraphLines = pdf.splitTextToSize(
-                  paragraphText,
-                  maxWidth
-                );
+                const paragraphLines = pdf.splitTextToSize(paragraphText, maxWidth);
 
                 paragraphLines.forEach((line: string) => {
                   if (yPosition > pageHeight) {
@@ -155,15 +157,11 @@ export default function DocMenu({
                     yPosition = 20;
                   }
 
-                  const bullet =
-                    node.type === "bulletList" ? "• " : `${index + 1}. `;
+                  const bullet = node.type === "bulletList" ? "• " : `${index + 1}. `;
                   const itemText = extractTextFromNode(listItem);
                   const fullText = bullet + itemText;
 
-                  const itemLines = pdf.splitTextToSize(
-                    fullText,
-                    maxWidth - 10
-                  );
+                  const itemLines = pdf.splitTextToSize(fullText, maxWidth - 10);
                   itemLines.forEach((line: string, lineIndex: number) => {
                     if (yPosition > pageHeight) {
                       pdf.addPage();
@@ -362,8 +360,7 @@ export default function DocMenu({
   };
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isDeleteAnchorsDialogOpen, setIsDeleteAnchorsDialogOpen] =
-    useState(false);
+  const [isDeleteAnchorsDialogOpen, setIsDeleteAnchorsDialogOpen] = useState(false);
 
   return (
     <>
