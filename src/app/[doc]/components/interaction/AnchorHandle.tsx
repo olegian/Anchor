@@ -463,8 +463,10 @@ export default function AnchorHandle({
   const title = `${
     owned && !isOwner
       ? ownerData?.name
-      : liveHandleInfo.handleName || deleteState
+      : deleteState
       ? "Delete?"
+      : liveHandleInfo.title
+      ? liveHandleInfo.title
       : currentAttachedPoint?.type === "word"
       ? "Word"
       : currentAttachedPoint?.type === "paragraph"
