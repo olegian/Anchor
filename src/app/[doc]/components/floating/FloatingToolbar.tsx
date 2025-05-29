@@ -30,7 +30,7 @@ export default function FloatingToolbar({
 
   return (
     <div
-      className={`fixed bottom-4 left-0 right-0 z-20 flex items-center justify-center transition-opacity ${
+      className={`fixed bottom-4 left-0 right-0 z-50 flex items-center justify-center transition-opacity ${
         draggingAnchor ? "pointer-events-none opacity-25" : "opacity-100"
       }`}
     >

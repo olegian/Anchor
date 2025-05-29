@@ -203,7 +203,7 @@ function SignUpForm({
             required
           />
         </div>
-        <div className="flex items-end justify-between w-full space-x-4">
+        <div className="flex items-center justify-between w-full space-x-4">
           <div className="space-y-2 w-full">
             <label
               htmlFor="color"
@@ -265,11 +265,10 @@ function SignUpForm({
               </label>
             </div>
           </div>
-
           <button
             type="submit"
             disabled={!username || !password || !name || !color}
-            className="disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap flex items-center justify-center shrink-0 text-sm h-[38px] w-[95px] rounded-xl bg-white border-zinc-200 border font-medium hover:bg-zinc-100 transition-colors text-zinc-700 cursor-pointer"
+            className="disabled:opacity-50 mt-3.25 disabled:pointer-events-none whitespace-nowrap flex items-center justify-center shrink-0 text-sm h-[38px] w-[95px] rounded-xl bg-white border-zinc-200 border font-medium hover:bg-zinc-100 transition-colors text-zinc-700 cursor-pointer"
           >
             Sign Up
           </button>
