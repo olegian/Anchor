@@ -67,7 +67,7 @@ export default function Editor({
           const x = rect.left + rect.width / 2;
           const y = rect.top - 4 + window.scrollY;
           anchor?.set("x", x - window.innerWidth / 2);
-          anchor?.set("y", y + window.scrollY);
+          anchor?.set("y", y);
           anchor?.set("width", span.offsetWidth);
           anchor?.set("height", span.offsetHeight);
 
@@ -116,6 +116,7 @@ export default function Editor({
             const { pos, inside } = editorLoc;
             const editorAtPos = editor.$pos(pos);
             paragraphIdx = (editorAtPos as any).resolvedPos.path[1];
+            console.log(editorAtPos.resolvedPos.path)
           }
 
           anchor?.set("wordIdx", wordIdx);
