@@ -96,10 +96,13 @@ export default function AnchorHandle({
   const [syncToLive, setSyncToLive] = useState(true);
 
   // Interpolate position changes to make it smooth remotely
+  // THIS SECTION IS LIVE SYNC <--- im sick of losing where this useeffect is -oleg
   useEffect(() => {
     if (dragging || !syncToLive) return; // Only interpolate when NOT dragging locally
 
     let animationFrame: number | null = null;
+    console.log("a", showConversation)
+    setOpenPopup(false);
 
     function animate() {
       setLocalCoords((prev) => {
@@ -133,7 +136,7 @@ export default function AnchorHandle({
     handle?.set("x", targetX - window.innerWidth / 2); // offset to center of screen, live coords use center as origin for consistency
     handle?.set("y", targetY);
   }, []);
-  const debouncedWritePos = useDebounce(writePos, 30); // TODO: tune out this parameter to make the sync movement feel nice
+  const debouncedWritePos = useDebounce(writePos, 20); // TODO: tune out this parameter to make the sync movement feel nice
 
   const writeInfo = useMutation(
     ({ storage }, paragraphIdx, wordIdx, anchorWidth, anchorHeight) => {
@@ -153,7 +156,7 @@ export default function AnchorHandle({
     },
     []
   );
-  const debouncedWriteInfo = useDebounce(writeInfo, 30);
+  const debouncedWriteInfo = useDebounce(writeInfo, 20);
 
   const deleteAnchor = useMutation(({ storage }) => {
     const anchor = storage.get("docHandles").get(id);
