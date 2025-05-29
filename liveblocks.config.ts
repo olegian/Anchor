@@ -19,7 +19,7 @@ export type AnchorInfo = LiveObject<{
 
 export type Attachment = LiveObject<{
   anchorId: string;
-  type: string;  // word, paragraph, or whatever type
+  type: "word" | "paragraph" | undefined; // word, paragraph, or whatever type
 }>;
 
 export type AttachedMap = LiveMap<string, Attachment>;
