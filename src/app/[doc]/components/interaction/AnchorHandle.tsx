@@ -261,13 +261,13 @@ export default function AnchorHandle({
       if (deleteState) {
         // Animate before deleting the anchor
         if (ref.current) {
-          ref.current.style.transition = "opacity 0.5s";
+          ref.current.style.transition = "opacity 0.3s";
           ref.current.style.opacity = "0";
           ref.current.style.pointerEvents = "none";
           setDraggingAnchor(false);
           setTimeout(() => {
             deleteAnchor();
-          }, 500);
+          }, 300);
         }
       } else {
         if (dragging) {
