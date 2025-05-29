@@ -472,6 +472,9 @@ export default function AnchorHandle({
       : "Document"
   }`;
 
+  const anchorInEditor =
+    localCoords.x >= 645 && localCoords.x <= window.innerWidth - 650;
+
   const [openPopup, setOpenPopup] = useState<boolean>(false);
   const showPopup = openPopup && !dragging && !deleteState;
 
@@ -571,7 +574,13 @@ export default function AnchorHandle({
                       : "text-white"
                   }`
                 : `text-zinc-700 ${
-                    currentAttachedPoint?.type === "word"
+                    currentAttachedPoint?.type === "word" ||
+                    (anchorInEditor && dragging)
+                      ? "bg-black/10"
+                      : anchorInEditor &&
+                        !dragging &&
+                        currentAttachedPoint?.type !== "paragraph" &&
+                        currentAttachedPoint?.type !== "word"
                       ? "bg-black/10"
                       : "bg-zinc-200"
                   }`
@@ -585,7 +594,10 @@ export default function AnchorHandle({
               backgroundColor:
                 owned && !isOwner && !deleteState
                   ? ownerData?.color +
-                    (currentAttachedPoint?.type === "word" ? "25" : "")
+                    (currentAttachedPoint?.type === "word" ||
+                    (anchorInEditor && dragging)
+                      ? "25"
+                      : "")
                   : "",
               color:
                 owned && !isOwner && !deleteState
@@ -596,7 +608,19 @@ export default function AnchorHandle({
             }}
             onMouseDown={onMouseDown}
           >
-            {currentAttachedPoint?.type === "word" ? null : icon}
+            {/* {currentAttachedPoint?.type === "word" || anchorInEditor
+              ? null
+              : icon} */}
+            <div
+              className={`${
+                currentAttachedPoint?.type === "word" ||
+                (anchorInEditor && dragging)
+                  ? "opacity-0"
+                  : "opacity-100"
+              } transition-opacity duration-200 ease-in-out shrink-0 flex items-center justify-center`}
+            >
+              {icon}
+            </div>
           </div>
         </div>
         {/* {openPopup && !deleteState && !dragging ? ( */}
