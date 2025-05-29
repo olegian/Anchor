@@ -474,8 +474,19 @@ export default function AnchorHandle({
       : "Document"
   }`;
 
-  const anchorInEditor =
-    localCoords.x >= 645 && localCoords.x <= window.innerWidth - 650;
+  // Check if the anchor is inside the bounds of #main-editor
+  const anchorInEditor = (() => {
+    const editorElem = document.getElementById("main-editor");
+    if (!editorElem) return false;
+    const rect = editorElem.getBoundingClientRect();
+    // localCoords are relative to the viewport
+    return (
+      localCoords.x >= rect.left &&
+      localCoords.x <= rect.right &&
+      localCoords.y >= rect.top + window.scrollY &&
+      localCoords.y <= rect.bottom + window.scrollY
+    );
+  })();
 
   const [openPopup, setOpenPopup] = useState<boolean>(false);
   const showPopup = openPopup && !dragging && !deleteState;
@@ -529,7 +540,9 @@ export default function AnchorHandle({
                     : deleteState
                     ? "text-white border-red-600 bg-red-500"
                     : "text-zinc-700 border-zinc-200 bg-white"
-                } px-1.5 py-0.5 border shadow-sm origin-center rounded-lg block tracking-tight whitespace-nowrap line-clamp-1 max-w-48`}
+                } ${
+                  anchorInEditor && dragging ? "opacity-0" : "opacity-100"
+                } px-1.5 py-0.5 border shadow-sm transition-all origin-center rounded-lg block tracking-tight whitespace-nowrap line-clamp-1 max-w-48`}
                 style={{
                   borderColor:
                     owned && !isOwner && !deleteState ? ownerData?.color : "",
