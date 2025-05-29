@@ -58,13 +58,13 @@
   position: relative;
 }
 
-.tiptap.ProseMirror p::before {
-  @apply border-2 border-zinc-200 rounded-lg;
+.tiptap.ProseMirror p:not(.is-empty)::before {
+  @apply border border-dashed border-zinc-200 rounded-lg;
   content: "";
   position: absolute;
   height: 24px;
   width: 24px;
-  top: 50%;
+  top: calc(50% + 2px);
   left: -47px;
   transform: translateY(-50%);
 }
