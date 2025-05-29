@@ -2,7 +2,7 @@
 
 import { LiveList, LiveMap, LiveObject } from "@liveblocks/client";
 
-export type Conversation = LiveObject<{
+export type AnchorInfo = LiveObject<{
   title: string;
   isPending: boolean; // whether there is a request that is currently outstanding
   exchanges: LiveList<LiveObject<{ prompt: string; response: string }>>; // in order
@@ -19,11 +19,7 @@ export type Conversation = LiveObject<{
 
 export type Attachment = LiveObject<{
   anchorId: string;
-  // TODO: -oleg-
-  // ideally, these values are synced to the associated AnchorInfo[anchorId] (x, y)
-  // and I think we can actually do that, but I am leaving this as a reminder for myself 
-//   x: number; // center-origin x-position
-//   y: number;
+  type: string;  // word, paragraph, or whatever type
 }>;
 
 export type AttachedMap = LiveMap<string, Attachment>;

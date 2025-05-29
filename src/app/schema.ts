@@ -138,6 +138,18 @@ export const SCHEMA = {
     },
   },
   marks: {
+    paraAttachedSpan: {
+      attrs: {
+        id: {
+          default: null,
+        },
+      },
+      parseDOM: [
+        {
+          tag: "span",
+        },
+      ],
+    },
     attachedSpan: {
       attrs: {
         id: {

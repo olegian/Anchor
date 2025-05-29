@@ -17,6 +17,7 @@ import { LiveObject, User } from "@liveblocks/client";
 import { useSession } from "next-auth/react";
 import { Editor } from "@tiptap/react";
 import { calculateBlackOrWhiteContrast } from "@/app/lib/utils";
+import { ParaSpansMark } from "./ParagraphSpanMark";
 
 export default function AnchorHandle({
   id,
@@ -69,14 +70,13 @@ export default function AnchorHandle({
 
   const closeConversation = () => {
     updatePresense({
-      openHandles: (presence.openHandles || []).filter(
-        (handleId) => handleId !== id
-      ),
+      openHandles: (presence.openHandles || []).filter((handleId) => handleId !== id),
     });
     setShowConversation(false);
   };
 
   const liveHandleInfo = useStorage((root) => root.docHandles.get(id));
+  const liveAnchorPoints = useStorage((root) => root.attachPoints);
   if (!liveHandleInfo) return null;
 
   const setAnchorOwner = useMutation(({ storage }, userId: string) => {
@@ -114,14 +114,8 @@ export default function AnchorHandle({
         const targetY = liveHandleInfo!.y;
         // Lerp factor: 0.2 is smooth, 1 is instant
         const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-        const newX =
-          Math.abs(prev.x - targetX) < 0.5
-            ? targetX
-            : lerp(prev.x, targetX, 0.2);
-        const newY =
-          Math.abs(prev.y - targetY) < 0.5
-            ? targetY
-            : lerp(prev.y, targetY, 0.2);
+        const newX = Math.abs(prev.x - targetX) < 0.5 ? targetX : lerp(prev.x, targetX, 0.2);
+        const newY = Math.abs(prev.y - targetY) < 0.5 ? targetY : lerp(prev.y, targetY, 0.2);
         return { x: newX, y: newY };
       });
       animationFrame = requestAnimationFrame(animate);
@@ -142,24 +136,21 @@ export default function AnchorHandle({
   }, []);
   const debouncedWritePos = useDebounce(writePos, 20); // TODO: tune out this parameter to make the sync movement feel nice
 
-  const writeInfo = useMutation(
-    ({ storage }, paragraphIdx, wordIdx, anchorWidth, anchorHeight) => {
-      const handle = storage.get("docHandles").get(id);
-      if (paragraphIdx !== undefined) {
-        handle?.set("paragraphIdx", paragraphIdx);
-      }
-      if (wordIdx !== undefined) {
-        handle?.set("wordIdx", wordIdx);
-      }
-      if (anchorHeight !== undefined) {
-        handle?.set("height", anchorHeight);
-      }
-      if (anchorWidth !== undefined) {
-        handle?.set("width", anchorWidth);
-      }
-    },
-    []
-  );
+  const writeInfo = useMutation(({ storage }, paragraphIdx, wordIdx, anchorWidth, anchorHeight) => {
+    const handle = storage.get("docHandles").get(id);
+    if (paragraphIdx !== undefined) {
+      handle?.set("paragraphIdx", paragraphIdx);
+    }
+    if (wordIdx !== undefined) {
+      handle?.set("wordIdx", wordIdx);
+    }
+    if (anchorHeight !== undefined) {
+      handle?.set("height", anchorHeight);
+    }
+    if (anchorWidth !== undefined) {
+      handle?.set("width", anchorWidth);
+    }
+  }, []);
   const debouncedWriteInfo = useDebounce(writeInfo, 20);
 
   const deleteAnchor = useMutation(({ storage }) => {
@@ -180,8 +171,7 @@ export default function AnchorHandle({
   const animationRef = useRef<number | null>(null);
 
   const deleteState =
-    localCoords.x < 50 ||
-    window.innerWidth - 50 - ANCHOR_HANDLE_SIZE < localCoords.x;
+    localCoords.x < 50 || window.innerWidth - 50 - ANCHOR_HANDLE_SIZE < localCoords.x;
 
   // --- Rotation animation effect ---
   useEffect(() => {
@@ -203,11 +193,12 @@ export default function AnchorHandle({
     };
   }, [dragging, localCoords.x, localCoords.y]);
 
-  const attachAnchor = useMutation(({ storage }, spanId) => {
+  const attachAnchor = useMutation(({ storage }, spanId, attachmentType) => {
     storage.get("attachPoints").set(
       spanId,
       new LiveObject({
         anchorId: id,
+        type: attachmentType,
       })
     );
 
@@ -243,79 +234,13 @@ export default function AnchorHandle({
     const onMouseMove = (e: MouseEvent) => {
       if (!dragging) return;
 
-      const mainEditor = document.getElementById("main-editor");
-      if (!mainEditor) return;
-      const paragraphs = mainEditor.querySelectorAll("p");
-      const codeblocks = mainEditor.querySelectorAll("pre");
-      if (!paragraphs) return;
-
       let targetX = e.clientX;
       let targetY = e.clientY + window.scrollY;
 
-      const editorLeftEdge = paragraphs[0].getBoundingClientRect().x;
-      const editorRightEdge = 752 + editorLeftEdge; // TODO from Ritesh: 752 is great for anything non-mobile, due to the max-w-3xl (or smth)
-
-      const anchorOnLeft = targetX < editorLeftEdge;
-      const anchorInEditor =
-        targetX >= editorLeftEdge && targetX <= editorRightEdge;
-
       // determine and set wordidx + paraidx
-      let paragraphIdx = -1;
-      let codeblockIdx = -1;
-      if (
-        anchorInEditor ||
-        (anchorOnLeft && editorLeftEdge - targetX < editorLeftEdge / 6)
-      ) {
-        // no need to try to identify if we already know we aren't over the editor
-        paraloop: for (let i = 0; i < paragraphs.length; i++) {
-          const paragraph = paragraphs[i];
-          // const spans = paragraph.getElementsByTagName("span");
-          const paraRect = paragraph.getBoundingClientRect();
-          if (
-            targetX < paraRect.right &&
-            targetX > paraRect.left - 120 && // buffer allows for paragraph only selection to the left of it
-            targetY > paraRect.top &&
-            targetY < paraRect.bottom
-          ) {
-            paragraphIdx = i;
-            if (targetX <= paraRect.left) {
-              // hovering in the paragraph zone, no need to search for word
-
-              targetX = paraRect.left - 35;
-              targetY = paraRect.top + paraRect.height / 2 - 12;
-
-              break paraloop;
-            }
-          }
-        }
-
-        // TODO: need to check if we're near a code block and how to grab its' context for replacement only!
-        codeloop: for (let i = 0; i < codeblocks.length; i++) {
-          const codeblock = codeblocks[i];
-          const codeRect = codeblock.getBoundingClientRect();
-          if (
-            targetX < codeRect.right &&
-            targetX > codeRect.left - 120 && // buffer allows for paragraph only selection to the left of it
-            targetY > codeRect.top &&
-            targetY < codeRect.bottom
-          ) {
-            codeblockIdx = i;
-            if (targetX <= codeRect.left) {
-              // hovering in the paragraph zone, no need to search for word
-
-              targetX = codeRect.left - 35;
-              targetY = codeRect.top + codeRect.height / 2 - 12;
-
-              break codeloop;
-            }
-          }
-        }
-      }
-
       // write new position to live
       setLocalCoords({ x: targetX, y: targetY });
       debouncedWritePos(targetX, targetY + window.scrollY);
-      debouncedWriteInfo(paragraphIdx, -1, 24, 24);
     };
 
     const onMouseUp = (e: MouseEvent) => {
@@ -340,6 +265,7 @@ export default function AnchorHandle({
           setOpenPopup(false);
           closeConversation();
 
+          // mouse up position
           const targetX = e.clientX;
           const targetY = e.clientY;
 
@@ -347,7 +273,7 @@ export default function AnchorHandle({
             left: targetX,
             top: targetY,
           });
-
+          // attempt to find word to snap to
           if (editorPos) {
             // pos is the pos of the nearest cursor position
             // inside is the pos of the containing node
@@ -384,8 +310,30 @@ export default function AnchorHandle({
                 .run();
 
               const spanId = editor.getAttributes(SpansMark.name)["id"];
-              attachAnchor(spanId);
+              attachAnchor(spanId, "word");
             }
+            setAnchorOwner(""); // release ownership, allow others to grab it
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+            return;
+          } // end word snap
+
+          const paragraphEditorPos = editor.view.posAtCoords({ left: targetX + 50, top: targetY });
+          if (paragraphEditorPos) {
+            let { pos, inside } = paragraphEditorPos;
+            const snappedPara = (editor.$pos(pos) as any).resolvedPos.path[3];
+            const end = inside + snappedPara.content.size;
+
+            editor
+              .chain()
+              .setTextSelection({
+                from: inside,
+                to: end,
+              })
+              .setMark(ParaSpansMark.name, { id: crypto.randomUUID() })
+              .run();
+
+            const spanId = editor.getAttributes(ParaSpansMark.name)["id"];
+            attachAnchor(spanId, "paragraph");
           }
 
           setAnchorOwner(""); // release ownership, allow others to grab it
@@ -436,6 +384,9 @@ export default function AnchorHandle({
     if (liveHandleInfo.attachedSpan !== "") {
       const spanId = liveHandleInfo.attachedSpan;
       const span = document.getElementById(spanId) as HTMLSpanElement;
+
+      const anchorPoint = liveAnchorPoints?.get(spanId);
+      const aType = anchorPoint?.type;
       if (span) {
         const rect = span.getBoundingClientRect();
 
@@ -453,10 +404,11 @@ export default function AnchorHandle({
           editor
             .chain()
             .setTextSelection({ from: startPos, to: endPos })
-            .unsetMark(SpansMark.name)
+            .unsetMark(aType === "paragraph" ? ParaSpansMark.name : SpansMark.name)
             .run();
         }
         dettachAnchor();
+        debouncedWriteInfo(undefined, undefined, 24, 24);
       }
     }
   };
@@ -520,20 +472,14 @@ export default function AnchorHandle({
           left: localCoords.x,
           top: localCoords.y,
           transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-          transition: dragging
-            ? "none"
-            : "transform 0.4s cubic-bezier(.4,2,.6,1)",
+          transition: dragging ? "none" : "transform 0.4s cubic-bezier(.4,2,.6,1)",
         }}
       >
         <div className="flex flex-col items-center justify-center group relative  space-y-2">
           <div className="relative">
             <div
               className={`${
-                owned && !isOwner && !deleteState
-                  ? ""
-                  : deleteState
-                  ? "opacity-0"
-                  : "opacity-0"
+                owned && !isOwner && !deleteState ? "" : deleteState ? "opacity-0" : "opacity-0"
               } flex items-center justify-center group-hover:opacity-100 translate-y-0  space-x-1 transition-all font-semibold transform text-xs`}
             >
               <div
@@ -545,15 +491,11 @@ export default function AnchorHandle({
                     : "text-zinc-700 border-zinc-200 bg-white"
                 } px-1.5 py-0.5 border shadow-sm origin-center rounded-lg block tracking-tight`}
                 style={{
-                  borderColor:
-                    owned && !isOwner && !deleteState ? ownerData?.color : "",
-                  backgroundColor:
-                    owned && !isOwner && !deleteState ? ownerData?.color : "",
+                  borderColor: owned && !isOwner && !deleteState ? ownerData?.color : "",
+                  backgroundColor: owned && !isOwner && !deleteState ? ownerData?.color : "",
                   color:
                     owned && !isOwner && !deleteState
-                      ? calculateBlackOrWhiteContrast(
-                          ownerData?.color ?? "#000000"
-                        )
+                      ? calculateBlackOrWhiteContrast(ownerData?.color ?? "#000000")
                       : "",
                 }}
               >
@@ -585,14 +527,10 @@ export default function AnchorHandle({
                 ? "text-white bg-red-500"
                 : liveHandleInfo.isPending
                 ? `from-sky-400 to-pink-400 via-violet-400 animate-pulse bg-gradient-to-r ${
-                    liveHandleInfo.attachedSpan.length > 0
-                      ? "blur-[3px]"
-                      : "text-white"
+                    liveHandleInfo.attachedSpan.length > 0 ? "blur-[3px]" : "text-white"
                   }`
                 : `text-zinc-700 ${
-                    liveHandleInfo.attachedSpan.length > 0
-                      ? "bg-black/10"
-                      : "bg-black/10"
+                    liveHandleInfo.attachedSpan.length > 0 ? "bg-black/10" : "bg-black/10"
                   }`
             } flex items-center justify-center rounded-lg origin-center transition-all duration-200 ease-in-out cursor-pointer ${
               dragging || owned
@@ -603,8 +541,7 @@ export default function AnchorHandle({
             style={{
               backgroundColor:
                 owned && !isOwner && !deleteState
-                  ? ownerData?.color +
-                    (liveHandleInfo.attachedSpan.length > 0 ? "25" : "")
+                  ? ownerData?.color + (liveHandleInfo.attachedSpan.length > 0 ? "25" : "")
                   : "",
               color:
                 owned && !isOwner && !deleteState

@@ -10,6 +10,7 @@ import Title from "./Title";
 import FloatingToolbar from "./floating/FloatingToolbar";
 import { AnchorLayer } from "./interaction/AnchorLayer";
 import { SpansMark } from "./interaction/SpansMark";
+import { ParaSpansMark } from "./interaction/ParagraphSpanMark";
 import { useDebounce } from "./interaction/useDebounce";
 import SkeletonEditor from "./other/SkeletonEditor";
 import { Editor as E } from "@tiptap/react";
@@ -60,42 +61,67 @@ export default function Editor({
       const anchor = storage.get("docHandles").get(anchorId);
 
       const rect: DOMRect = span.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top - 4 + window.scrollY;
-      anchor?.set("x", x - window.innerWidth / 2);
-      anchor?.set("y", y);
-      anchor?.set("width", span.offsetWidth);
-      anchor?.set("height", span.offsetHeight);
-
-      let wordIdx = -1;
-      let paragraphIdx = -1;
       if (editor) {
-        const editorLoc = editor.view.posAtCoords({ left: rect.left, top: rect.top });
-        if (editorLoc) {
-          const { pos, inside } = editorLoc;
-          const editorAtPos = editor.$pos(pos);
-          paragraphIdx = (editorAtPos as any).resolvedPos.path[1] // magic! there has to be something similar for wordidx.
+        const aType = attachment.get("type");
+        if (aType === "word") {
+          const x = rect.left + rect.width / 2;
+          const y = rect.top - 4 + window.scrollY;
+          anchor?.set("x", x - window.innerWidth / 2);
+          anchor?.set("y", y);
+          anchor?.set("width", span.offsetWidth);
+          anchor?.set("height", span.offsetHeight);
 
-          const paragraphContent = editorAtPos.content.content.map((node: any) => node.text).join("");
-          const idxInParagraph = pos - inside;
-          // anchor dropped not on a space, find wordidx if possible
-          if (
-            paragraphContent[idxInParagraph] !== " " &&
-            paragraphContent[idxInParagraph] !== undefined
-          ) {
-            let start = paragraphContent.lastIndexOf(" ", idxInParagraph);
-            const words = paragraphContent.substring(0, start).split(/\s+/);
-            if (words[words.length - 1] == "") {
-              words.pop();
+          const editorLoc = editor.view.posAtCoords({ left: rect.left, top: rect.top });
+          let wordIdx = -1;
+          let paragraphIdx = -1;
+          if (editorLoc) {
+            const { pos, inside } = editorLoc;
+            const editorAtPos = editor.$pos(pos);
+            paragraphIdx = (editorAtPos as any).resolvedPos.path[1]; // magic! there has to be something similar for wordidx.
+
+            const paragraphContent = editorAtPos.content.content
+              .map((node: any) => node.text)
+              .join("");
+            const idxInParagraph = pos - inside;
+            // anchor dropped not on a space, find wordidx if possible
+            if (
+              paragraphContent[idxInParagraph] !== " " &&
+              paragraphContent[idxInParagraph] !== undefined
+            ) {
+              let start = paragraphContent.lastIndexOf(" ", idxInParagraph);
+              const words = paragraphContent.substring(0, start).split(/\s+/);
+              if (words[words.length - 1] == "") {
+                words.pop();
+              }
+
+              wordIdx = words[0] == "" ? 0 : words.length;
             }
-
-            wordIdx = words[0] == "" ? 0 : words.length;
           }
+
+          anchor?.set("wordIdx", wordIdx);
+          anchor?.set("paragraphIdx", paragraphIdx);
+        } else if (aType === "paragraph") {
+          const x = rect.left - 35;
+          const y = rect.top + rect.height / 2 - 15;
+
+          anchor?.set("x", x - window.innerWidth / 2);
+          anchor?.set("y", y);
+          anchor?.set("width", 24);
+          anchor?.set("height", 24);
+
+          const editorLoc = editor.view.posAtCoords({ left: rect.left, top: rect.top });
+          let wordIdx = -1;
+          let paragraphIdx = -1;
+          if (editorLoc) {
+            const { pos, inside } = editorLoc;
+            const editorAtPos = editor.$pos(pos);
+            paragraphIdx = (editorAtPos as any).resolvedPos.path[1];
+          }
+
+          anchor?.set("wordIdx", wordIdx);
+          anchor?.set("paragraphIdx", paragraphIdx);
         }
       }
-
-      anchor?.set("wordIdx", wordIdx);
-      anchor?.set("paragraphIdx", paragraphIdx);
     });
   }, []);
   const debouncedUpdateAttachedAnchors = useDebounce(updateAttachedAnchors, 20);
@@ -113,6 +139,7 @@ export default function Editor({
         placeholder: "Type your text here...",
       }),
       SpansMark,
+      ParaSpansMark,
     ],
     immediatelyRender: false,
     editable: !draggingAnchor,
