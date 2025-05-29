@@ -66,7 +66,9 @@ export default function AnchorHandle({
 
   const closeConversation = () => {
     updatePresense({
-      openHandles: (presence.openHandles || []).filter((handleId) => handleId !== id),
+      openHandles: (presence.openHandles || []).filter(
+        (handleId) => handleId !== id
+      ),
     });
     setShowConversation(false);
   };
@@ -105,8 +107,14 @@ export default function AnchorHandle({
         const targetY = liveHandleInfo!.y;
         // Lerp factor: 0.2 is smooth, 1 is instant
         const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-        const newX = Math.abs(prev.x - targetX) < 0.5 ? targetX : lerp(prev.x, targetX, 0.2);
-        const newY = Math.abs(prev.y - targetY) < 0.5 ? targetY : lerp(prev.y, targetY, 0.2);
+        const newX =
+          Math.abs(prev.x - targetX) < 0.5
+            ? targetX
+            : lerp(prev.x, targetX, 0.2);
+        const newY =
+          Math.abs(prev.y - targetY) < 0.5
+            ? targetY
+            : lerp(prev.y, targetY, 0.2);
         return { x: newX, y: newY };
       });
       animationFrame = requestAnimationFrame(animate);
@@ -127,21 +135,24 @@ export default function AnchorHandle({
   }, []);
   const debouncedWritePos = useDebounce(writePos, 30); // TODO: tune out this parameter to make the sync movement feel nice
 
-  const writeInfo = useMutation(({ storage }, paragraphIdx, wordIdx, anchorWidth, anchorHeight) => {
-    const handle = storage.get("docHandles").get(id);
-    if (paragraphIdx !== undefined) {
-      handle?.set("paragraphIdx", paragraphIdx);
-    }
-    if (wordIdx !== undefined) {
-      handle?.set("wordIdx", wordIdx);
-    }
-    if (anchorHeight !== undefined) {
-      handle?.set("height", anchorHeight);
-    }
-    if (anchorWidth !== undefined) {
-      handle?.set("width", anchorWidth);
-    }
-  }, []);
+  const writeInfo = useMutation(
+    ({ storage }, paragraphIdx, wordIdx, anchorWidth, anchorHeight) => {
+      const handle = storage.get("docHandles").get(id);
+      if (paragraphIdx !== undefined) {
+        handle?.set("paragraphIdx", paragraphIdx);
+      }
+      if (wordIdx !== undefined) {
+        handle?.set("wordIdx", wordIdx);
+      }
+      if (anchorHeight !== undefined) {
+        handle?.set("height", anchorHeight);
+      }
+      if (anchorWidth !== undefined) {
+        handle?.set("width", anchorWidth);
+      }
+    },
+    []
+  );
   const debouncedWriteInfo = useDebounce(writeInfo, 30);
 
   const deleteAnchor = useMutation(({ storage }) => {
@@ -162,7 +173,8 @@ export default function AnchorHandle({
   const animationRef = useRef<number | null>(null);
 
   const deleteState =
-    localCoords.x < 50 || window.innerWidth - 50 - ANCHOR_HANDLE_SIZE < localCoords.x;
+    localCoords.x < 50 ||
+    window.innerWidth - 50 - ANCHOR_HANDLE_SIZE < localCoords.x;
 
   // --- Rotation animation effect ---
   useEffect(() => {
@@ -236,32 +248,15 @@ export default function AnchorHandle({
       const editorRightEdge = 752 + editorLeftEdge; // TODO from Ritesh: 752 is great for anything non-mobile, due to the max-w-3xl (or smth)
 
       const anchorOnLeft = targetX < editorLeftEdge;
-      const anchorOnRight = targetX > editorRightEdge;
-      const anchorInEditor = targetX >= editorLeftEdge && targetX <= editorRightEdge;
-
-      // Should we snap to the left side of the editor?
-      // if (anchorOnLeft && !anchorOnRight) {
-      //   if (editorLeftEdge - targetX < editorLeftEdge / 6) {
-      //     // console.log("near left side of the editor"); // we should snap to the left side!
-      //   } else {
-      //     // console.log("on the left side"); // we are outside the editor!
-      //   }
-      // } else if (anchorOnRight && !anchorOnLeft) {
-      //   if (targetX < editorRightEdge + editorRightEdge / 6) {
-      //     // console.log("near right side of the editor"); // we should snap to the right side!
-      //   } else {
-      //     // console.log("on the right side"); // we are outside the editor!
-      //   }
-      // } else if (anchorInEditor) {
-      //   // console.log("inside the editor"); // we are inside the editor!
-      // }
+      const anchorInEditor =
+        targetX >= editorLeftEdge && targetX <= editorRightEdge;
 
       // determine and set wordidx + paraidx
       let paragraphIdx = -1;
-      let wordIdx = -1;
-      let anchorWidth = ANCHOR_HANDLE_SIZE;
-      let anchorHeight = ANCHOR_HANDLE_SIZE;
-      if (anchorInEditor || (anchorOnLeft && editorLeftEdge - targetX < editorLeftEdge / 6)) {
+      if (
+        anchorInEditor ||
+        (anchorOnLeft && editorLeftEdge - targetX < editorLeftEdge / 6)
+      ) {
         // no need to try to identify if we already know we aren't over the editor
         outer: for (let i = 0; i < paragraphs.length; i++) {
           const paragraph = paragraphs[i];
@@ -380,13 +375,16 @@ export default function AnchorHandle({
 
               const span = document.getElementById(spanId) as HTMLSpanElement;
               const rect = span.getBoundingClientRect();
-              debouncedWritePos(rect.left + rect.width / 2, rect.top - 6 + window.scrollY);
+              debouncedWritePos(
+                rect.left + rect.width / 2,
+                rect.top - 6 + window.scrollY
+              );
 
               const words = paragraphContent.substring(0, start).split(/\s/);
-              wordIdx = (words[0] == "") ? 0 : words.length;
+              wordIdx = words[0] == "" ? 0 : words.length;
               console.log("wi", wordIdx);
               debouncedWriteInfo(
-                undefined,  // leave paragraph idx to be whatever it was when the anchor was moved
+                undefined, // leave paragraph idx to be whatever it was when the anchor was moved
                 wordIdx,
                 span ? span.offsetWidth : 24,
                 span ? span.offsetHeight : 24
@@ -396,11 +394,28 @@ export default function AnchorHandle({
               return;
             }
           }
-          // we are not on any word, so height/width should be default, and then 
+
+          // set paragraphIdx one last time, just to be sure its correct after mouse move events
+          const mainEditor = document.getElementById("main-editor");
+          let paragraphIdx = undefined;  // leave it unchanged by default ..
+          if (mainEditor) {
+            const paragraphs = mainEditor.querySelectorAll("p");
+            if (paragraphs) {
+              const editorLeftEdge = paragraphs[0].getBoundingClientRect().x;
+              const editorRightEdge = 752 + editorLeftEdge; // TODO from Ritesh: 752 is great for anything non-mobile, due to the max-w-3xl (or smth)
+
+              // if we are outside the editor, then explicit set pIdx to -1
+              if (targetX < editorLeftEdge && editorRightEdge < targetX) {
+                paragraphIdx = -1;
+              }
+            }
+          }
+
+          // we are not on any word, so height/width should be default, and then
           // paragraph idx should have been set accordingly in onMouseMove.
           setAnchorOwner(""); // release ownership, allow others to grab it
-          debouncedWriteInfo(undefined, -1, 24, 24);  // explicitly set wordIdx to be -1, leave paragraphidx unchanged
-        }  // end if dragging
+          debouncedWriteInfo(paragraphIdx, -1, 24, 24);
+        } // end if dragging
         if (animationFrame) cancelAnimationFrame(animationFrame);
       }
     };
@@ -519,13 +534,19 @@ export default function AnchorHandle({
           left: localCoords.x,
           top: localCoords.y,
           transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-          transition: dragging ? "none" : "transform 0.4s cubic-bezier(.4,2,.6,1)",
+          transition: dragging
+            ? "none"
+            : "transform 0.4s cubic-bezier(.4,2,.6,1)",
         }}
       >
         <div className="flex flex-col items-center justify-center group relative  space-y-2">
           <div
             className={`${
-              owned && !isOwner && !deleteState ? "" : deleteState ? "opacity-0" : "opacity-0"
+              owned && !isOwner && !deleteState
+                ? ""
+                : deleteState
+                ? "opacity-0"
+                : "opacity-0"
             } flex items-center justify-center group-hover:opacity-100 translate-y-0  space-x-1 transition-all font-semibold transform text-xs`}
           >
             <div
@@ -537,11 +558,15 @@ export default function AnchorHandle({
                   : "text-zinc-700 border-zinc-200 bg-white"
               } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block tracking-tight`}
               style={{
-                borderColor: owned && !isOwner && !deleteState ? ownerData?.color : "",
-                backgroundColor: owned && !isOwner && !deleteState ? ownerData?.color : "",
+                borderColor:
+                  owned && !isOwner && !deleteState ? ownerData?.color : "",
+                backgroundColor:
+                  owned && !isOwner && !deleteState ? ownerData?.color : "",
                 color:
                   owned && !isOwner && !deleteState
-                    ? calculateBlackOrWhiteContrast(ownerData?.color ?? "#000000")
+                    ? calculateBlackOrWhiteContrast(
+                        ownerData?.color ?? "#000000"
+                      )
                     : "",
               }}
             >
@@ -573,7 +598,8 @@ export default function AnchorHandle({
             style={{
               backgroundColor:
                 owned && !isOwner && !deleteState
-                  ? ownerData?.color + (liveHandleInfo.attachedSpan.length > 0 ? "25" : "")
+                  ? ownerData?.color +
+                    (liveHandleInfo.attachedSpan.length > 0 ? "25" : "")
                   : "",
               color:
                 owned && !isOwner && !deleteState
