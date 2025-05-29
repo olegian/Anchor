@@ -1,6 +1,5 @@
 import { getUser } from "@/app/actions";
 import { calculateBlackOrWhiteContrast } from "@/app/lib/utils";
-import { NEXT_CACHE_TAG_MAX_LENGTH } from "next/dist/lib/constants";
 import { useEffect, useState } from "react";
 
 export function Users({
