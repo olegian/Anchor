@@ -52,7 +52,7 @@ export default function DocMenu({ showText = false, editor, title = "document" }
   }, []);
 
   const deleteAnchorsHandler = () => {
-    deleteAllAnchors();
+    deleteAllAnchors(); // do this explicitly to delete floating anchors
 
     // remove all spans
     const paraNodes = editor?.$nodes("paraAttachedSpan");

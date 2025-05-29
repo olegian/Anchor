@@ -203,10 +203,10 @@ export default function AnchorPopup({
     console.log(paragraphIdx, wordIdx);
 
     const response = exchanges.at(viewedExchange)?.response || "";
-    const formatResponse = response.replaceAll(/([\p{P}])  /gu, "$1 ").trim();
-    const splitResponse = response.split("\n");
+    const formatResponse = response.trim();
+    const splitResponse = formatResponse.split("\n");  // format newlines as new paragraphs
     const nodes = splitResponse
-      .filter((text: string) => text !== "")
+      .filter((text: string) => text !== "") // remove non text words
       .map((text: string) => {
         return {
           type: "paragraph",
@@ -226,7 +226,7 @@ export default function AnchorPopup({
       const paragraph = editor.state.doc.child(paragraphIdx);
       const insertionPoint =
         (editor.$doc.children.at(paragraphIdx)?.pos || 0) +
-        paragraph.content.size;
+        paragraph.content.size + 1;
 
       editor.commands.insertContentAt(insertionPoint, nodes);
     }
