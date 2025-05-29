@@ -69,7 +69,7 @@ export default function Editor({
       anchor?.set("y", y);
     });
   }, []);
-  const debouncedUpdateAttachedAnchors = useDebounce(updateAttachedAnchors, 5);
+  const debouncedUpdateAttachedAnchors = useDebounce(updateAttachedAnchors, 20);
 
   const editor = useEditor({
     extensions: [
