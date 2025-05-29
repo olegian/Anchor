@@ -10,8 +10,10 @@ import Title from "./Title";
 import FloatingToolbar from "./floating/FloatingToolbar";
 import { AnchorLayer } from "./interaction/AnchorLayer";
 import { SpansMark } from "./interaction/SpansMark";
+import { ParaSpansNode } from "./interaction/ParagraphSpanMark";
 import { useDebounce } from "./interaction/useDebounce";
 import SkeletonEditor from "./other/SkeletonEditor";
+import { Editor as E } from "@tiptap/react";
 
 export default function Editor({
   title,
@@ -31,13 +33,7 @@ export default function Editor({
   open: () => void;
   loaded: boolean;
   anchorHandles: HandlesMap;
-  addHandle: (
-    newHandleId: string,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => void;
+  addHandle: (newHandleId: string, x: number, y: number, width: number, height: number) => void;
   mousePos: { x: number; y: number };
   draggingAnchor: boolean;
   setDraggingAnchor: (dragging: boolean) => void;
@@ -46,11 +42,12 @@ export default function Editor({
 }) {
   const liveblocks = useLiveblocksExtension({ field: "maindoc" });
 
-  const updateAttachedAnchors = useMutation(({ storage }) => {
+  const updateAttachedAnchors = useMutation(({ storage }, editor: E | null) => {
     storage.get("attachPoints").forEach((attachment, spanId) => {
       const anchorId = attachment.get("anchorId");
       const span = document.getElementById(spanId) as HTMLSpanElement;
       if (!span) {
+        // span was deleted in the editor, delete the associated handle
         const anchor = storage.get("docHandles").get(anchorId);
         const attachedSpanId = anchor?.get("attachedSpan");
         if (attachedSpanId) {
@@ -60,13 +57,71 @@ export default function Editor({
         return;
       }
 
-      const rect: DOMRect = span.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top - 4 + window.scrollY;
-
+      // we know for a fact this handle is attached!
       const anchor = storage.get("docHandles").get(anchorId);
-      anchor?.set("x", x - window.innerWidth / 2);
-      anchor?.set("y", y);
+
+      const rect: DOMRect = span.getBoundingClientRect();
+      if (editor) {
+        const aType = attachment.get("type");
+        if (aType === "word") {
+          const x = rect.left + rect.width / 2;
+          const y = rect.top - 4 + window.scrollY;
+          anchor?.set("x", x - window.innerWidth / 2);
+          anchor?.set("y", y);
+          anchor?.set("width", span.offsetWidth);
+          anchor?.set("height", span.offsetHeight);
+
+          const editorLoc = editor.view.posAtCoords({ left: rect.left, top: rect.top });
+          let wordIdx = -1;
+          let paragraphIdx = -1;
+          if (editorLoc) {
+            const { pos, inside } = editorLoc;
+            const editorAtPos = editor.$pos(pos);
+            paragraphIdx = (editorAtPos as any).resolvedPos.path[1]; // magic! there has to be something similar for wordidx.
+
+            const paragraphContent = editorAtPos.content.content
+              .map((node: any) => node.text)
+              .join("");
+            const idxInParagraph = pos - inside;
+            // anchor dropped not on a space, find wordidx if possible
+            if (
+              paragraphContent[idxInParagraph] !== " " &&
+              paragraphContent[idxInParagraph] !== undefined
+            ) {
+              let start = paragraphContent.lastIndexOf(" ", idxInParagraph);
+              const words = paragraphContent.substring(0, start).split(/\s+/);
+              if (words[words.length - 1] == "") {
+                words.pop();
+              }
+
+              wordIdx = words[0] == "" ? 0 : words.length;
+            }
+          }
+
+          anchor?.set("wordIdx", wordIdx);
+          anchor?.set("paragraphIdx", paragraphIdx);
+        } else if (aType === "paragraph") {
+          const x = rect.left - 35;
+          const y = rect.top + rect.height / 2 - 13;
+
+          anchor?.set("x", x - window.innerWidth / 2);
+          anchor?.set("y", y);
+          anchor?.set("width", 24);
+          anchor?.set("height", 24);
+
+          const editorLoc = editor.view.posAtCoords({ left: rect.left, top: rect.top });
+          let wordIdx = -1;
+          let paragraphIdx = -1;
+          if (editorLoc) {
+            const { pos, inside } = editorLoc;
+            const editorAtPos = editor.$pos(pos);
+            paragraphIdx = (editorAtPos as any).resolvedPos.path[1];
+          }
+
+          anchor?.set("wordIdx", wordIdx);
+          anchor?.set("paragraphIdx", paragraphIdx);
+        }
+      }
     });
   }, []);
   const debouncedUpdateAttachedAnchors = useDebounce(updateAttachedAnchors, 20);
@@ -84,11 +139,12 @@ export default function Editor({
         placeholder: "Type your text here...",
       }),
       SpansMark,
+      ParaSpansNode,
     ],
     immediatelyRender: false,
     editable: !draggingAnchor,
     onUpdate(props) {
-      debouncedUpdateAttachedAnchors();
+      debouncedUpdateAttachedAnchors(editor);
     },
   });
 
@@ -116,9 +172,7 @@ export default function Editor({
         <article
           id="main-editor"
           className={`${
-            draggingAnchor
-              ? "pointer-events-none select-none"
-              : "pointer-events-auto"
+            draggingAnchor ? "pointer-events-none select-none" : "pointer-events-auto"
           } ${
             loaded ? "" : "hidden"
           } prose max-w-none h-full prose-headings:font-heading prose-headings:tracking-tighter prose-h2:my-4 min-h-screen prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-xl prose-img:shadow-lg`}
