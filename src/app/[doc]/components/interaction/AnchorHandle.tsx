@@ -525,7 +525,7 @@ export default function AnchorHandle({
       : liveHandleInfo.handleName || deleteState
       ? "Delete?"
       : liveHandleInfo.title
-      ? liveHandleInfo.title
+      ? liveHandleInfo?.title
       : liveHandleInfo.attachedSpan.length > 0
       ? "Word"
       : liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx === -1
@@ -636,7 +636,7 @@ export default function AnchorHandle({
                       ? "bg-black/10"
                       : "bg-black/10"
                   }`
-            } flex items-center justify-center rounded-lg origin-center transition-all duration-200 ease-in-out cursor-pointer ${
+            } flex items-center relative z-10 justify-center rounded-lg origin-center transition-all duration-200 ease-in-out cursor-pointer ${
               dragging || owned
                 ? "scale-125 opacity-100"
                 : "group-hover:scale-125 group-hover:opacity-100"

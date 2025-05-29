@@ -66,7 +66,9 @@ export default function AnchorPopup({
     return null;
   }
 
-  const [viewedExchange, setViewedExchange] = useState(exchanges.length - 1); // TODO: initialize to last?
+  const [viewedExchange, setViewedExchange] = useState(
+    exchanges > 1 ? exchanges.length - 2 : 0
+  ); // Initalize to the second last exchange if there are more than one, otherwise to the first exchange
   const [isLoading, setIsLoading] = useState(false);
 
   // TODO: only one popup should be open?
