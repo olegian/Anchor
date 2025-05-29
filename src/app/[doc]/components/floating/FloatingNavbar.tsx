@@ -12,7 +12,7 @@ export default function FloatingNavbar({
     <>
       <div className="fixed top-0 left-0 right-0 z-10 transition-opacity p-4 bg-linear-to-b w-full text-center from-zinc-50 via-white/75 to-transparent">
         <h2
-          className={`line-clamp-1 flex items-start justify-center gap-8 overflow-hidden duration-200 transition-colors rounded-lg ${
+          className={`line-clamp-1 flex items-start justify-center gap-8 overflow-hidden duration-200 transition-colors rounded-xl ${
             scrollPosition < 180 ? "opacity-0" : "opacity-100"
           } transition-opacity`}
         >

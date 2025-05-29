@@ -36,7 +36,7 @@ export default function UserMenu({ user }: { user: User | null }) {
               backgroundColor: profile?.color,
               color: calculateBlackOrWhiteContrast(profile?.color ?? "#000000"),
             }}
-            className="uppercase cursor-pointer hover:opacity-75 transition-opacity flex items-center justify-center size-10 rounded-full text-white font-semibold text-base"
+            className="cursor-pointer hover:opacity-75 transition-opacity flex items-center justify-center size-10 rounded-full text-white font-semibold text-base"
           >
             {first.charAt(0)}
             {last.charAt(0) ? last.charAt(0) : ""}
@@ -56,7 +56,7 @@ export default function UserMenu({ user }: { user: User | null }) {
               // signOut();
               // redirect("/");
             }}
-            className="group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium"
+            className="group flex w-full items-center gap-2 rounded-xl px-3 py-1.5 text-base tracking-tight font-heading font-medium"
           >
             {profile?.name}
           </button>
@@ -68,7 +68,7 @@ export default function UserMenu({ user }: { user: User | null }) {
               signOut();
               redirect("/");
             }}
-            className="group flex w-full items-center cursor-pointer gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium"
+            className="group flex w-full items-center cursor-pointer gap-2 rounded-xl px-3 py-1.5 data-focus:bg-zinc-100 font-medium"
           >
             {/* <TrashIcon className="size-4 fill-red-500" /> */}
             Sign out

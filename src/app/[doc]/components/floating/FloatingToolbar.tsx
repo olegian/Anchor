@@ -16,10 +16,10 @@ import { SparklesIcon } from "@heroicons/react/24/solid";
 
 export default function FloatingToolbar({
   editor,
-  open,
+  draggingAnchor,
 }: {
   editor: Editor | null;
-  open: () => void;
+  draggingAnchor: boolean;
 }) {
   if (!editor) {
     return null;
@@ -29,8 +29,12 @@ export default function FloatingToolbar({
     useState<boolean>(true);
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 z-20 flex items-center justify-center">
-      <div className="bg-white border rounded-xl border-zinc-200 relative shadow-xl p-2 flex items-center justify-center space-x-2">
+    <div
+      className={`fixed bottom-4 left-0 right-0 z-20 flex items-center justify-center transition-opacity ${
+        draggingAnchor ? "pointer-events-none opacity-25" : "opacity-100"
+      }`}
+    >
+      <div className="bg-white border rounded-2xl border-zinc-200 relative shadow-2xl p-2 flex items-center justify-center space-x-2">
         <TabbarItem
           text="Heading"
           children={
@@ -84,7 +88,9 @@ export default function FloatingToolbar({
         />
         <Divider />
         <TabbarItem
-          text="AI"
+          text={`AI Anchors ${
+            anchorHandlesInteractivity ? "Enabled" : "Disabled"
+          } `}
           children={
             anchorHandlesInteractivity ? (
               <SparklesIcon className="size-5 shrink-0" />
@@ -109,6 +115,15 @@ export default function FloatingToolbar({
           }}
         />
       </div>
+      <p
+        className={`${
+          anchorHandlesInteractivity && !draggingAnchor
+            ? "opacity-100"
+            : "opacity-0 pointer-events-none select-none"
+        } transition-opacity absolute -bottom-6 text-xs text-center font-medium text-zinc-400 tracking-tight`}
+      >
+        Click outside the page to create an Anchor
+      </p>
     </div>
   );
 
@@ -139,7 +154,7 @@ function TabbarItem({
         <div
           className={`${
             active ? "bg-zinc-200" : "bg-white"
-          } w-8 h-8 transition-colors rounded-lg group-hover:bg-zinc-100 flex items-center justify-center`}
+          } w-8 h-8 transition-colors rounded-xl group-hover:bg-zinc-100 flex items-center justify-center`}
         >
           {children}
         </div>
@@ -148,7 +163,7 @@ function TabbarItem({
         <div
           className={`absolute w-full -top-10 hidden group-hover:flex items-center justify-center`}
         >
-          <p className="text-center whitespace-nowrap text-xs font-medium text-zinc-700 pointer-events-none px-2 py-1 bg-white border shadow rounded-md border-zinc-200">
+          <p className="text-center whitespace-nowrap text-xs font-medium text-zinc-700 pointer-events-none px-2 py-1 bg-white border shadow rounded-lg border-zinc-200">
             {text}
           </p>
         </div>

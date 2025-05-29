@@ -25,10 +25,10 @@ interface DocMenuProps {
   title?: string; // Document title for filename
 }
 
-export default function DocMenu({ 
-  showText = false, 
+export default function DocMenu({
+  showText = false,
   editor,
-  title = "document" 
+  title = "document",
 }: DocMenuProps) {
   const params = useParams<{ doc: string }>();
   const router = useRouter();
@@ -39,7 +39,7 @@ export default function DocMenu({
     });
   };
 
-  const deleteAllAnchors = useMutation(({storage}) => {
+  const deleteAllAnchors = useMutation(({ storage }) => {
     storage.get("docHandles").forEach((handle, handleId) => {
       const attachedSpanId = handle.get("attachedSpan");
       if (attachedSpanId) {
@@ -48,11 +48,10 @@ export default function DocMenu({
 
       storage.get("docHandles").delete(handleId);
     });
-
-  }, [])
+  }, []);
 
   const deleteAnchorsHandler = () => {
-    deleteAllAnchors()
+    deleteAllAnchors();
   };
 
   const exportToPDF = async () => {
@@ -64,10 +63,10 @@ export default function DocMenu({
     try {
       // Dynamic import to reduce bundle size
       const jsPDF = (await import("jspdf")).default;
-      
+
       // Get JSON content from TipTap editor for better structure parsing
       const jsonContent = editor.getJSON();
-      
+
       // Create PDF
       const pdf = new jsPDF({
         orientation: "portrait",
@@ -98,14 +97,14 @@ export default function DocMenu({
           }
 
           switch (node.type) {
-            case 'heading':
+            case "heading":
               const level = node.attrs?.level || 1;
               pdf.setFontSize(level === 1 ? 16 : level === 2 ? 14 : 12);
               pdf.setFont("helvetica", "bold");
-              
+
               const headingText = extractTextFromNode(node);
               const headingLines = pdf.splitTextToSize(headingText, maxWidth);
-              
+
               headingLines.forEach((line: string) => {
                 if (yPosition > pageHeight) {
                   pdf.addPage();
@@ -117,14 +116,17 @@ export default function DocMenu({
               yPosition += 5; // Extra space after heading
               break;
 
-            case 'paragraph':
+            case "paragraph":
               pdf.setFontSize(11);
               pdf.setFont("helvetica", "normal");
-              
+
               const paragraphText = extractTextFromNode(node);
               if (paragraphText.trim()) {
-                const paragraphLines = pdf.splitTextToSize(paragraphText, maxWidth);
-                
+                const paragraphLines = pdf.splitTextToSize(
+                  paragraphText,
+                  maxWidth
+                );
+
                 paragraphLines.forEach((line: string) => {
                   if (yPosition > pageHeight) {
                     pdf.addPage();
@@ -137,23 +139,27 @@ export default function DocMenu({
               }
               break;
 
-            case 'bulletList':
-            case 'orderedList':
+            case "bulletList":
+            case "orderedList":
               pdf.setFontSize(11);
               pdf.setFont("helvetica", "normal");
-              
+
               if (node.content) {
                 node.content.forEach((listItem: any, index: number) => {
                   if (yPosition > pageHeight) {
                     pdf.addPage();
                     yPosition = 20;
                   }
-                  
-                  const bullet = node.type === 'bulletList' ? '• ' : `${index + 1}. `;
+
+                  const bullet =
+                    node.type === "bulletList" ? "• " : `${index + 1}. `;
                   const itemText = extractTextFromNode(listItem);
                   const fullText = bullet + itemText;
-                  
-                  const itemLines = pdf.splitTextToSize(fullText, maxWidth - 10);
+
+                  const itemLines = pdf.splitTextToSize(
+                    fullText,
+                    maxWidth - 10
+                  );
                   itemLines.forEach((line: string, lineIndex: number) => {
                     if (yPosition > pageHeight) {
                       pdf.addPage();
@@ -174,7 +180,7 @@ export default function DocMenu({
               if (defaultText.trim()) {
                 pdf.setFontSize(11);
                 pdf.setFont("helvetica", "normal");
-                
+
                 const defaultLines = pdf.splitTextToSize(defaultText, maxWidth);
                 defaultLines.forEach((line: string) => {
                   if (yPosition > pageHeight) {
@@ -192,17 +198,17 @@ export default function DocMenu({
 
       // Helper function to extract text from TipTap JSON node
       const extractTextFromNode = (node: any): string => {
-        if (!node) return '';
-        
-        if (node.type === 'text') {
-          return node.text || '';
+        if (!node) return "";
+
+        if (node.type === "text") {
+          return node.text || "";
         }
-        
+
         if (node.content && Array.isArray(node.content)) {
-          return node.content.map(extractTextFromNode).join('');
+          return node.content.map(extractTextFromNode).join("");
         }
-        
-        return '';
+
+        return "";
       };
 
       // Process the document content
@@ -228,107 +234,113 @@ export default function DocMenu({
     try {
       // Get JSON content from TipTap editor
       const jsonContent = editor.getJSON();
-      
+
       // Convert TipTap JSON to Markdown
       const convertToMarkdown = (content: any[]): string => {
-        return content.map((node: any) => {
-          switch (node.type) {
-            case 'heading':
-              const level = node.attrs?.level || 1;
-              const headingPrefix = '#'.repeat(level);
-              const headingText = extractTextFromNode(node);
-              return `${headingPrefix} ${headingText}\n\n`;
+        return content
+          .map((node: any) => {
+            switch (node.type) {
+              case "heading":
+                const level = node.attrs?.level || 1;
+                const headingPrefix = "#".repeat(level);
+                const headingText = extractTextFromNode(node);
+                return `${headingPrefix} ${headingText}\n\n`;
 
-            case 'paragraph':
-              const paragraphText = extractTextFromNode(node);
-              return paragraphText.trim() ? `${paragraphText}\n\n` : '';
+              case "paragraph":
+                const paragraphText = extractTextFromNode(node);
+                return paragraphText.trim() ? `${paragraphText}\n\n` : "";
 
-            case 'bulletList':
-              if (node.content) {
-                const listItems = node.content.map((item: any) => {
-                  const itemText = extractTextFromNode(item);
-                  return `- ${itemText}`;
-                }).join('\n');
-                return `${listItems}\n\n`;
-              }
-              return '';
+              case "bulletList":
+                if (node.content) {
+                  const listItems = node.content
+                    .map((item: any) => {
+                      const itemText = extractTextFromNode(item);
+                      return `- ${itemText}`;
+                    })
+                    .join("\n");
+                  return `${listItems}\n\n`;
+                }
+                return "";
 
-            case 'orderedList':
-              if (node.content) {
-                const listItems = node.content.map((item: any, index: number) => {
-                  const itemText = extractTextFromNode(item);
-                  return `${index + 1}. ${itemText}`;
-                }).join('\n');
-                return `${listItems}\n\n`;
-              }
-              return '';
+              case "orderedList":
+                if (node.content) {
+                  const listItems = node.content
+                    .map((item: any, index: number) => {
+                      const itemText = extractTextFromNode(item);
+                      return `${index + 1}. ${itemText}`;
+                    })
+                    .join("\n");
+                  return `${listItems}\n\n`;
+                }
+                return "";
 
-            case 'codeBlock':
-              const codeText = extractTextFromNode(node);
-              const language = node.attrs?.language || '';
-              return `\`\`\`${language}\n${codeText}\n\`\`\`\n\n`;
+              case "codeBlock":
+                const codeText = extractTextFromNode(node);
+                const language = node.attrs?.language || "";
+                return `\`\`\`${language}\n${codeText}\n\`\`\`\n\n`;
 
-            case 'blockquote':
-              const quoteText = extractTextFromNode(node);
-              return `> ${quoteText}\n\n`;
+              case "blockquote":
+                const quoteText = extractTextFromNode(node);
+                return `> ${quoteText}\n\n`;
 
-            default:
-              const defaultText = extractTextFromNode(node);
-              return defaultText.trim() ? `${defaultText}\n\n` : '';
-          }
-        }).join('');
+              default:
+                const defaultText = extractTextFromNode(node);
+                return defaultText.trim() ? `${defaultText}\n\n` : "";
+            }
+          })
+          .join("");
       };
 
       // Helper function to extract text from TipTap JSON node
       const extractTextFromNode = (node: any): string => {
-        if (!node) return '';
-        
-        if (node.type === 'text') {
-          let text = node.text || '';
-          
+        if (!node) return "";
+
+        if (node.type === "text") {
+          let text = node.text || "";
+
           // Apply marks (formatting)
           if (node.marks) {
             node.marks.forEach((mark: any) => {
               switch (mark.type) {
-                case 'bold':
-                case 'strong':
+                case "bold":
+                case "strong":
                   text = `**${text}**`;
                   break;
-                case 'italic':
-                case 'em':
+                case "italic":
+                case "em":
                   text = `*${text}*`;
                   break;
-                case 'code':
+                case "code":
                   text = `\`${text}\``;
                   break;
-                case 'strike':
+                case "strike":
                   text = `~~${text}~~`;
                   break;
-                case 'link':
-                  const href = mark.attrs?.href || '#';
+                case "link":
+                  const href = mark.attrs?.href || "#";
                   text = `[${text}](${href})`;
                   break;
               }
             });
           }
-          
+
           return text;
         }
-        
+
         if (node.content && Array.isArray(node.content)) {
-          return node.content.map(extractTextFromNode).join('');
+          return node.content.map(extractTextFromNode).join("");
         }
-        
-        return '';
+
+        return "";
       };
 
       // Convert content to Markdown
       let markdownContent = `# ${title}\n\n`;
-      
+
       if (jsonContent.content) {
         markdownContent += convertToMarkdown(jsonContent.content);
       }
-      
+
       // Create and download file
       const blob = new Blob([markdownContent], { type: "text/markdown" });
       const url = URL.createObjectURL(blob);
@@ -353,8 +365,8 @@ export default function DocMenu({
     <>
       <Menu>
         <MenuButton
-          className={`inline-flex items-center gap-1 text-sm rounded-lg cursor-pointer data-hover:bg-zinc-100 data-open:bg-zinc-100 transition-colors ${
-            showText ? "px-2 py-1" : "p-1"
+          className={`inline-flex items-center gap-1 text-sm rounded-xl cursor-pointer data-hover:bg-zinc-100 data-open:bg-zinc-100 transition-colors ${
+            showText ? "px-2.5 py-1.5" : "p-1.5"
           } font-medium text-zinc-600`}
         >
           {showText && <span>Options</span>}
@@ -369,7 +381,7 @@ export default function DocMenu({
           {/* Export Options */}
           <MenuItem>
             <button
-              className="group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium cursor-pointer"
+              className="group flex w-full items-center gap-2 rounded-xl px-3 py-1.5 data-focus:bg-zinc-100 font-medium cursor-pointer"
               onClick={exportToPDF}
             >
               <DocumentArrowDownIcon className="size-4 fill-blue-500" />
@@ -378,21 +390,21 @@ export default function DocMenu({
           </MenuItem>
           <MenuItem>
             <button
-              className="group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium cursor-pointer"
+              className="group flex w-full items-center gap-2 rounded-xl px-3 py-1.5 data-focus:bg-zinc-100 font-medium cursor-pointer"
               onClick={exportToMarkdown}
             >
               <DocumentTextIcon className="size-4 fill-green-500" />
               Export as Markdown
             </button>
           </MenuItem>
-          
+
           {/* Divider */}
           <div className="my-1 h-px bg-zinc-200" />
-          
+
           {/* Delete Options */}
           <MenuItem>
             <button
-              className="group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium cursor-pointer"
+              className="group flex w-full items-center gap-2 rounded-xl px-3 py-1.5 data-focus:bg-zinc-100 font-medium cursor-pointer"
               onClick={() => setIsDeleteDialogOpen(true)}
             >
               <TrashIcon className="size-4 fill-red-500" />
@@ -401,7 +413,7 @@ export default function DocMenu({
           </MenuItem>
           <MenuItem>
             <button
-              className="group flex w-full items-center gap-2 rounded-lg px-3 py-1.5 data-focus:bg-zinc-100 font-medium cursor-pointer"
+              className="group flex w-full items-center gap-2 rounded-xl px-3 py-1.5 data-focus:bg-zinc-100 font-medium cursor-pointer"
               onClick={() => setIsDeleteAnchorsDialogOpen(true)}
             >
               <XMarkIcon className="size-4 fill-red-500" />

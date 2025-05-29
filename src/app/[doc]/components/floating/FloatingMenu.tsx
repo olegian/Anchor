@@ -28,17 +28,14 @@ export default function FloatingMenu({ docId }: { docId: string }) {
           <div className="w-px h-8 bg-zinc-200" />
         ) : null}
         {session && session.data && session.data.user ? (
-          <User
-            id={session!.data!.user!.id ?? "Unknown User"}
-            hover={true}
-          />
+          <User id={session!.data!.user!.id ?? "Unknown User"} hover={true} />
         ) : (
           <UserCircleIcon className="size-6 fill-zinc-500 animate-pulse" />
         )}
 
         <button
           onClick={() => setOpenShareDialog(true)}
-          className="text-sm px-2 py-1 rounded-lg bg-white border-zinc-200 border font-medium hover:bg-zinc-100 transition-colors text-zinc-700 cursor-pointer"
+          className="text-sm px-2.5 py-1.5 rounded-xl bg-white border-zinc-200 border font-medium hover:bg-zinc-100 transition-colors text-zinc-700 cursor-pointer"
         >
           Share
         </button>

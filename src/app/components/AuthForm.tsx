@@ -55,7 +55,7 @@ export default function AuthForm({
           </p>
           <div className="flex flex-col items-end justify-start space-y-1">
             <AnchorLogo className="w-24 h-8 fill-zinc-800/25 z-50 float-right" />
-            <p className="text-xs text-zinc-800/25 text-right font-heading w-48 tracking-tight">
+            <p className="text-xs text-zinc-800/25 text-right font-heading w-45 tracking-tighter">
               A collaborative writing platform with context-aware and assistive
               AI
             </p>

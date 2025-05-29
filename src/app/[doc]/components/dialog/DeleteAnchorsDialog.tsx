@@ -39,7 +39,7 @@ export default function DeleteAnchorsDialog({
               >
                 Delete all anchors?
               </DialogTitle>
-              <p className="text-sm/6 text-zinc-600">
+              <p className="text-sm/6 text-zinc-600 text-balance">
                 Are you sure you want to delete all anchors? This action cannot
                 be undone.
               </p>
@@ -49,7 +49,7 @@ export default function DeleteAnchorsDialog({
               <Button
                 onClick={close}
                 type="button"
-                className="border border-zinc-200 inline-flex items-center gap-2 rounded-lg bg-white cursor-pointer px-2 py-1 text-sm font-medium text-black focus:not-data-focus:outline-none data-focus:outline data-hover:bg-zinc-100 data-open:bg-zinc-100"
+                className="border border-zinc-200 inline-flex items-center gap-2 rounded-xl bg-white cursor-pointer px-2.5 py-1.5 text-sm font-medium text-black focus:not-data-focus:outline-none data-focus:outline data-hover:bg-zinc-100 data-open:bg-zinc-100"
               >
                 Cancel
               </Button>
@@ -58,7 +58,7 @@ export default function DeleteAnchorsDialog({
                   deleteAllAnchorsHandler();
                   close();
                 }}
-                className="border border-red-700 inline-flex items-center gap-2 rounded-lg bg-red-500 cursor-pointer px-2 py-1 text-sm font-medium text-white focus:not-data-focus:outline-none data-focus:outline data-hover:bg-red-600 data-open:bg-red-600"
+                className="border border-red-700 inline-flex items-center gap-2 rounded-xl bg-red-500 cursor-pointer px-2.5 py-1.5 text-sm font-medium text-white focus:not-data-focus:outline-none data-focus:outline data-hover:bg-red-600 data-open:bg-red-600"
               >
                 Delete
               </Button>

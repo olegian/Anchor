@@ -273,7 +273,7 @@ export default function AnchorPopup({
           <div className="relative w-full">
             <input
               type="text"
-              className="disabled:border-zinc-100 w-full border text-sm border-zinc-200 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="disabled:border-zinc-100 w-full border text-sm border-zinc-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Ask AI about this content..."
               disabled={viewedExchange != exchanges.length - 1}
               value={exchanges.at(viewedExchange)?.prompt}
@@ -375,7 +375,7 @@ export default function AnchorPopup({
             </button>
           </div>
         </div>
-        <div className="border border-zinc-200 p-2 rounded-lg text-sm text-zinc-700 max-h-64 overflow-y-auto">
+        <div className="border border-zinc-200 p-2 rounded-xl text-sm text-zinc-700 max-h-64 overflow-y-auto">
           {isLoading ? (
             <ul className="animate-pulse flex flex-wrap items-start justify-start gap-1">
               {Array(6)
@@ -432,7 +432,7 @@ export default function AnchorPopup({
             onClick={() => {
               insertResponseIntoDocument();
             }}
-            className="disabled:opacity-50 disabled:pointer-events-none text-sm px-2 py-1 h-7 inline-flex items-center border border-zinc-200 rounded-lg font-medium hover:bg-zinc-100 cursor-pointer"
+            className="disabled:opacity-50 disabled:pointer-events-none text-sm px-2 py-1 h-7 inline-flex items-center border border-zinc-200 rounded-xl font-medium hover:bg-zinc-100 cursor-pointer"
           >
             Insert
           </button>

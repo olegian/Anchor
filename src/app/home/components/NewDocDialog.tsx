@@ -55,7 +55,7 @@ export default function NewDocDialog({
               >
                 Create a new document
               </DialogTitle>
-              <p className="text-sm/6 text-zinc-600">
+              <p className="text-sm/6 text-zinc-600 text-balance">
                 Enter a name for your new document. You can change it later.
               </p>
             </div>
@@ -66,14 +66,14 @@ export default function NewDocDialog({
               value={tempDocTitle}
               onChange={(e) => setTempDocTitle(e.target.value)}
               placeholder="Document name"
-              className="w-full border disabled:opacity-50 disabled:pointer-events-none border-zinc-200 rounded-lg px-4 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border disabled:opacity-50 disabled:pointer-events-none border-zinc-200 rounded-xl px-4 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
             <Button
               onClick={createDocHandler}
               type="button"
               disabled={tempDocTitle.length < 1 || loading}
-              className="disabled:opacity-50 disabled:pointer-events-none border border-zinc-200 inline-flex items-center gap-2 rounded-lg bg-white cursor-pointer px-2 py-1 text-sm font-medium text-black focus:not-data-focus:outline-none data-focus:outline data-hover:bg-zinc-100 data-open:bg-zinc-100"
+              className="disabled:opacity-50 disabled:pointer-events-none border border-zinc-200 inline-flex items-center gap-2 rounded-xl bg-white cursor-pointer px-2.5 py-1.5 text-sm font-medium text-black focus:not-data-focus:outline-none data-focus:outline data-hover:bg-zinc-100 data-open:bg-zinc-100"
             >
               {loading ? (
                 <>

@@ -583,7 +583,7 @@ export default function AnchorHandle({
                     : deleteState
                     ? "text-white border-red-600 bg-red-500"
                     : "text-zinc-700 border-zinc-200 bg-white"
-                } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block tracking-tight`}
+                } px-1.5 py-0.5 border shadow-sm origin-center rounded-lg block tracking-tight`}
                 style={{
                   borderColor:
                     owned && !isOwner && !deleteState ? ownerData?.color : "",
@@ -632,9 +632,9 @@ export default function AnchorHandle({
                 : `text-zinc-700 ${
                     liveHandleInfo.attachedSpan.length > 0
                       ? "bg-black/10"
-                      : "bg-black/10 backdrop-blur-sm"
+                      : "bg-black/10"
                   }`
-            } flex items-center justify-center rounded-md origin-center transition-all duration-200 ease-in-out cursor-pointer ${
+            } flex items-center justify-center rounded-lg origin-center transition-all duration-200 ease-in-out cursor-pointer ${
               dragging || owned
                 ? "scale-125 opacity-100"
                 : "group-hover:scale-125 group-hover:opacity-100"

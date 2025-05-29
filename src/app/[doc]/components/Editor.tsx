@@ -61,7 +61,7 @@ export default function Editor({
       }
 
       const rect: DOMRect = span.getBoundingClientRect();
-      const x = rect.left + (rect.width / 2);
+      const x = rect.left + rect.width / 2;
       const y = rect.top - 4 + window.scrollY;
 
       const anchor = storage.get("docHandles").get(anchorId);
@@ -121,13 +121,13 @@ export default function Editor({
               : "pointer-events-auto"
           } ${
             loaded ? "" : "hidden"
-          } prose max-w-none h-full min-h-screen prose-headings:font-semibold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-lg prose-img:shadow-lg`}
+          } prose max-w-none h-full prose-headings:font-heading prose-headings:tracking-tighter prose-h2:my-4 min-h-screen prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-p:leading-7 prose-p:font-normal prose-p:text-zinc-700 prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline prose-img:rounded-xl prose-img:shadow-lg`}
         >
           <Title title={title} setTitle={setTitle} />
           <EditorContent editor={editor} className="px-2" />
         </article>
       </div>
-      <FloatingToolbar editor={editor} open={open} />
+      <FloatingToolbar editor={editor} draggingAnchor={draggingAnchor} />
       {editor && loaded ? (
         <AnchorLayer
           anchorHandles={anchorHandles}

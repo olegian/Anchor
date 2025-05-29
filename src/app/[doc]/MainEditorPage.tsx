@@ -14,6 +14,7 @@ import { useScrollPosition } from "../components/hooks/useScrollPosition";
 import BackButton from "./components/floating/BackButton";
 import { useEffect, useRef, useState } from "react";
 import { ANCHOR_HANDLE_SIZE } from "./components/interaction/constants";
+import { getRoomStorage } from "../actions";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
@@ -162,10 +163,10 @@ function EditingInterface({ docId }: { docId: string }) {
                     Last updated 2 days ago by Greg Heffley
                   </p>
                 ) : (
-                  <div className="relative p-2 py-1 rounded-lg bg-zinc-200 animate-pulse h-5 w-56" />
+                  <div className="relative p-2 py-1 rounded-xl bg-zinc-200 animate-pulse h-5 w-56" />
                 )}
-                <DocMenu 
-                  showText={true} 
+                <DocMenu
+                  showText={true}
                   editor={editorInstance}
                   title={title || "Untitled Document"}
                 />

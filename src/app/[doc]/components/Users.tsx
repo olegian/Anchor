@@ -61,7 +61,7 @@ export function User({ id, hover }: { id: string; hover?: boolean }) {
         <div
           className={`absolute w-full top-8 hidden group-hover:flex items-center justify-center`}
         >
-          <p className="text-center whitespace-nowrap text-xs font-medium text-zinc-700 pointer-events-none px-2 py-1 bg-white border shadow rounded-md border-zinc-200">
+          <p className="text-center whitespace-nowrap text-xs font-medium text-zinc-700 pointer-events-none px-2 py-1 bg-white border shadow rounded-lg border-zinc-200">
             {profile?.name}
           </p>
         </div>

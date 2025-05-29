@@ -84,7 +84,7 @@ export default function ShareDialog({
               >
                 Share "{title}"
               </DialogTitle>
-              <p className="text-sm/6 text-zinc-600">
+              <p className="text-sm/6 text-zinc-600 text-balance">
                 Who would you like to share this document with?
               </p>
             </div>
@@ -100,14 +100,14 @@ export default function ShareDialog({
               <ComboboxInput
                 disabled={usersList.length === 0}
                 aria-label="Select user to share document with"
-                className="z-50 w-full border disabled:opacity-50 disabled:pointer-events-none border-zinc-200 rounded-lg px-4 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="z-50 w-full border disabled:opacity-50 disabled:pointer-events-none border-zinc-200 rounded-xl px-4 py-2 text-sm font-medium text-black focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Start typing to search for users..."
                 onChange={(e) => setQuery(e.target.value)}
                 displayValue={(u: User | null) => u?.fullname || ""}
               />
               <ComboboxOptions
                 anchor="bottom"
-                className="z-50 mt-2 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-60 overflow-y-auto w-full relative"
+                className="z-50 mt-2 bg-white border border-zinc-200 rounded-xl shadow-lg max-h-60 overflow-y-auto w-full relative"
                 style={{ width: "384px" }} // Adjust width as needed
               >
                 {filteredPeople.map((u) => (
@@ -133,7 +133,7 @@ export default function ShareDialog({
               onClick={() => handleShareDocument()}
               type="button"
               disabled={!user || !usersList.includes(user)}
-              className="disabled:opacity-50 border border-zinc-200 inline-flex items-center gap-2 rounded-lg bg-white cursor-pointer px-2 py-1 text-sm font-medium text-black focus:not-data-focus:outline-none data-focus:outline data-hover:bg-zinc-100 data-open:bg-zinc-100"
+              className="disabled:opacity-50 border border-zinc-200 inline-flex items-center gap-2 rounded-xl bg-white cursor-pointer px-2.5 py-1.5 text-sm font-medium text-black focus:not-data-focus:outline-none data-focus:outline data-hover:bg-zinc-100 data-open:bg-zinc-100"
             >
               Share document
             </Button>
