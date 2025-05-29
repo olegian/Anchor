@@ -121,7 +121,7 @@ export default function AnchorPopup({
     if (promptText.length == 0 || isLoading) return;
     console.log("prompting: ", promptText);
 
-    console.log(editor.schema.spec)
+    console.log(editor.schema.spec);
     if (!setPending(true)) {
       setIsLoading(false);
       return;
@@ -233,9 +233,9 @@ export default function AnchorPopup({
             <div
               className={`${
                 isLoading
-                  ? "from-sky-400 to-pink-400 via-violet-400 bg-radial-[at_25%_75%]"
-                  : "bg-zinc-300"
-              } animate-spin size-7 rounded-full shrink-0 blur-xs transition-all`}
+                  ? "from-sky-400 to-pink-400 via-violet-400 bg-radial-[at_25%_75%] animate-spin"
+                  : "bg-zinc-300 animate-pulse"
+              } size-7 rounded-full shrink-0 blur-xs transition-all`}
             />
           </div>
           <div className="relative w-full">

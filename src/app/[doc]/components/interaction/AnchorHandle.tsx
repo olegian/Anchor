@@ -239,6 +239,7 @@ export default function AnchorHandle({
       const mainEditor = document.getElementById("main-editor");
       if (!mainEditor) return;
       const paragraphs = mainEditor.querySelectorAll("p");
+      const codeblocks = mainEditor.querySelectorAll("pre");
       if (!paragraphs) return;
 
       let targetX = e.clientX;
@@ -253,12 +254,13 @@ export default function AnchorHandle({
 
       // determine and set wordidx + paraidx
       let paragraphIdx = -1;
+      let codeblockIdx = -1;
       if (
         anchorInEditor ||
         (anchorOnLeft && editorLeftEdge - targetX < editorLeftEdge / 6)
       ) {
         // no need to try to identify if we already know we aren't over the editor
-        outer: for (let i = 0; i < paragraphs.length; i++) {
+        paraloop: for (let i = 0; i < paragraphs.length; i++) {
           const paragraph = paragraphs[i];
           // const spans = paragraph.getElementsByTagName("span");
           const paraRect = paragraph.getBoundingClientRect();
@@ -271,29 +273,33 @@ export default function AnchorHandle({
             paragraphIdx = i;
             if (targetX <= paraRect.left) {
               // hovering in the paragraph zone, no need to search for word
-              // paragraph.className =
-              //   "border-l-4 border-zinc-300 -ml-2 transition-colors";
-              // paragraph.after;
 
               targetX = paraRect.left - 35;
               targetY = paraRect.top + paraRect.height / 2 - 12;
 
-              // if (anchorRef.current) {
-              //   anchorRef.current.style.width = `${ANCHOR_HANDLE_SIZE}px`;
-              //   anchorRef.current.style.height = `${ANCHOR_HANDLE_SIZE}px`;
+              break paraloop;
+            }
+          }
+        }
 
-              //   anchorWidth = ANCHOR_HANDLE_SIZE;
-              //   anchorHeight = ANCHOR_HANDLE_SIZE;
-              // }
+        // TODO: need to check if we're near a code block and how to grab its' context for replacement only!
+        codeloop: for (let i = 0; i < codeblocks.length; i++) {
+          const codeblock = codeblocks[i];
+          const codeRect = codeblock.getBoundingClientRect();
+          if (
+            targetX < codeRect.right &&
+            targetX > codeRect.left - 120 && // buffer allows for paragraph only selection to the left of it
+            targetY > codeRect.top &&
+            targetY < codeRect.bottom
+          ) {
+            codeblockIdx = i;
+            if (targetX <= codeRect.left) {
+              // hovering in the paragraph zone, no need to search for word
 
-              break outer;
-            } else {
-              // if (anchorRef.current) {
-              //   anchorRef.current.style.width = `${ANCHOR_HANDLE_SIZE}px`;
-              //   anchorRef.current.style.height = `${ANCHOR_HANDLE_SIZE}px`;
-              //   anchorWidth = ANCHOR_HANDLE_SIZE;
-              //   anchorHeight = ANCHOR_HANDLE_SIZE;
-              // }
+              targetX = codeRect.left - 35;
+              targetY = codeRect.top + codeRect.height / 2 - 12;
+
+              break codeloop;
             }
           }
         }
@@ -576,7 +582,7 @@ export default function AnchorHandle({
                     : "",
               }}
             >
-              {title}
+              {liveHandleInfo?.title || title}
               {liveHandleInfo.isPending ? (
                 <ArrowPathIcon className="inline size-3 ml-1 animate-spin" />
               ) : null}
@@ -589,7 +595,11 @@ export default function AnchorHandle({
                 : deleteState
                 ? "text-white bg-red-500"
                 : liveHandleInfo.isPending
-                ? "from-sky-400 to-pink-400 via-violet-400 animate-pulse bg-gradient-to-r blur-[3px]"
+                ? `from-sky-400 to-pink-400 via-violet-400 animate-pulse bg-gradient-to-r ${
+                    liveHandleInfo.attachedSpan.length > 0
+                      ? "blur-[3px]"
+                      : "text-white"
+                  }`
                 : `text-zinc-700 ${
                     liveHandleInfo.attachedSpan.length > 0
                       ? "bg-black/10"
