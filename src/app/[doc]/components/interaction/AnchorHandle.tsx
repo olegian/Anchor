@@ -281,7 +281,7 @@ export default function AnchorHandle({
               // paragraph.after;
 
               targetX = paraRect.left - 35;
-              targetY = paraRect.top + paraRect.height / 2 - 10;
+              targetY = paraRect.top + paraRect.height / 2 - 12;
 
               // if (anchorRef.current) {
               //   anchorRef.current.style.width = `${ANCHOR_HANDLE_SIZE}px`;
@@ -304,18 +304,10 @@ export default function AnchorHandle({
         }
       }
 
-      // Animate toward the target position
-      if (animationFrame) cancelAnimationFrame(animationFrame);
-      const animate = () => {
-        // console.log("animate ", targetX, targetY);
-        setLocalCoords({ x: targetX, y: targetY });
-        animationFrame = requestAnimationFrame(animate);
-      };
-
       // write new position to live
+      setLocalCoords({ x: targetX, y: targetY });
       debouncedWritePos(targetX, targetY + window.scrollY);
       debouncedWriteInfo(paragraphIdx, -1, 24, 24);
-      animate();
     };
 
     const onMouseUp = (e: MouseEvent) => {
@@ -404,9 +396,10 @@ export default function AnchorHandle({
               return;
             }
           }
+          // we are not on any word, so height/width should be default, and then 
+          // paragraph idx should have been set accordingly in onMouseMove.
           setAnchorOwner(""); // release ownership, allow others to grab it
-          debouncedWritePos(targetX, targetY + window.scrollY);
-          debouncedWriteInfo(undefined, -1, 24, 24);
+          debouncedWriteInfo(undefined, -1, 24, 24);  // explicitly set wordIdx to be -1, leave paragraphidx unchanged
         }  // end if dragging
         if (animationFrame) cancelAnimationFrame(animationFrame);
       }
