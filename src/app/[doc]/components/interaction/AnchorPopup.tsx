@@ -6,11 +6,12 @@ import {
   PlusIcon,
 } from "@heroicons/react/16/solid";
 
-import { LiveObject } from "@liveblocks/client";
+import { LiveObject, User } from "@liveblocks/client";
 import { useMutation, useStorage } from "@liveblocks/react";
 import { Editor } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
 import { prompt, regenerateResponse } from "@/app/actions";
+import { Users } from "../Users";
 
 export default function AnchorPopup({
   title,
@@ -21,6 +22,8 @@ export default function AnchorPopup({
   isOpen,
   close,
   editor,
+  presence,
+  othersPresense,
 }: {
   title: string;
   handleId: string;
@@ -30,6 +33,20 @@ export default function AnchorPopup({
   isOpen: boolean;
   editor: Editor;
   close: () => void;
+  presence: {
+    openHandles: string[];
+    id: string;
+  };
+  othersPresense: User<
+    {
+      openHandles: string[];
+      id: string;
+    },
+    {
+      id: string;
+      info: {};
+    }
+  >[];
 }) {
   const popupRef = useRef<HTMLDivElement | null>(null);
   const exchanges = useStorage(
@@ -215,13 +232,28 @@ export default function AnchorPopup({
     close();
   };
 
+  // console.log("presence: ", presence);
+  // console.log("othersPresense: ", othersPresense);
+
   return (
     <div
       className="anchor-popup top-14 left-0 -translate-x-1/2 absolute w-xs z-50 bg-white border border-zinc-200 rounded-xl shadow-xl"
       ref={popupRef}
     >
-      <div className="text-center font-heading tracking-tight border-b border-zinc-200 p-2 text-sm line-clamp-1 font-medium">
-        {liveHandleInfo?.title || `AI Conversation • ${title}`}
+      <div
+        className={`flex ${
+          othersPresense.length > 0 ? "justify-between" : "justify-between"
+        } items-center border-b border-zinc-200 p-2`}
+      >
+        <h3 className="font-heading tracking-tight font-medium text-sm">
+          {liveHandleInfo?.title || "AI Conversation"}
+        </h3>
+        {othersPresense.length > 0 ? (
+          <Users
+            hover={false}
+            usersList={othersPresense.map((user) => user.id)}
+          />
+        ) : null}
       </div>
       <div className="p-2">
         <div className="flex items-center justify-start space-x-2">
