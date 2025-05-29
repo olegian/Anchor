@@ -43,7 +43,10 @@ export default function AnchorHandle({
     },
     {
       id: string;
-      info: {};
+      info: {
+        color: string;
+        [key: string]: any;
+      };
     }
   >[];
   docId: string;
@@ -101,8 +104,9 @@ export default function AnchorHandle({
     if (dragging || !syncToLive) return; // Only interpolate when NOT dragging locally
 
     let animationFrame: number | null = null;
-    console.log("a", showConversation)
-    setOpenPopup(false);
+    // console.log("a", showConversation);
+    // setOpenPopup(false);
+    // closeConversation();
 
     function animate() {
       setLocalCoords((prev) => {
@@ -334,6 +338,7 @@ export default function AnchorHandle({
           }, 10);
           setDraggingAnchor(false);
           setOpenPopup(false);
+          closeConversation();
 
           const targetX = e.clientX;
           const targetY = e.clientY;
@@ -442,6 +447,7 @@ export default function AnchorHandle({
     if (e.detail >= 2) {
       // we double clicked the thing, treat the mouse down as not a drag event but an open dialog
       setOpenPopup(true);
+      openConversation();
       return;
     }
 
@@ -540,6 +546,11 @@ export default function AnchorHandle({
     <PlusIcon className="absolute size-3.5 shrink-0 transition-all group-hover:scale-125" />
   );
 
+  const activeOtherUsers =
+    othersPresense.length > 0
+      ? othersPresense.filter((user) => user.presence.openHandles.includes(id))
+      : [];
+
   return (
     <>
       <div
@@ -555,40 +566,55 @@ export default function AnchorHandle({
         }}
       >
         <div className="flex flex-col items-center justify-center group relative  space-y-2">
-          <div
-            className={`${
-              owned && !isOwner && !deleteState
-                ? ""
-                : deleteState
-                ? "opacity-0"
-                : "opacity-0"
-            } flex items-center justify-center group-hover:opacity-100 translate-y-0  space-x-1 transition-all font-semibold transform text-xs`}
-          >
+          <div className="relative">
             <div
               className={`${
                 owned && !isOwner && !deleteState
-                  ? "text-white"
+                  ? ""
                   : deleteState
-                  ? "text-white border-red-600 bg-red-500"
-                  : "text-zinc-700 border-zinc-200 bg-white"
-              } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block tracking-tight`}
-              style={{
-                borderColor:
-                  owned && !isOwner && !deleteState ? ownerData?.color : "",
-                backgroundColor:
-                  owned && !isOwner && !deleteState ? ownerData?.color : "",
-                color:
-                  owned && !isOwner && !deleteState
-                    ? calculateBlackOrWhiteContrast(
-                        ownerData?.color ?? "#000000"
-                      )
-                    : "",
-              }}
+                  ? "opacity-0"
+                  : "opacity-0"
+              } flex items-center justify-center group-hover:opacity-100 translate-y-0  space-x-1 transition-all font-semibold transform text-xs`}
             >
-              {liveHandleInfo?.title || title}
-              {liveHandleInfo.isPending ? (
-                <ArrowPathIcon className="inline size-3 ml-1 animate-spin" />
-              ) : null}
+              <div
+                className={`${
+                  owned && !isOwner && !deleteState
+                    ? "text-white"
+                    : deleteState
+                    ? "text-white border-red-600 bg-red-500"
+                    : "text-zinc-700 border-zinc-200 bg-white"
+                } px-1.5 py-0.5 border shadow-sm origin-center rounded-md block tracking-tight`}
+                style={{
+                  borderColor:
+                    owned && !isOwner && !deleteState ? ownerData?.color : "",
+                  backgroundColor:
+                    owned && !isOwner && !deleteState ? ownerData?.color : "",
+                  color:
+                    owned && !isOwner && !deleteState
+                      ? calculateBlackOrWhiteContrast(
+                          ownerData?.color ?? "#000000"
+                        )
+                      : "",
+                }}
+              >
+                {liveHandleInfo?.title || title}
+                {liveHandleInfo.isPending ? (
+                  <ArrowPathIcon className="inline size-3 ml-1 animate-spin" />
+                ) : null}
+              </div>
+            </div>
+            <div className="absolute -bottom-3 z-10 left-1/2 -translate-x-1/2 flex items-center justify-center -space-x-0.5 w-full">
+              {activeOtherUsers.length > 0
+                ? activeOtherUsers.slice(0, 3).map((user) => (
+                    <div
+                      className="size-2 rounded-full"
+                      key={user.id}
+                      style={{
+                        backgroundColor: user.info.color, // TODO fix error
+                      }}
+                    />
+                  ))
+                : null}
             </div>
           </div>
           <div
@@ -641,8 +667,13 @@ export default function AnchorHandle({
             liveHandleInfo={liveHandleInfo}
             position={{ x: localCoords.x, y: localCoords.y }}
             isOpen={showPopup}
-            close={() => setOpenPopup(false)}
+            close={() => {
+              setOpenPopup(false);
+              closeConversation();
+            }}
             editor={editor}
+            presence={presence}
+            othersPresense={activeOtherUsers}
           />
         </Transition>
         {/* ) : null} */}
