@@ -394,9 +394,9 @@ export default function AnchorHandle({
                 rect.top - 6 + window.scrollY
               );
 
-              const words = paragraphContent.substring(0, start).split(/\s/);
+              const words = paragraphContent.substring(0, start).split(/\s+/);
               wordIdx = words[0] == "" ? 0 : words.length;
-              console.log("wi", wordIdx);
+              console.log("wi", words, wordIdx);
               debouncedWriteInfo(
                 undefined, // leave paragraph idx to be whatever it was when the anchor was moved
                 wordIdx,
