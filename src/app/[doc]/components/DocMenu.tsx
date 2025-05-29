@@ -48,6 +48,10 @@ export default function DocMenu({
 
       storage.get("docHandles").delete(handleId);
     });
+
+    storage.get("attachPoints").forEach((point, spanId) => {
+      storage.get("attachPoints").delete(spanId);
+    }) 
   }, []);
 
   const deleteAnchorsHandler = () => {

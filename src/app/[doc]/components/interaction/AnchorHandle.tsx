@@ -194,15 +194,17 @@ export default function AnchorHandle({
   }, [dragging, localCoords.x, localCoords.y]);
 
   const attachAnchor = useMutation(({ storage }, spanId, attachmentType) => {
-    storage.get("attachPoints").set(
-      spanId,
-      new LiveObject({
-        anchorId: id,
-        type: attachmentType,
-      })
-    );
-
-    storage.get("docHandles").get(id)?.set("attachedSpan", spanId);
+    if (spanId) {
+      storage.get("attachPoints").set(
+        spanId,
+        new LiveObject({
+          anchorId: id,
+          type: attachmentType,
+        })
+      );
+      
+      storage.get("docHandles").get(id)?.set("attachedSpan", spanId);
+    }
   }, []);
 
   const dettachAnchor = useMutation(({ storage }) => {
