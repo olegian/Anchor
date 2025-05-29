@@ -17,7 +17,7 @@ import { LiveObject, User } from "@liveblocks/client";
 import { useSession } from "next-auth/react";
 import { Editor } from "@tiptap/react";
 import { calculateBlackOrWhiteContrast } from "@/app/lib/utils";
-import { ParaSpansMark } from "./ParagraphSpanMark";
+import { ParaSpansNode } from "./ParagraphSpanMark";
 
 export default function AnchorHandle({
   id,
@@ -70,9 +70,7 @@ export default function AnchorHandle({
 
   const closeConversation = () => {
     updatePresense({
-      openHandles: (presence.openHandles || []).filter(
-        (handleId) => handleId !== id
-      ),
+      openHandles: (presence.openHandles || []).filter((handleId) => handleId !== id),
     });
     setShowConversation(false);
   };
@@ -116,14 +114,8 @@ export default function AnchorHandle({
         const targetY = liveHandleInfo!.y;
         // Lerp factor: 0.2 is smooth, 1 is instant
         const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-        const newX =
-          Math.abs(prev.x - targetX) < 0.5
-            ? targetX
-            : lerp(prev.x, targetX, 0.2);
-        const newY =
-          Math.abs(prev.y - targetY) < 0.5
-            ? targetY
-            : lerp(prev.y, targetY, 0.2);
+        const newX = Math.abs(prev.x - targetX) < 0.5 ? targetX : lerp(prev.x, targetX, 0.2);
+        const newY = Math.abs(prev.y - targetY) < 0.5 ? targetY : lerp(prev.y, targetY, 0.2);
         return { x: newX, y: newY };
       });
       animationFrame = requestAnimationFrame(animate);
@@ -144,24 +136,21 @@ export default function AnchorHandle({
   }, []);
   const debouncedWritePos = useDebounce(writePos, 20); // TODO: tune out this parameter to make the sync movement feel nice
 
-  const writeInfo = useMutation(
-    ({ storage }, paragraphIdx, wordIdx, anchorWidth, anchorHeight) => {
-      const handle = storage.get("docHandles").get(id);
-      if (paragraphIdx !== undefined) {
-        handle?.set("paragraphIdx", paragraphIdx);
-      }
-      if (wordIdx !== undefined) {
-        handle?.set("wordIdx", wordIdx);
-      }
-      if (anchorHeight !== undefined) {
-        handle?.set("height", anchorHeight);
-      }
-      if (anchorWidth !== undefined) {
-        handle?.set("width", anchorWidth);
-      }
-    },
-    []
-  );
+  const writeInfo = useMutation(({ storage }, paragraphIdx, wordIdx, anchorWidth, anchorHeight) => {
+    const handle = storage.get("docHandles").get(id);
+    if (paragraphIdx !== undefined) {
+      handle?.set("paragraphIdx", paragraphIdx);
+    }
+    if (wordIdx !== undefined) {
+      handle?.set("wordIdx", wordIdx);
+    }
+    if (anchorHeight !== undefined) {
+      handle?.set("height", anchorHeight);
+    }
+    if (anchorWidth !== undefined) {
+      handle?.set("width", anchorWidth);
+    }
+  }, []);
   const debouncedWriteInfo = useDebounce(writeInfo, 20);
 
   const deleteAnchor = useMutation(({ storage }) => {
@@ -182,8 +171,7 @@ export default function AnchorHandle({
   const animationRef = useRef<number | null>(null);
 
   const deleteState =
-    localCoords.x < 50 ||
-    window.innerWidth - 50 - ANCHOR_HANDLE_SIZE < localCoords.x;
+    localCoords.x < 50 || window.innerWidth - 50 - ANCHOR_HANDLE_SIZE < localCoords.x;
 
   // --- Rotation animation effect ---
   useEffect(() => {
@@ -344,10 +332,10 @@ export default function AnchorHandle({
                 from: inside,
                 to: end,
               })
-              .setMark(ParaSpansMark.name, { id: crypto.randomUUID() })
+              .wrapIn(ParaSpansNode.name, { id: crypto.randomUUID() })
               .run();
 
-            const spanId = editor.getAttributes(ParaSpansMark.name)["id"];
+            const spanId = editor.getAttributes(ParaSpansNode.name)["id"];
             attachAnchor(spanId, "paragraph");
           }
 
@@ -416,13 +404,19 @@ export default function AnchorHandle({
         if (start && end) {
           const startPos = start.pos;
           const endPos = end.pos;
-          editor
-            .chain()
-            .setTextSelection({ from: startPos, to: endPos })
-            .unsetMark(
-              aType === "paragraph" ? ParaSpansMark.name : SpansMark.name
-            )
-            .run();
+          if (aType === "paragraph") {
+            editor
+              .chain()
+              .setTextSelection({ from: startPos, to: endPos })
+              .toggleWrap(ParaSpansNode.name)
+              .run();
+          } else if (aType === "word") {
+            editor
+              .chain()
+              .setTextSelection({ from: startPos, to: endPos })
+              .unsetMark(SpansMark.name)
+              .run();
+          }
         }
         dettachAnchor();
         debouncedWriteInfo(undefined, undefined, 24, 24);
@@ -448,9 +442,7 @@ export default function AnchorHandle({
     }
   }, [liveHandleInfo]);
 
-  const currentAttachedPoint = liveAnchorPoints?.get(
-    liveHandleInfo.attachedSpan
-  );
+  const currentAttachedPoint = liveAnchorPoints?.get(liveHandleInfo.attachedSpan);
 
   const title = `${
     owned && !isOwner
@@ -493,20 +485,14 @@ export default function AnchorHandle({
           left: localCoords.x,
           top: localCoords.y,
           transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
-          transition: dragging
-            ? "none"
-            : "transform 0.4s cubic-bezier(.4,2,.6,1)",
+          transition: dragging ? "none" : "transform 0.4s cubic-bezier(.4,2,.6,1)",
         }}
       >
         <div className="flex flex-col items-center justify-center group relative  space-y-2">
           <div className="relative">
             <div
               className={`${
-                owned && !isOwner && !deleteState
-                  ? ""
-                  : deleteState
-                  ? "opacity-0"
-                  : "opacity-0"
+                owned && !isOwner && !deleteState ? "" : deleteState ? "opacity-0" : "opacity-0"
               } flex items-center justify-center group-hover:opacity-100 translate-y-0  space-x-1 transition-all font-semibold transform text-xs`}
             >
               <div
@@ -518,15 +504,11 @@ export default function AnchorHandle({
                     : "text-zinc-700 border-zinc-200 bg-white"
                 } px-1.5 py-0.5 border shadow-sm origin-center rounded-lg block tracking-tight`}
                 style={{
-                  borderColor:
-                    owned && !isOwner && !deleteState ? ownerData?.color : "",
-                  backgroundColor:
-                    owned && !isOwner && !deleteState ? ownerData?.color : "",
+                  borderColor: owned && !isOwner && !deleteState ? ownerData?.color : "",
+                  backgroundColor: owned && !isOwner && !deleteState ? ownerData?.color : "",
                   color:
                     owned && !isOwner && !deleteState
-                      ? calculateBlackOrWhiteContrast(
-                          ownerData?.color ?? "#000000"
-                        )
+                      ? calculateBlackOrWhiteContrast(ownerData?.color ?? "#000000")
                       : "",
                 }}
               >
@@ -558,9 +540,7 @@ export default function AnchorHandle({
                 ? "text-white bg-red-500"
                 : liveHandleInfo.isPending
                 ? `from-sky-400 to-pink-400 via-violet-400 animate-pulse bg-gradient-to-r ${
-                    currentAttachedPoint?.type == "word"
-                      ? "blur-[3px]"
-                      : "text-white"
+                    currentAttachedPoint?.type == "word" ? "blur-[3px]" : "text-white"
                   }`
                 : `text-zinc-700 bg-black/10`
             } flex items-center justify-center rounded-lg origin-center transition-all duration-200 ease-in-out cursor-pointer ${
@@ -572,8 +552,7 @@ export default function AnchorHandle({
             style={{
               backgroundColor:
                 owned && !isOwner && !deleteState
-                  ? ownerData?.color +
-                    (currentAttachedPoint?.type === "word" ? "25" : "")
+                  ? ownerData?.color + (currentAttachedPoint?.type === "word" ? "25" : "")
                   : "",
               color:
                 owned && !isOwner && !deleteState

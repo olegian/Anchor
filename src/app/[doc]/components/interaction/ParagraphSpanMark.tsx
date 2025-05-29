@@ -1,4 +1,4 @@
-import { Mark, mergeAttributes } from "@tiptap/core";
+import { Node, Mark, mergeAttributes } from "@tiptap/core";
 
 export interface SpansMarkOptions {
   /**
@@ -21,10 +21,16 @@ declare module "@tiptap/core" {
   }
 }
 
-export const ParaSpansMark = Mark.create<SpansMarkOptions>({
+export const ParaSpansNode = Node.create<SpansMarkOptions>({
   name: "paraAttachedSpan",
 
-  priority: 101,
+  content: 'block+',
+
+  group: 'block',
+
+  defining: true,
+  
+  priority: 1000, // same as paragraph
 
   addOptions() {
     return {

@@ -10,7 +10,7 @@ import Title from "./Title";
 import FloatingToolbar from "./floating/FloatingToolbar";
 import { AnchorLayer } from "./interaction/AnchorLayer";
 import { SpansMark } from "./interaction/SpansMark";
-import { ParaSpansMark } from "./interaction/ParagraphSpanMark";
+import { ParaSpansNode } from "./interaction/ParagraphSpanMark";
 import { useDebounce } from "./interaction/useDebounce";
 import SkeletonEditor from "./other/SkeletonEditor";
 import { Editor as E } from "@tiptap/react";
@@ -102,7 +102,7 @@ export default function Editor({
           anchor?.set("paragraphIdx", paragraphIdx);
         } else if (aType === "paragraph") {
           const x = rect.left - 35;
-          const y = rect.top + rect.height / 2 - 15;
+          const y = rect.top + rect.height / 2 - 13;
 
           anchor?.set("x", x - window.innerWidth / 2);
           anchor?.set("y", y);
@@ -139,7 +139,7 @@ export default function Editor({
         placeholder: "Type your text here...",
       }),
       SpansMark,
-      ParaSpansMark,
+      ParaSpansNode,
     ],
     immediatelyRender: false,
     editable: !draggingAnchor,
