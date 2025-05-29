@@ -806,6 +806,11 @@ export async function getAccessibleRooms(userId: string): Promise<RoomData[]> {
   return result;
 }
 
+export async function getRoom(roomId: string): Promise<RoomData | null> {
+  const room = await liveblocks.getRoom(roomId);
+  return room;
+}
+
 // include this ALL
 
 export async function getRoomStorage(roomId: string) {

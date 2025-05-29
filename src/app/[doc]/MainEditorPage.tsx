@@ -14,7 +14,8 @@ import { useScrollPosition } from "../components/hooks/useScrollPosition";
 import BackButton from "./components/floating/BackButton";
 import { useEffect, useRef, useState } from "react";
 import { ANCHOR_HANDLE_SIZE } from "./components/interaction/constants";
-import { getRoomStorage } from "../actions";
+import { getRoom, getRoomStorage } from "../actions";
+import { RoomData } from "@liveblocks/node";
 
 export default function MainEditorPage({ session }: { session: Session }) {
   const params = useParams<{ doc: string }>();
@@ -148,6 +149,19 @@ function EditingInterface({ docId }: { docId: string }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [addHandle, mousePos, borderRef, handles, draggingAnchor]);
 
+  const [roomInfo, setRoomInfo] = useState<RoomData | null>(null);
+  useEffect(() => {
+    if (docId && !roomInfo) {
+      getRoom(docId)
+        .then((room) => {
+          setRoomInfo(room);
+        })
+        .catch((error) => {
+          console.error("Error fetching room info:", error);
+        });
+    }
+  }, [docId]);
+
   return (
     <>
       <div className="pt-4 px-2 md:pt-16 md:px-6 select-none">
@@ -158,12 +172,24 @@ function EditingInterface({ docId }: { docId: string }) {
           <div className="max-w-3xl mx-auto py-16 space-y-4">
             <div className="space-y-4 px-2">
               <div className="flex items-center justify-between">
-                {title !== null ? (
+                {roomInfo !== null ? (
                   <p className="font-semibold text-zinc-500 text-sm">
-                    Last updated 2 days ago by Greg Heffley
+                    Last updated{" "}
+                    {roomInfo.lastConnectionAt
+                      ? new Intl.RelativeTimeFormat("en", {
+                          numeric: "auto",
+                        }).format(
+                          -Math.round(
+                            (Date.now() -
+                              new Date(roomInfo.lastConnectionAt).getTime()) /
+                              60000
+                          ),
+                          "minute"
+                        )
+                      : "just now"}
                   </p>
                 ) : (
-                  <div className="relative p-2 py-1 rounded-xl bg-zinc-200 animate-pulse h-5 w-56" />
+                  <div className="relative p-2 py-1 rounded-lg bg-zinc-200 animate-pulse h-5 w-56" />
                 )}
                 <DocMenu
                   showText={true}

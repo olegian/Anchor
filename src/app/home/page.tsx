@@ -123,50 +123,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-      {/* <div className="py-32">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-start justify-between">
-            <div className="space-y-2">
-              <div className="space-y-2">
-                <AnchorLogo className="w-16 h-6 fill-zinc-800" />
-                <h1 className="text-4xl font-heading tracking-tight font-semibold">
-                  Documents
-                </h1>
-              </div>
-              <p className="text-lg font-semibold text-zinc-700 tracking-tight">
-                {isLoading
-                  ? "Figuring out who you are..."
-                  : `    Welcome back, ${session?.data?.user?.name}!`}
-              </p>
-            </div>
-            <div className="flex items-center justify-end space-x-4">
-              <button
-                onClick={open}
-                className="border border-zinc-200 rounded-xl px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 flex items-center gap-2 cursor-pointer"
-              >
-                <PlusIcon className="size-5 text-zinc-500 hover:text-zinc-700" />
-                Create Document
-              </button>
-              <UserMenu user={session?.data?.user ?? null} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-            {isLoading ? (
-              <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                <p className="text-center text-zinc-500">Loading...</p>
-              </div>
-            ) : rooms.length > 0 ? (
-              rooms.map((room: any) => (
-                <DocGridItem key={room.id} room={room} />
-              ))
-            ) : (
-              <div className="col-span-1 md:col-span-2 lg:col-span-4">
-                <p className="text-center text-zinc-500">No documents found</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div> */}
       <NewDocDialog isOpen={newDocDialog} close={close} />
     </>
   );
@@ -203,12 +159,21 @@ function DocGridItem({ room }: { room: RoomData }) {
             {(data?.data?.data?.docTitle as string) ?? "Untitled Document"}
           </h2>
         ) : (
-          <div className="h-4 bg-zinc-200 rounded w-1/2 animate-pulse" />
+          <div className="h-5 bg-zinc-200 rounded w-1/2 animate-pulse" />
         )}
         <p className="text-xs text-zinc-500">
+          Last updated{" "}
           {room.lastConnectionAt
-            ? `Last updated ${new Date(room.lastConnectionAt).toLocaleString()}`
-            : "No update information available"}
+            ? new Intl.RelativeTimeFormat("en", {
+                numeric: "auto",
+              }).format(
+                -Math.round(
+                  (Date.now() - new Date(room.lastConnectionAt).getTime()) /
+                    60000
+                ),
+                "minute"
+              )
+            : "just now"}
         </p>
       </div>
     </Link>

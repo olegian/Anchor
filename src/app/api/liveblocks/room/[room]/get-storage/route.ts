@@ -1,6 +1,6 @@
 import { liveblocks } from "@/app/liveblocks";
 
-export async function GET(request, props) {
+export async function GET(request: Request, props: { params: any }) {
   const params = await props.params;
 
   const room = params.room;
@@ -28,7 +28,7 @@ export async function GET(request, props) {
       format: true,
     });
     // TODO: Ritesh is REALLY lazy. There's definitely a better way to do this. Hopefully.
-    if (doc.maindoc) {
+    if (typeof doc.maindoc === "string") {
       doc.maindoc = doc.maindoc.replaceAll('<heading level="2">', "<h2>");
       doc.maindoc = doc.maindoc.replaceAll("</heading>", "</h2>");
       doc.maindoc = doc.maindoc.replaceAll("<paragraph>", "<p>");
