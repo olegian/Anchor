@@ -359,7 +359,6 @@ export default function AnchorHandle({
               .content.content.map((node: any) => node.text)
               .join("");
             const idxInParagraph = pos - inside;
-            let wordIdx = -1;
             // anchor dropped not on a space
             if (
               paragraphContent[idxInParagraph] !== " " &&
@@ -386,49 +385,10 @@ export default function AnchorHandle({
 
               const spanId = editor.getAttributes(SpansMark.name)["id"];
               attachAnchor(spanId);
-
-              const span = document.getElementById(spanId) as HTMLSpanElement;
-              const rect = span.getBoundingClientRect();
-              debouncedWritePos(
-                rect.left + rect.width / 2,
-                rect.top - 6 + window.scrollY
-              );
-
-              const words = paragraphContent.substring(0, start).split(/\s+/);
-              wordIdx = words[0] == "" ? 0 : words.length;
-              console.log("wi", words, wordIdx);
-              debouncedWriteInfo(
-                undefined, // leave paragraph idx to be whatever it was when the anchor was moved
-                wordIdx,
-                span ? span.offsetWidth : 24,
-                span ? span.offsetHeight : 24
-              );
-              setAnchorOwner(""); // release ownership, allow others to grab it
-              if (animationFrame) cancelAnimationFrame(animationFrame);
-              return;
             }
           }
 
-          // set paragraphIdx one last time, just to be sure its correct after mouse move events
-          const mainEditor = document.getElementById("main-editor");
-          let paragraphIdx = undefined; // leave it unchanged by default ..
-          if (mainEditor) {
-            const paragraphs = mainEditor.querySelectorAll("p");
-            if (paragraphs) {
-              const editorLeftEdge = paragraphs[0].getBoundingClientRect().x;
-              const editorRightEdge = 752 + editorLeftEdge; // TODO from Ritesh: 752 is great for anything non-mobile, due to the max-w-3xl (or smth)
-
-              // if we are outside the editor, then explicit set pIdx to -1
-              if (targetX < editorLeftEdge && editorRightEdge < targetX) {
-                paragraphIdx = -1;
-              }
-            }
-          }
-
-          // we are not on any word, so height/width should be default, and then
-          // paragraph idx should have been set accordingly in onMouseMove.
           setAnchorOwner(""); // release ownership, allow others to grab it
-          debouncedWriteInfo(paragraphIdx, -1, 24, 24);
         } // end if dragging
         if (animationFrame) cancelAnimationFrame(animationFrame);
       }
