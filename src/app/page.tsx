@@ -28,7 +28,8 @@ export default async function Home() {
         formData.get("username") as string,
         formData.get("password") as string,
         formData.get("name") as string,
-        formData.get("color") as string
+        (formData.get("color") as string) ??
+          `#${Math.floor(Math.random() * 16777215).toString(16)}`
       );
 
       // After registering the user, we can sign them in
@@ -42,9 +43,9 @@ export default async function Home() {
 
   return (
     <div className="w-screen h-screen flex items-center justify-center bg-zinc-50">
-      <div className="mx-auto max-w-xl p-8 bg-white border rounded-2xl border-zinc-200 w-full space-y-4">
-        <AuthForm loginHandler={loginHandler} signUpHandler={signUpHandler} />
-      </div>
+      {/* <div className="mx-auto max-w-xl p-8 bg-white border rounded-2xl border-zinc-200 w-full space-y-4"> */}
+      <AuthForm loginHandler={loginHandler} signUpHandler={signUpHandler} />
+      {/* </div> */}
     </div>
   );
 }
