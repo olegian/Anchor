@@ -1,5 +1,5 @@
 import { getUserColor } from "@/app/actions";
-import { getAvailableRoomIds } from "@/app/firebase";
+import { getAvailableRoomIds, getUserInfo } from "@/app/firebase";
 import { liveblocks } from "@/app/liveblocks";
 
 interface AuthRequest {
@@ -14,9 +14,11 @@ export async function POST(request: Request) {
   }
 
   const color = await getUserColor(authRequest.userId);
+  const user = await getUserInfo(authRequest.userId);
+
   const session = liveblocks.prepareSession(authRequest.userId, {
     userInfo: {
-      name: authRequest.userId,
+      name: user.name ?? authRequest.userId,
       color: color ?? "black",
     },
   });
