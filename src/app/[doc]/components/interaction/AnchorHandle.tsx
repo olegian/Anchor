@@ -524,6 +524,8 @@ export default function AnchorHandle({
       ? ownerData?.name
       : liveHandleInfo.handleName || deleteState
       ? "Delete?"
+      : liveHandleInfo.title
+      ? liveHandleInfo.title
       : liveHandleInfo.attachedSpan.length > 0
       ? "Word"
       : liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx === -1
@@ -597,7 +599,7 @@ export default function AnchorHandle({
                       : "",
                 }}
               >
-                {liveHandleInfo?.title || title}
+                {title}
                 {liveHandleInfo.isPending ? (
                   <ArrowPathIcon className="inline size-3 ml-1 animate-spin" />
                 ) : null}
