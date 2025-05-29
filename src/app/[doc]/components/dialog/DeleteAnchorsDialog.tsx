@@ -54,7 +54,10 @@ export default function DeleteAnchorsDialog({
                 Cancel
               </Button>
               <Button
-                onClick={deleteAllAnchorsHandler}
+                onClick={() => {
+                  deleteAllAnchorsHandler();
+                  close();
+                }}
                 className="border border-red-700 inline-flex items-center gap-2 rounded-lg bg-red-500 cursor-pointer px-2 py-1 text-sm font-medium text-white focus:not-data-focus:outline-none data-focus:outline data-hover:bg-red-600 data-open:bg-red-600"
               >
                 Delete

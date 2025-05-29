@@ -14,6 +14,7 @@ const DeleteAnchorsDialog = dynamic(
   () => import("./dialog/DeleteAnchorsDialog")
 );
 import { useState } from "react";
+import { useMutation } from "@liveblocks/react";
 
 // You'll need to install these dependencies:
 // npm install jspdf turndown
@@ -38,8 +39,20 @@ export default function DocMenu({
     });
   };
 
+  const deleteAllAnchors = useMutation(({storage}) => {
+    storage.get("docHandles").forEach((handle, handleId) => {
+      const attachedSpanId = handle.get("attachedSpan");
+      if (attachedSpanId) {
+        storage.get("attachPoints").delete(attachedSpanId);
+      }
+
+      storage.get("docHandles").delete(handleId);
+    });
+
+  }, [])
+
   const deleteAnchorsHandler = () => {
-    // TODO: Delete all anchors
+    deleteAllAnchors()
   };
 
   const exportToPDF = async () => {
