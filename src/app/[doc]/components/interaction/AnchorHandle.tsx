@@ -397,7 +397,7 @@ export default function AnchorHandle({
 
           // set paragraphIdx one last time, just to be sure its correct after mouse move events
           const mainEditor = document.getElementById("main-editor");
-          let paragraphIdx = undefined;  // leave it unchanged by default ..
+          let paragraphIdx = undefined; // leave it unchanged by default ..
           if (mainEditor) {
             const paragraphs = mainEditor.querySelectorAll("p");
             if (paragraphs) {
@@ -430,6 +430,12 @@ export default function AnchorHandle({
   }, [dragging, id, debouncedWritePos, localCoords.x, localCoords.y]);
 
   const onMouseDown = (e: React.MouseEvent) => {
+    if (e.detail >= 2) {
+      // we double clicked the thing, treat the mouse down as not a drag event but an open dialog
+      setOpenPopup(true);
+      return;
+    }
+
     if (liveHandleInfo.owner !== "") {
       // someone is already moving the handle, need to disallow concurrent grab and just
       // wait till they release it
@@ -609,9 +615,6 @@ export default function AnchorHandle({
               height: `${liveHandleInfo.height ?? ANCHOR_HANDLE_SIZE}px`,
             }}
             onMouseDown={onMouseDown}
-            onDoubleClick={() => {
-              setOpenPopup(true);
-            }}
           >
             {liveHandleInfo.attachedSpan.length > 0 ? null : icon}
           </div>
