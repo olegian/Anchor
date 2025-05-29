@@ -14,6 +14,20 @@ export const SCHEMA = {
         },
       ],
     },
+    paraAttachedSpan: {
+      content: "inline*",
+      group: "block",
+      attrs: {
+        id: {
+          default: null,
+        },
+      },
+      parseDOM: [
+        {
+          tag: "span",
+        },
+      ],
+    },
     liveblocksMention: {
       group: "inline",
       inline: true,
@@ -138,18 +152,6 @@ export const SCHEMA = {
     },
   },
   marks: {
-    // paraAttachedSpan: {
-    //   attrs: {
-    //     id: {
-    //       default: null,
-    //     },
-    //   },
-    //   parseDOM: [
-    //     {
-    //       tag: "span",
-    //     },
-    //   ],
-    // },
     attachedSpan: {
       attrs: {
         id: {
