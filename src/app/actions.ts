@@ -29,6 +29,9 @@ const conversationHistory = new Map<
   Array<{ role: string; parts: { text: string }[] }>
 >();
 
+// Store document sections per document ID
+const documentSections = new Map<string, DocumentSection[]>();
+
 interface PromptResponse {
   text: string;
   status: "success" | "error";
@@ -37,7 +40,16 @@ interface PromptResponse {
 
 interface DocumentContext {
   content: string;
-  contextType: "word" | "paragraph" | "document";
+  contextType: "word" | "paragraph" | "document" | "section";
+  sectionTitle?: string;
+}
+
+interface DocumentSection {
+  title: string;
+  content: string;
+  startParagraph: number;
+  endParagraph: number;
+  paragraphs: number[];
 }
 
 // Parse ProseMirror JSON to extract text content and create context mapping
@@ -139,13 +151,133 @@ function parseDocumentContent(docJson: any): {
   return { fullText: fullText.trim(), paragraphs, words };
 }
 
+// New function to identify document sections using Gemini AI
+export async function identifyDocumentSections(
+  docId: string,
+  parsedDoc: ReturnType<typeof parseDocumentContent>
+): Promise<DocumentSection[]> {
+  // Check if we already have sections cached for this document
+  if (documentSections.has(docId)) {
+    return documentSections.get(docId)!;
+  }
+
+  try {
+    const sectionModel = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      systemInstruction: {
+        role: "system",
+        parts: [
+          {
+            text: `You are an expert document analyzer. Your task is to identify logical sections within a document based on its content and structure.
+
+Analyze the provided document and identify natural sections that span one or more paragraphs. Each section should represent a coherent topic, theme, or argument.
+
+For each section you identify, provide:
+1. A descriptive title (2-6 words) that captures the main theme
+2. The starting paragraph index (0-based)
+3. The ending paragraph index (0-based, inclusive)
+
+Return your response as a JSON array with this exact format:
+[
+  {
+    "title": "Introduction",
+    "startParagraph": 0,
+    "endParagraph": 1
+  },
+  {
+    "title": "Main Arguments",
+    "startParagraph": 2,
+    "endParagraph": 5
+  }
+]
+
+Guidelines:
+- Sections should be meaningful and represent distinct topics or themes
+- A section can be a single paragraph or span multiple paragraphs
+- Avoid overly granular sections (aim for 3-8 sections for most documents)
+- Use descriptive but concise titles
+- Ensure all paragraphs are covered by sections
+- Sections should not overlap`,
+          },
+        ],
+      },
+    });
+
+    // Create paragraph list for analysis
+    const paragraphList = parsedDoc.paragraphs
+      .map((p, index) => `[${index}] ${p.content}`)
+      .join('\n\n');
+
+    const prompt = `Document to analyze:
+
+${paragraphList}
+
+Identify logical sections in this document and return them as JSON.`;
+
+    const result = await sectionModel.generateContent(prompt);
+    const response = result.response.text();
+    
+    // Extract JSON from the response
+    const jsonMatch = response.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      throw new Error("No valid JSON found in response");
+    }
+
+    const sectionsData = JSON.parse(jsonMatch[0]);
+    
+    // Convert to DocumentSection format
+    const sections: DocumentSection[] = sectionsData.map((section: any) => {
+      const paragraphRange = section.startParagraph === section.endParagraph 
+        ? `(¶${section.startParagraph})` 
+        : `(¶${section.startParagraph}-${section.endParagraph})`;
+      
+      return {
+        title: `${section.title} ${paragraphRange}`,
+        content: parsedDoc.paragraphs
+          .slice(section.startParagraph, section.endParagraph + 1)
+          .map(p => p.content)
+          .join('\n\n'),
+        startParagraph: section.startParagraph,
+        endParagraph: section.endParagraph,
+        paragraphs: Array.from(
+          { length: section.endParagraph - section.startParagraph + 1 },
+          (_, i) => section.startParagraph + i
+        ),
+      };
+    });
+
+    // Cache the sections
+    documentSections.set(docId, sections);
+    
+    console.log(`Identified ${sections.length} sections for document ${docId}:`, 
+      sections.map(s => `"${s.title}" (paragraphs ${s.startParagraph}-${s.endParagraph})`));
+    
+    return sections;
+  } catch (error) {
+    console.error("Error identifying document sections:", error);
+    // Return a fallback single section containing the entire document
+    const fallbackRange = parsedDoc.paragraphs.length === 1 
+      ? "(¶0)" 
+      : `(¶0-${parsedDoc.paragraphs.length - 1})`;
+    
+    return [{
+      title: `Full Document ${fallbackRange}`,
+      content: parsedDoc.fullText,
+      startParagraph: 0,
+      endParagraph: parsedDoc.paragraphs.length - 1,
+      paragraphs: parsedDoc.paragraphs.map((_, i) => i),
+    }];
+  }
+}
+
 // Updated function to use contextMode override or fall back to index-based detection
-function getDocumentContext(
-  contextMode: "doc" | "paragraph" | "word",
+async function getDocumentContext(
+  contextMode: "doc" | "paragraph" | "word" | "section",
   paragraphIdx: number,
   wordIdx: number,
-  parsedDoc: ReturnType<typeof parseDocumentContent>
-): DocumentContext {
+  parsedDoc: ReturnType<typeof parseDocumentContent>,
+  docId: string
+): Promise<DocumentContext> {
   console.log(
     `Getting context with mode: ${contextMode}, paragraphIdx: ${paragraphIdx}, wordIdx: ${wordIdx}`
   );
@@ -229,6 +361,33 @@ function getDocumentContext(
         contextType: "document",
       };
 
+    case "section":
+      // Use section context based on paragraph index
+      if (paragraphIdx >= 0) {
+        const sections = await identifyDocumentSections(docId, parsedDoc);
+        const targetSection = sections.find(section => 
+          section.paragraphs.includes(paragraphIdx)
+        );
+
+        if (targetSection) {
+          console.log(`Using section context: "${targetSection.title}"`);
+          return {
+            content: targetSection.content,
+            contextType: "section",
+            sectionTitle: targetSection.title,
+          };
+        }
+      }
+
+      // Fall back to document context if section context is not available
+      console.log(
+        "Section context not available, falling back to document context"
+      );
+      return {
+        content: parsedDoc.fullText,
+        contextType: "document",
+      };
+
     default:
       // Fallback to document context
       console.log("Unknown context mode, falling back to document context");
@@ -243,7 +402,7 @@ function getDocumentContext(
 export async function prompt(
   docId: string,
   handleId: string,
-  contextMode: "doc" | "paragraph" | "word",
+  contextMode: "doc" | "paragraph" | "word" | "section",
   xPosition?: number,
   yPosition?: number,
   env?: string
@@ -280,11 +439,12 @@ export async function prompt(
     });
 
     // Get appropriate context using the explicit contextMode
-    const documentContext = getDocumentContext(
+    const documentContext = await getDocumentContext(
       contextMode,
       paragraphIdx,
       wordIdx,
-      parsedDoc
+      parsedDoc,
+      docId
     );
 
     console.log(
@@ -307,6 +467,9 @@ export async function prompt(
         break;
       case "paragraph":
         contextPrompt = `Focus specifically on this paragraph:\n"${documentContext.content}"`;
+        break;
+      case "section":
+        contextPrompt = `Focus specifically on this section titled "${documentContext.sectionTitle}":\n"${documentContext.content}"`;
         break;
       case "document":
         contextPrompt = `Document content:\n${documentContext.content}`;
@@ -332,13 +495,13 @@ export async function prompt(
         role: "system",
         parts: [
           {
-            text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, or full document) and tailor your response accordingly. 
+            text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, section, or full document) and tailor your response accordingly. 
 
-When focusing on a paragraph, discuss only that specific paragraph and its content. When focusing on a word, discuss that word in the context of its paragraph. When given the full document, you can discuss the entire document.
+When focusing on a paragraph, discuss only that specific paragraph and its content. When focusing on a word, discuss that word in the context of its paragraph. When focusing on a section, discuss that specific section and its content, which may span multiple paragraphs. When given the full document, you can discuss the entire document.
 
 Be concise but thorough in your analysis.
 
-When focusing on a word, you may be asked to provide a synonym, which will be indicated by the user passing the word \"synonym\" into the model. If you 
+When focusing on a word, you may be asked to provide a synonym, which will be indicated by the user passing the word "synonym" into the model. If you 
 receive this prompt, you should provide a sample synonym for the word. You would not need any additional context in this situation, and should therefore not discuss this.
 For example: if the user enters "was", a synonym could be "existed". 
 
@@ -347,9 +510,11 @@ This will be similar for other instances in which the context is only the word. 
 If the context is a paragraph, you will also discuss only that specific paragraph and its content, while thinking through your reasoning. If the user asks you to provide
 additional text for that paragraph, only provide the additional text.
 
-For instance, if the paragraph is "\We want to remind you that midnight today, May 25, is the deadline for you to register/order cap and gown to attend the Commencement ceremony in Husky Stadium on June 14! 
-It is easy to sign up to share this special day with your friends and family.\",
-additional text for that paragraph may be \"Don't miss your chance to join us on this special day! We hope to see you there, and we are excited to have you join us. More information will be revealed shortly\";
+If the context is a section, you will discuss only that specific section and its content, while thinking through your reasoning. Sections may span multiple paragraphs that are thematically related. If the user asks you to provide additional text for that section, only provide the additional text that would fit within that section's theme.
+
+For instance, if the paragraph is "We want to remind you that midnight today, May 25, is the deadline for you to register/order cap and gown to attend the Commencement ceremony in Husky Stadium on June 14! 
+It is easy to sign up to share this special day with your friends and family.",
+additional text for that paragraph may be "Don't miss your chance to join us on this special day! We hope to see you there, and we are excited to have you join us. More information will be revealed shortly";
 the user is also able to request for specific sentence lengths or for more information after this point. 
 
 If the context is the document, analyze the document fully, being sure to consider the perspective of the user and what goals they want, while thinking
@@ -419,7 +584,7 @@ through your thought process.
 export async function regenerateResponse(
   docId: string,
   handleId: string,
-  contextMode: "doc" | "paragraph" | "word",
+  contextMode: "doc" | "paragraph" | "word" | "section",
   exchangeIndex?: number, // NEW: Add optional exchange index parameter
   env?: string
 ): Promise<PromptResponse> {
@@ -463,11 +628,12 @@ export async function regenerateResponse(
     const parsedDoc = parseDocumentContent(docJson);
 
     // Get appropriate context
-    const documentContext = getDocumentContext(
+    const documentContext = await getDocumentContext(
       contextMode,
       paragraphIdx,
       wordIdx,
-      parsedDoc
+      parsedDoc,
+      docId
     );
 
     // FIXED: Get conversation history and properly reset for regeneration
@@ -550,7 +716,7 @@ export async function regenerateResponse(
         // Update the specific exchange, not necessarily the last one
         exchanges.get(targetExchangeIndex)?.set("response", text);
         // Optional: Update timestamp to indicate regeneration
-        exchanges.get(targetExchangeIndex)?.set("timestamp", Date.now());
+        // exchanges.get(targetExchangeIndex)?.set("timestamp", Date.now());
       }
     });
 
@@ -584,6 +750,9 @@ async function generateLLMResponseWithVariation(
     case "paragraph":
       contextPrompt = `Focus specifically on this paragraph:\n"${documentContext.content}"`;
       break;
+    case "section":
+      contextPrompt = `Focus specifically on this section titled "${documentContext.sectionTitle}":\n"${documentContext.content}"`;
+      break;
     case "document":
       contextPrompt = `Document content:\n${documentContext.content}`;
       break;
@@ -604,9 +773,9 @@ async function generateLLMResponseWithVariation(
       role: "system",
       parts: [
         {
-          text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, or full document) and tailor your response accordingly. 
+          text: `You are a helpful AI assistant analyzing a document. When responding to queries, consider the specific context provided (word, paragraph, section, or full document) and tailor your response accordingly. 
 
-When focusing on a paragraph, discuss only that specific paragraph and its content. When focusing on a word, discuss that word in the context of its paragraph. When given the full document, you can discuss the entire document.
+When focusing on a paragraph, discuss only that specific paragraph and its content. When focusing on a word, discuss that word in the context of its paragraph. When focusing on a section, discuss that specific section and its content, which may span multiple paragraphs. When given the full document, you can discuss the entire document.
 
 Be concise but thorough in your analysis.
 
@@ -618,6 +787,8 @@ This will be similar for other instances in which the context is only the word. 
 
 If the context is a paragraph, you will also discuss only that specific paragraph and its content, while thinking through your reasoning. If the user asks you to provide
 additional text for that paragraph, only provide the additional text.
+
+If the context is a section, you will discuss only that specific section and its content, while thinking through your reasoning. Sections may span multiple paragraphs that are thematically related. If the user asks you to provide additional text for that section, only provide the additional text that would fit within that section's theme.
 
 For instance, if the paragraph is "We want to remind you that midnight today, May 25, is the deadline for you to register/order cap and gown to attend the Commencement ceremony in Husky Stadium on June 14! 
 It is easy to sign up to share this special day with your friends and family.",
@@ -651,6 +822,25 @@ When regenerating responses, try to provide alternative perspectives or differen
   const text = response.text();
 
   return text;
+}
+
+// New function to get available sections for a document
+export async function getDocumentSections(docId: string): Promise<DocumentSection[]> {
+  try {
+    const docContents = await getContents(docId);
+    const docJson = JSON.parse(docContents);
+    const parsedDoc = parseDocumentContent(docJson);
+    
+    return await identifyDocumentSections(docId, parsedDoc);
+  } catch (error) {
+    console.error("Error getting document sections:", error);
+    return [];
+  }
+}
+
+// Clear sections cache when document is updated (call this when document changes)
+export async function clearDocumentSectionsCache(docId: string): Promise<void> {
+  documentSections.delete(docId);
 }
 
 export async function resetConversation(handleId: string): Promise<void> {
