@@ -254,7 +254,7 @@ export default function AnchorHandle({
       // determine and set wordidx + paraidx
       // write new position to live
       setLocalCoords({ x: targetX, y: targetY });
-      debouncedWritePos(targetX, targetY + window.scrollY);
+      debouncedWritePos(targetX, targetY);
     };
 
     const onMouseUp = (e: MouseEvent) => {
