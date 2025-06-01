@@ -10,8 +10,17 @@ import { LiveObject, User } from "@liveblocks/client";
 import { useMutation, useStorage } from "@liveblocks/react";
 import { Editor } from "@tiptap/react";
 import { useEffect, useRef, useState } from "react";
-import { prompt, regenerateResponse } from "@/app/actions";
+import { prompt, regenerateResponse, getDocumentSections } from "@/app/actions";
 import { Users } from "../Users";
+
+// Add this interface to define the section structure
+interface DocumentSection {
+  title: string;
+  content: string;
+  startParagraph: number;
+  endParagraph: number;
+  paragraphs: number[];
+}
 
 export default function AnchorPopup({
   title,
@@ -28,7 +37,7 @@ export default function AnchorPopup({
   title: string;
   handleId: string;
   docId: string;
-  liveHandleInfo?: any; // TODO: this should be better typed, i think theres a type def in liveblocks config.ts
+  liveHandleInfo?: any;
   position: { x: number; y: number };
   isOpen: boolean;
   editor: Editor;
@@ -52,14 +61,41 @@ export default function AnchorPopup({
   const exchanges = useStorage(
     (root) => root.docHandles.get(handleId)?.exchanges
   );
-  const [contextMode, setContextMode] = useState<"word" | "doc" | "paragraph">(
+  
+  // Add state for document sections
+  const [documentSections, setDocumentSections] = useState<DocumentSection[]>([]);
+  const [currentSectionTitle, setCurrentSectionTitle] = useState<string>("");
+  
+  // Updated to default to "paragraph" instead of "section" when both are available
+  const [contextMode, setContextMode] = useState<"word" | "doc" | "paragraph" | "section">(
     liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
       ? "word"
       : liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx === -1
       ? "paragraph"
+      : liveHandleInfo.paragraphIdx >= 0
+      ? "paragraph" // Changed from "section" to "paragraph" as default
       : "doc"
   );
   const [userHasSetContextMode, setUserHasSetContextMode] = useState(false);
+
+  // Load document sections when popup opens
+  useEffect(() => {
+    if (isOpen && docId) {
+      getDocumentSections(docId).then((sections) => {
+        setDocumentSections(sections);
+        
+        // Find the current section based on paragraph index
+        if (liveHandleInfo?.paragraphIdx >= 0) {
+          const currentSection = sections.find(section => 
+            section.paragraphs.includes(liveHandleInfo.paragraphIdx)
+          );
+          if (currentSection) {
+            setCurrentSectionTitle(currentSection.title);
+          }
+        }
+      }).catch(console.error);
+    }
+  }, [isOpen, docId, liveHandleInfo?.paragraphIdx]);
 
   if (!exchanges) {
     // TODO: add indicator while synced exchanges load
@@ -68,12 +104,12 @@ export default function AnchorPopup({
 
   const [viewedExchange, setViewedExchange] = useState(
     exchanges.length > 1 ? exchanges.length - 2 : 0
-  ); // Initalize to the second last exchange if there are more than one, otherwise to the first exchange
+  ); // Initialize to the second last exchange if there are more than one, otherwise to the first exchange
   const [isLoading, setIsLoading] = useState(false);
 
   // TODO: only one popup should be open?
 
-  // // if click outside, close the popup
+  // if click outside, close the popup
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -88,6 +124,7 @@ export default function AnchorPopup({
     };
   }, [isOpen, close]);
 
+  // Updated context mode detection logic to default to paragraph
   useEffect(() => {
     if (!isOpen || !liveHandleInfo || userHasSetContextMode) return;
 
@@ -96,6 +133,7 @@ export default function AnchorPopup({
     if (wordIdx >= 0 && paragraphIdx >= 0) {
       setContextMode("word");
     } else if (paragraphIdx >= 0) {
+      // Default to paragraph context when we have a paragraph but no specific word
       setContextMode("paragraph");
     } else {
       setContextMode("doc");
@@ -147,7 +185,7 @@ export default function AnchorPopup({
     }
 
     try {
-      // Pass the current contextMode to the prompt function
+      // Pass the current contextMode to the prompt function (now includes "section")
       await prompt(docId, handleId, contextMode);
 
       if (!openNewPrompt()) {
@@ -232,6 +270,22 @@ export default function AnchorPopup({
     }
 
     close();
+  };
+
+  // Helper function to get context display text with section title
+  const getContextDisplayText = (mode: string) => {
+    switch (mode) {
+      case "word":
+        return "Word";
+      case "paragraph":
+        return "Paragraph";
+      case "section":
+        return currentSectionTitle ? `Section: ${currentSectionTitle}` : "Section";
+      case "doc":
+        return "Document";
+      default:
+        return "Document";
+    }
   };
 
   // console.log("presence: ", presence);
@@ -401,27 +455,39 @@ export default function AnchorPopup({
           <h5 className="font-medium text-sm font-heading tracking-tight">
             Context
           </h5>
-          {/* TODO: chosen context */}
+          {/* Updated context selector to show section titles directly in options */}
           <div className="relative text-xs text-zinc-700 border inline-block border-zinc-200 px-1 py-0.5 rounded font-medium">
-            Use{}
+            <span className="text-zinc-500">Use </span>
             <select
-              className="text-xs ml-1 p-0 w-auto border-none form-select appearance-none! bg-none pr-4"
+              className="text-xs ml-1 p-0 w-auto border-none form-select appearance-none! bg-none pr-4 font-medium"
               value={contextMode}
               onChange={(event) => {
                 setContextMode(
-                  event.target.value as "word" | "doc" | "paragraph"
+                  event.target.value as "word" | "doc" | "paragraph" | "section"
                 );
                 setUserHasSetContextMode(true);
               }}
             >
+              {/* Show word option only if we have both word and paragraph indices */}
               {liveHandleInfo &&
               liveHandleInfo.wordIdx >= 0 &&
               liveHandleInfo.paragraphIdx >= 0 ? (
                 <option value="word">Word</option>
               ) : null}
+              
+              {/* Show paragraph option if we have paragraph index */}
               {liveHandleInfo && liveHandleInfo.paragraphIdx >= 0 ? (
                 <option value="paragraph">Paragraph</option>
               ) : null}
+              
+              {/* Show section option with title directly in the option text */}
+              {liveHandleInfo && liveHandleInfo.paragraphIdx >= 0 ? (
+                <option value="section">
+                  {currentSectionTitle ? `Section: ${currentSectionTitle}` : "Section"}
+                </option>
+              ) : null}
+              
+              {/* Document option is always available */}
               <option value="doc">Document</option>
             </select>
             <ChevronUpDownIcon className="absolute size-4 text-zinc-500 top-0.5 right-0.5 pointer-events-none" />
