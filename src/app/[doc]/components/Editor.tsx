@@ -116,7 +116,7 @@ export default function Editor({
             const { pos, inside } = editorLoc;
             const editorAtPos = editor.$pos(pos);
             paragraphIdx = (editorAtPos as any).resolvedPos.path[1];
-            console.log(editorAtPos.resolvedPos.path)
+            console.log(editorAtPos.resolvedPos.path) // not an error, for dbg, sorry -oleg
           }
 
           anchor?.set("wordIdx", wordIdx);
