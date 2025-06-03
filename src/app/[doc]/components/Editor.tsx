@@ -102,10 +102,10 @@ export default function Editor({
           anchor?.set("paragraphIdx", paragraphIdx);
         } else if (aType === "paragraph") {
           const x = rect.left - 35;
-          const y = rect.top + rect.height / 2 - 13;
+          const y = rect.top + (rect.height / 2) + window.scrollY - 13;
 
           anchor?.set("x", x - window.innerWidth / 2);
-          anchor?.set("y", y + window.scrollY);
+          anchor?.set("y", y);
           anchor?.set("width", 24);
           anchor?.set("height", 24);
 
@@ -116,7 +116,7 @@ export default function Editor({
             const { pos, inside } = editorLoc;
             const editorAtPos = editor.$pos(pos);
             paragraphIdx = (editorAtPos as any).resolvedPos.path[1];
-            console.log(editorAtPos.resolvedPos.path) // not an error, for dbg, sorry -oleg
+            console.log((editorAtPos as any).resolvedPos.path)
           }
 
           anchor?.set("wordIdx", wordIdx);

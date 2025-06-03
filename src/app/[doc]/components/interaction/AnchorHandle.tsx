@@ -338,6 +338,12 @@ export default function AnchorHandle({
           if (paragraphEditorPos) {
             let { pos, inside } = paragraphEditorPos;
             const snappedPara = (editor.$pos(pos) as any).resolvedPos.path[3];
+            if (snappedPara.type.name !== "paragraph") { // todo: this whole function can def be reformatted better
+              // top level element we are snapping to was not a paragraph, so dont attach anything
+              setAnchorOwner("");
+              if (animationFrame) cancelAnimationFrame(animationFrame);
+              return
+            }
             const end = inside + snappedPara.content.size;
 
             editor
