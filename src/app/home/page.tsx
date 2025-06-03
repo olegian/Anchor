@@ -164,15 +164,27 @@ function DocGridItem({ room }: { room: RoomData }) {
         <p className="text-xs text-zinc-500">
           Last updated{" "}
           {room.lastConnectionAt
-            ? new Intl.RelativeTimeFormat("en", {
-                numeric: "auto",
-              }).format(
-                -Math.round(
-                  (Date.now() - new Date(room.lastConnectionAt).getTime()) /
-                    60000
-                ),
-                "minute"
-              )
+            ? (() => {
+                const diffMs =
+                  Date.now() - new Date(room.lastConnectionAt).getTime();
+                const diffMins = Math.round(diffMs / 60000);
+                const diffHours = Math.round(diffMs / 3600000);
+                const diffDays = Math.round(diffMs / 86400000);
+
+                if (diffMins < 60) {
+                  return new Intl.RelativeTimeFormat("en", {
+                    numeric: "auto",
+                  }).format(-diffMins, "minute");
+                } else if (diffHours < 24) {
+                  return new Intl.RelativeTimeFormat("en", {
+                    numeric: "auto",
+                  }).format(-diffHours, "hour");
+                } else {
+                  return new Intl.RelativeTimeFormat("en", {
+                    numeric: "auto",
+                  }).format(-diffDays, "day");
+                }
+              })()
             : "just now"}
         </p>
       </div>

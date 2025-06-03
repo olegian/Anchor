@@ -24,7 +24,7 @@ export default function FloatingNavbar({
               {title || "No title"}
             </h4>
             <p className="text-zinc-500 text-xs font-semibold font-sans opacity-0 text-sm group-hover:translate-y-0 transition-all group-hover:opacity-100 -translate-y-5">
-              Last updated 2 days ago
+              Last updated just now
             </p>
           </div>
         </h2>
