@@ -61,13 +61,17 @@ export default function AnchorPopup({
   const exchanges = useStorage(
     (root) => root.docHandles.get(handleId)?.exchanges
   );
-  
+
   // Add state for document sections
-  const [documentSections, setDocumentSections] = useState<DocumentSection[]>([]);
+  const [documentSections, setDocumentSections] = useState<DocumentSection[]>(
+    []
+  );
   const [currentSectionTitle, setCurrentSectionTitle] = useState<string>("");
-  
+
   // Updated to default to "paragraph" instead of "section" when both are available
-  const [contextMode, setContextMode] = useState<"word" | "doc" | "paragraph" | "section">(
+  const [contextMode, setContextMode] = useState<
+    "word" | "doc" | "paragraph" | "section"
+  >(
     liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx >= 0
       ? "word"
       : liveHandleInfo.paragraphIdx >= 0 && liveHandleInfo.wordIdx === -1
@@ -81,19 +85,21 @@ export default function AnchorPopup({
   // Load document sections when popup opens
   useEffect(() => {
     if (isOpen && docId) {
-      getDocumentSections(docId).then((sections) => {
-        setDocumentSections(sections);
-        
-        // Find the current section based on paragraph index
-        if (liveHandleInfo?.paragraphIdx >= 0) {
-          const currentSection = sections.find(section => 
-            section.paragraphs.includes(liveHandleInfo.paragraphIdx)
-          );
-          if (currentSection) {
-            setCurrentSectionTitle(currentSection.title);
+      getDocumentSections(docId)
+        .then((sections) => {
+          setDocumentSections(sections);
+
+          // Find the current section based on paragraph index
+          if (liveHandleInfo?.paragraphIdx >= 0) {
+            const currentSection = sections.find((section) =>
+              section.paragraphs.includes(liveHandleInfo.paragraphIdx)
+            );
+            if (currentSection) {
+              setCurrentSectionTitle(currentSection.title);
+            }
           }
-        }
-      }).catch(console.error);
+        })
+        .catch(console.error);
     }
   }, [isOpen, docId, liveHandleInfo?.paragraphIdx]);
 
@@ -242,7 +248,7 @@ export default function AnchorPopup({
 
     const response = exchanges.at(viewedExchange)?.response || "";
     const formatResponse = response.trim();
-    const splitResponse = formatResponse.split("\n");  // format newlines as new paragraphs
+    const splitResponse = formatResponse.split("\n"); // format newlines as new paragraphs
     const nodes = splitResponse
       .filter((text: string) => text !== "") // remove non text words
       .map((text: string) => {
@@ -264,7 +270,8 @@ export default function AnchorPopup({
       const paragraph = editor.state.doc.child(paragraphIdx);
       const insertionPoint =
         (editor.$doc.children.at(paragraphIdx)?.pos || 0) +
-        paragraph.content.size + 1;
+        paragraph.content.size +
+        1;
 
       editor.commands.insertContentAt(insertionPoint, nodes);
     }
@@ -280,7 +287,9 @@ export default function AnchorPopup({
       case "paragraph":
         return "Paragraph";
       case "section":
-        return currentSectionTitle ? `Section: ${currentSectionTitle}` : "Section";
+        return currentSectionTitle
+          ? `Section: ${currentSectionTitle}`
+          : "Section";
       case "doc":
         return "Document";
       default:
@@ -474,19 +483,25 @@ export default function AnchorPopup({
               liveHandleInfo.paragraphIdx >= 0 ? (
                 <option value="word">Word</option>
               ) : null}
-              
+
               {/* Show paragraph option if we have paragraph index */}
               {liveHandleInfo && liveHandleInfo.paragraphIdx >= 0 ? (
                 <option value="paragraph">Paragraph</option>
               ) : null}
-              
+
               {/* Show section option with title directly in the option text */}
               {liveHandleInfo && liveHandleInfo.paragraphIdx >= 0 ? (
                 <option value="section">
-                  {currentSectionTitle ? `Section: ${currentSectionTitle}` : "Section"}
+                  {currentSectionTitle
+                    ? `Section: ${
+                        currentSectionTitle.length > 20
+                          ? `${currentSectionTitle.slice(0, 20)}...`
+                          : currentSectionTitle
+                      }`
+                    : "Section"}
                 </option>
               ) : null}
-              
+
               {/* Document option is always available */}
               <option value="doc">Document</option>
             </select>
