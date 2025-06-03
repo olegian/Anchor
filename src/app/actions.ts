@@ -952,6 +952,7 @@ export async function createDoc(
     new LiveObject({
       docHandles: new LiveMap(),
       docTitle: tempDocTitle,
+      attachPoints: new LiveMap(),
     })
   ) as PlainLsonObject;
 
