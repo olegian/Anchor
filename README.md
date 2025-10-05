@@ -13,6 +13,3 @@ Then, run `npm install`, followed by `npm run dev`, and the application should s
 
 Note that two people can run this application on their own local machines, and document access and content is still synced between them, given they use the same LiveBlocks key. You can also just use two tabs to explore what realtime editing with other users looks like, if you don't have any friends :(.
 
-### A Note on Authentication
-Currently, authentication is kind of spoofed, there is no actual way to signup with a new user, but feel free to use the three dev user profiles (any of our initials as the username and password). While the authentication management is setup, alongside document permissions and such, we have not gotten around to creating a signup UI.
-
